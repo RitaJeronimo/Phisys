@@ -1,23 +1,23 @@
-import logo from './logo.svg';
-import './App.css';
+import React, { useState } from 'react';
+import LoginScreen from './screens/LoginScreen';
 
 function App() {
+  const [user, setUser] = useState(null);
+
+  function handleLogin(userData) {
+    setUser(userData);
+  }
+
+  if (!user) {
+    return <LoginScreen onLogin={handleLogin} />;
+  }
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div style={{ padding: '2rem', fontFamily: 'monospace' }}>
+      <h2>Bem-vindo, {user.name}!</h2>
+      <p>Modo: {user.mode === 'aluno' ? 'Aluno' : 'Professor'}</p>
+      <p>Credencial: {user.credential}</p>
+      <button onClick={() => setUser(null)}>Sair</button>
     </div>
   );
 }
