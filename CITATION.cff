@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+title: Phisys
+message: "If you use this software, please cite it as below."
+type: software
+authors:
+  - family-names: Jeronimo
+    given-names: Rita
+    orcid: "https://orcid.org/0009-0006-6534-1027"
+repository-code: "https://github.com/RitaJeronimo/Phisys"
+abstract: >
+  Phisys is a gamified educational application for Cardiovascular
+  and Renal Physiology, designed as a learning object for
+  undergraduate students. It simulates physiological scenarios
+  through a virtual mascot whose survival depends on the
+  student's correct responses to clinical challenges.
+license: MIT
+version: 0.1.0
+date-released: "2026-05-01"
+keywords:
+  - physiology
+  - gamification
+  - educational software
+  - serious game
+  - cardiovascular
+  - renal
+  - undergraduate education
