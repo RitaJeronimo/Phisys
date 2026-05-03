@@ -135,6 +135,7 @@ function GameScreen({ user, mode, onBack }) {
       totalChallenges: MOCK_CHALLENGES.length,
       solvedChallenges: solvedCount,
       avgResponseTime,
+      errors: errorCount,
     });
 
     return (
@@ -174,7 +175,6 @@ function GameScreen({ user, mode, onBack }) {
 
   return (
     <div style={styles.screen}>
-
       <div style={styles.topbar}>
         <button style={styles.backBtn} onClick={onBack}>←</button>
         <div style={styles.scoreBadge}>⭐ {Math.round(score)} pts</div>
@@ -250,7 +250,6 @@ function GameScreen({ user, mode, onBack }) {
           </button>
         </div>
       )}
-
     </div>
   );
 }

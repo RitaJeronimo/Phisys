@@ -139,38 +139,29 @@ export const DEFAULT_WEIGHTS = {
 
 export function calculateFinalGrade(sessionData, weights = DEFAULT_WEIGHTS) {
   const {
-    finalScore,
-    finalStatus,
     totalChallenges,
     solvedChallenges,
     avgResponseTime,
+    errors = 0,
   } = sessionData;
 
-  // Score normalizado: máximo esperado por sessão é 100 base + 10 por acerto
-  const expectedMax = SCORE_RULES.initial + (SCORE_RULES.bonus.correct_answer * totalChallenges);
-  const scoreNorm = Math.min(finalScore / expectedMax, 1);
-
-  const survivalMap = {
-    [STATUS.SAUDAVEL]: 1.0,
-    [STATUS.DEBILITADO]: 0.5,
-    [STATUS.CRITICO]: 0.1,
-  };
-  const survivalNorm = survivalMap[finalStatus] || 0;
-
+  // Base: acertos sobre total (peso dominante)
   const challengeNorm = totalChallenges > 0
     ? solvedChallenges / totalChallenges
     : 0;
 
-  // Tempo ideal: até 15s = 1.0, declina gradualmente até 60s = 0
-  const timeNorm = Math.max(0, 1 - (avgResponseTime - 15) / 45);
+  // Bônus de tempo: resposta em até 10s = +1.0, até 30s = +0.5, acima de 60s = 0
+  const timeBonus = Math.max(0, 1 - (avgResponseTime - 10) / 50);
 
-  const grade =
-    scoreNorm * weights.score +
-    survivalNorm * weights.survival +
-    challengeNorm * weights.challenges +
-    timeNorm * weights.response_time;
+  // Penalidade por erros: cada erro desconta 0.5 ponto na nota final
+  const errorPenalty = errors * 0.5;
 
-  return parseFloat((grade * 10).toFixed(1));
+  // Nota base = acertos * 9 + bônus de tempo - penalidade de erros
+  const grade = Math.max(0, Math.min(10,
+    (challengeNorm * 9.0) + (timeBonus * 1.0) - errorPenalty
+  ));
+
+  return parseFloat(grade.toFixed(1));
 }
 
 export const INTERVENTIONS = {
