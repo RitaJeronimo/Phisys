@@ -79,12 +79,13 @@ function GameScreen({ user, mode, onBack }) {
   const challenge = MOCK_CHALLENGES[currentIdx];
 
   useEffect(() => {
+    if (answered || finished) return;
     const interval = setInterval(() => {
       setSeconds(s => s + 1);
       setScore(s => applyPenalty(s, status));
     }, 1000);
     return () => clearInterval(interval);
-  }, [status]);
+  }, [status, answered, finished]);
 
   function handleAnswer(option) {
     if (answered) return;
