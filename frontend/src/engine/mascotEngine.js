@@ -146,7 +146,9 @@ export function calculateFinalGrade(sessionData, weights = DEFAULT_WEIGHTS) {
     avgResponseTime,
   } = sessionData;
 
-  const scoreNorm = Math.min(finalScore / SCORE_RULES.max, 1);
+  // Score normalizado: máximo esperado por sessão é 100 base + 10 por acerto
+  const expectedMax = SCORE_RULES.initial + (SCORE_RULES.bonus.correct_answer * totalChallenges);
+  const scoreNorm = Math.min(finalScore / expectedMax, 1);
 
   const survivalMap = {
     [STATUS.SAUDAVEL]: 1.0,
@@ -159,7 +161,8 @@ export function calculateFinalGrade(sessionData, weights = DEFAULT_WEIGHTS) {
     ? solvedChallenges / totalChallenges
     : 0;
 
-  const timeNorm = Math.max(0, 1 - (avgResponseTime - 10) / 50);
+  // Tempo ideal: até 15s = 1.0, declina gradualmente até 60s = 0
+  const timeNorm = Math.max(0, 1 - (avgResponseTime - 15) / 45);
 
   const grade =
     scoreNorm * weights.score +
