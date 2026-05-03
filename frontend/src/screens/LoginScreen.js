@@ -23,40 +23,40 @@ function LoginScreen({ onLogin }) {
     <div style={styles.wrap}>
       <div style={styles.card}>
 
-        <div style={styles.brand}>
-          <svg width="72" height="72" viewBox="0 0 72 72">
-            <circle cx="36" cy="40" r="26" fill="#9FE1CB"/>
-            <ellipse cx="20" cy="22" rx="10" ry="12" fill="#9FE1CB"/>
-            <ellipse cx="52" cy="22" rx="10" ry="12" fill="#9FE1CB"/>
-            <ellipse cx="20" cy="23" rx="6" ry="7" fill="#F4C0D1"/>
-            <ellipse cx="52" cy="23" rx="6" ry="7" fill="#F4C0D1"/>
-            <circle cx="36" cy="40" r="26" fill="#9FE1CB"/>
-            <circle cx="29" cy="37" r="4" fill="white"/>
-            <circle cx="43" cy="37" r="4" fill="white"/>
-            <circle cx="30" cy="38" r="2.5" fill="#085041"/>
-            <circle cx="44" cy="38" r="2.5" fill="#085041"/>
-            <ellipse cx="36" cy="46" rx="3" ry="2.5" fill="#D4537E"/>
-            <path d="M 30 53 Q 36 58 42 53" stroke="#085041" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
-            <line x1="24" y1="44" x2="13" y2="41" stroke="#085041" strokeWidth="1" opacity="0.5"/>
-            <line x1="24" y1="47" x2="13" y2="49" stroke="#085041" strokeWidth="1" opacity="0.5"/>
-            <line x1="48" y1="44" x2="59" y2="41" stroke="#085041" strokeWidth="1" opacity="0.5"/>
-            <line x1="48" y1="47" x2="59" y2="49" stroke="#085041" strokeWidth="1" opacity="0.5"/>
-          </svg>
-          <div style={styles.brandName}>Phisys</div>
-          <div style={styles.brandSub}>Fisiologia Cardiovascular &amp; Renal</div>
-        </div>
+        <svg width="76" height="76" viewBox="0 0 76 76">
+          <ellipse cx="22" cy="24" rx="12" ry="15" fill="white" opacity="0.9"/>
+          <ellipse cx="54" cy="24" rx="12" ry="15" fill="white" opacity="0.9"/>
+          <ellipse cx="22" cy="25" rx="7" ry="9" fill="#F4C0D1"/>
+          <ellipse cx="54" cy="25" rx="7" ry="9" fill="#F4C0D1"/>
+          <circle cx="38" cy="42" r="28" fill="white" opacity="0.92"/>
+          <circle cx="30" cy="39" r="5" fill="#7B2FBE"/>
+          <circle cx="46" cy="39" r="5" fill="#7B2FBE"/>
+          <circle cx="31" cy="40" r="3" fill="white"/>
+          <circle cx="47" cy="40" r="3" fill="white"/>
+          <circle cx="33" cy="38" r="1.5" fill="#7B2FBE" opacity="0.4"/>
+          <circle cx="49" cy="38" r="1.5" fill="#7B2FBE" opacity="0.4"/>
+          <ellipse cx="38" cy="49" rx="4" ry="3" fill="#F4C0D1"/>
+          <path d="M 30 57 Q 38 63 46 57" stroke="#7B2FBE" strokeWidth="2" fill="none" strokeLinecap="round"/>
+          <line x1="24" y1="46" x2="10" y2="43" stroke="#7B2FBE" strokeWidth="1.2" opacity="0.5"/>
+          <line x1="24" y1="50" x2="10" y2="53" stroke="#7B2FBE" strokeWidth="1.2" opacity="0.5"/>
+          <line x1="48" y1="46" x2="62" y2="43" stroke="#7B2FBE" strokeWidth="1.2" opacity="0.5"/>
+          <line x1="48" y1="50" x2="62" y2="53" stroke="#7B2FBE" strokeWidth="1.2" opacity="0.5"/>
+        </svg>
+
+        <div style={styles.brandName}>Phisys</div>
+        <div style={styles.brandSub}>Fisiologia Cardiovascular &amp; Renal</div>
 
         <div style={styles.divider}/>
 
         <div style={styles.modeToggle}>
           <button
-            style={{ ...styles.modeBtn, ...(mode === 'aluno' ? styles.modeBtnActive : {}) }}
+            style={{ ...styles.modeBtn, ...(mode === 'aluno' ? styles.modeBtnActive : styles.modeBtnInactive) }}
             onClick={() => { setMode('aluno'); setCredential(''); setError(''); }}
           >
             Sou aluno
           </button>
           <button
-            style={{ ...styles.modeBtn, ...(mode === 'professor' ? styles.modeBtnActive : {}) }}
+            style={{ ...styles.modeBtn, ...(mode === 'professor' ? styles.modeBtnActive : styles.modeBtnInactive) }}
             onClick={() => { setMode('professor'); setCredential(''); setError(''); }}
           >
             Sou professor
@@ -102,50 +102,47 @@ function LoginScreen({ onLogin }) {
   );
 }
 
+const GRADIENT = 'linear-gradient(135deg, #1B4FCC 0%, #7B2FBE 50%, #CC1B1B 100%)';
+
 const styles = {
   wrap: {
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
     minHeight: '100vh',
-    backgroundColor: '#f5f5f3',
+    backgroundColor: '#f0f0f0',
     padding: '2rem 1rem',
   },
   card: {
-    backgroundColor: '#ffffff',
-    border: '0.5px solid rgba(0,0,0,0.12)',
-    borderRadius: '12px',
+    background: GRADIENT,
+    borderRadius: '16px',
     padding: '2.5rem 2rem',
     width: '100%',
-    maxWidth: '360px',
+    maxWidth: '370px',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
     gap: '1.25rem',
-  },
-  brand: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: '0.5rem',
+    boxShadow: '0 8px 40px rgba(123,47,190,0.35)',
   },
   brandName: {
-    fontSize: '32px',
-    fontWeight: '500',
-    color: '#1a1a1a',
+    fontSize: '34px',
+    fontWeight: '700',
     fontFamily: 'monospace',
     letterSpacing: '-0.02em',
+    color: 'white',
   },
   brandSub: {
-    fontSize: '12px',
-    color: '#888',
+    fontSize: '11px',
     letterSpacing: '0.08em',
     textTransform: 'uppercase',
+    color: 'rgba(255,255,255,0.75)',
   },
   divider: {
     width: '100%',
-    height: '0.5px',
-    backgroundColor: 'rgba(0,0,0,0.1)',
+    height: '2px',
+    borderRadius: '2px',
+    background: 'rgba(255,255,255,0.35)',
   },
   modeToggle: {
     display: 'flex',
@@ -154,20 +151,24 @@ const styles = {
   },
   modeBtn: {
     flex: 1,
-    padding: '8px',
+    padding: '9px',
     borderRadius: '8px',
-    border: '0.5px solid rgba(0,0,0,0.2)',
-    backgroundColor: 'transparent',
-    color: '#888',
     fontSize: '12px',
+    fontWeight: '500',
     cursor: 'pointer',
     fontFamily: 'inherit',
-    transition: 'all 0.15s',
+    transition: 'all 0.2s',
   },
   modeBtnActive: {
-    borderColor: '#1D9E75',
-    color: '#0F6E56',
-    backgroundColor: '#E1F5EE',
+    background: 'white',
+    color: '#7B2FBE',
+    border: '1.5px solid white',
+    fontWeight: '700',
+  },
+  modeBtnInactive: {
+    border: '1.5px solid rgba(255,255,255,0.4)',
+    background: 'transparent',
+    color: 'rgba(255,255,255,0.7)',
   },
   formGroup: {
     width: '100%',
@@ -176,46 +177,48 @@ const styles = {
     gap: '0.4rem',
   },
   label: {
-    fontSize: '12px',
-    color: '#888',
-    letterSpacing: '0.04em',
+    fontSize: '11px',
+    color: 'rgba(255,255,255,0.7)',
+    letterSpacing: '0.05em',
+    textTransform: 'uppercase',
   },
   input: {
     width: '100%',
-    padding: '10px 14px',
-    border: '0.5px solid rgba(0,0,0,0.2)',
+    padding: '11px 14px',
     borderRadius: '8px',
     fontSize: '14px',
-    backgroundColor: '#fafafa',
-    color: '#1a1a1a',
+    border: '1.5px solid rgba(255,255,255,0.3)',
+    background: 'rgba(255,255,255,0.15)',
+    color: 'white',
     fontFamily: 'inherit',
     outline: 'none',
   },
   error: {
     width: '100%',
     fontSize: '12px',
-    color: '#A32D2D',
-    backgroundColor: '#FCEBEB',
-    border: '0.5px solid #F09595',
+    color: 'white',
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    border: '1.5px solid rgba(255,255,255,0.5)',
     borderRadius: '8px',
     padding: '8px 12px',
   },
   submitBtn: {
     width: '100%',
-    padding: '11px',
-    borderRadius: '8px',
+    padding: '13px',
+    borderRadius: '10px',
     border: 'none',
-    backgroundColor: '#1D9E75',
-    color: 'white',
+    backgroundColor: 'white',
+    color: '#7B2FBE',
     fontSize: '14px',
-    fontWeight: '500',
+    fontWeight: '700',
     cursor: 'pointer',
     fontFamily: 'inherit',
-    letterSpacing: '0.02em',
+    letterSpacing: '0.03em',
+    boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
   },
   footerNote: {
-    fontSize: '11px',
-    color: '#aaa',
+    fontSize: '10px',
+    color: 'rgba(255,255,255,0.55)',
     textAlign: 'center',
     lineHeight: '1.6',
   },
