@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { PARAMS, getDefaultValues, getMascotStatus, applyPenalty, applyBonus, STATUS } from '../engine/mascotEngine';
+import { PARAMS, getDefaultValues, getMascotStatus, applyPenalty, applyBonus, calculateFinalGrade, STATUS } from '../engine/mascotEngine';
 
 const MOCK_CHALLENGES = [
   {
@@ -73,6 +73,8 @@ function GameScreen({ user, mode, onBack }) {
   const [solvedCount, setSolvedCount] = useState(0);
   const [errorCount, setErrorCount] = useState(0);
   const [seconds, setSeconds] = useState(0);
+  const [responseTimes, setResponseTimes] = useState([]);
+  const [questionStart, setQuestionStart] = useState(Date.now());
   const [finished, setFinished] = useState(false);
 
   const status = getMascotStatus(values);
@@ -89,6 +91,8 @@ function GameScreen({ user, mode, onBack }) {
 
   function handleAnswer(option) {
     if (answered) return;
+    const elapsed = (Date.now() - questionStart) / 1000;
+    setResponseTimes(t => [...t, elapsed]);
     setSelected(option.letter);
     setAnswered(true);
     if (option.correct) {
@@ -107,6 +111,7 @@ function GameScreen({ user, mode, onBack }) {
       setCurrentIdx(i => i + 1);
       setSelected(null);
       setAnswered(false);
+      setQuestionStart(Date.now());
     }
   }
 
@@ -120,7 +125,18 @@ function GameScreen({ user, mode, onBack }) {
   const statusLabel = { [STATUS.SAUDAVEL]: 'Saudável', [STATUS.DEBILITADO]: 'Debilitado', [STATUS.CRITICO]: 'Crítico' };
 
   if (finished) {
-    const grade = Math.min(10, ((score / 999) * 4 + (solvedCount / MOCK_CHALLENGES.length) * 4 + (errorCount === 0 ? 2 : 1))).toFixed(1);
+    const avgResponseTime = responseTimes.length > 0
+      ? responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length
+      : 30;
+
+    const grade = calculateFinalGrade({
+      finalScore: score,
+      finalStatus: status,
+      totalChallenges: MOCK_CHALLENGES.length,
+      solvedChallenges: solvedCount,
+      avgResponseTime,
+    });
+
     return (
       <div style={styles.screen}>
         <div style={{ padding: '3rem 1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem' }}>
