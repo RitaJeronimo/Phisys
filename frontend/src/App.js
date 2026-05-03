@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import LoginScreen from './screens/LoginScreen';
 import HomeScreen from './screens/HomeScreen';
+import GameScreen from './screens/GameScreen';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -19,26 +20,24 @@ function App() {
     setMode(null);
   }
 
+  function handleBack() {
+    setMode(null);
+  }
+
   if (!user) {
     return <LoginScreen onLogin={handleLogin} />;
   }
 
-  if (!mode) {
-    return (
-      <HomeScreen
-        user={user}
-        onSelectMode={handleSelectMode}
-        onLogout={handleLogout}
-      />
-    );
+  if (mode) {
+    return <GameScreen user={user} mode={mode} onBack={handleBack} />;
   }
 
   return (
-    <div style={{ padding: '2rem', fontFamily: 'monospace' }}>
-      <h2>Modo: {mode === 'livre' ? 'Livre' : 'Sessão'}</h2>
-      <p>Aluno: {user.name}</p>
-      <button onClick={() => setMode(null)}>Voltar</button>
-    </div>
+    <HomeScreen
+      user={user}
+      onSelectMode={handleSelectMode}
+      onLogout={handleLogout}
+    />
   );
 }
 
