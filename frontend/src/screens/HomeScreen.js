@@ -1,6 +1,6 @@
 import React from 'react';
 
-function HomeScreen({ user, onSelectMode, onLogout }) {
+function HomeScreen({ user, onSelectMode, onLogout, onViewRanking }) {
   const initials = user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
 
   const mockRanking = [
@@ -83,7 +83,7 @@ function HomeScreen({ user, onSelectMode, onLogout }) {
       <div style={styles.ranking}>
         <div style={styles.rankHeader}>
           <div style={styles.rankTitle}>ranking da turma</div>
-          <div style={styles.rankVer}>ver tudo</div>
+          <div style={styles.rankVer} onClick={onViewRanking}>ver tudo</div>
         </div>
         <div style={styles.rankRows}>
           {mockRanking.map(r => (
