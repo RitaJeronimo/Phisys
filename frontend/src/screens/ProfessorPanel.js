@@ -26,17 +26,21 @@ function ProfessorPanel({ onBack }) {
   const [manualGrades, setManualGrades] = useState(() => {
     const obj = {};
     MOCK_STUDENTS.forEach(s => {
-      const grade = calculateFinalGrade(
+      obj[s.initials] = calculateFinalGrade(
         { finalScore: s.pts, finalStatus: s.finalStatus, totalChallenges: s.totalChallenges, solvedChallenges: s.solvedChallenges, avgResponseTime: s.avgResponseTime },
         { score: DEFAULT_WEIGHTS.score, survival: DEFAULT_WEIGHTS.survival, challenges: DEFAULT_WEIGHTS.challenges, response_time: DEFAULT_WEIGHTS.response_time }
       );
-      obj[s.initials] = grade;
     });
     return obj;
   });
 
   function getCalcGrade(student) {
-    const w = { score: weights.score / 100, survival: weights.survival / 100, challenges: weights.challenges / 100, response_time: weights.response_time / 100 };
+    const w = {
+      score: weights.score / 100,
+      survival: weights.survival / 100,
+      challenges: weights.challenges / 100,
+      response_time: weights.response_time / 100,
+    };
     return calculateFinalGrade(
       { finalScore: student.pts, finalStatus: student.finalStatus, totalChallenges: student.totalChallenges, solvedChallenges: student.solvedChallenges, avgResponseTime: student.avgResponseTime },
       w
@@ -48,10 +52,15 @@ function ProfessorPanel({ onBack }) {
   }
 
   function handleManualGrade(initials, val) {
-    setManualGrades(g => ({ ...g, [initials]: val }));
+    setManualGrades(g => ({ ...g, [initials]: Number(val) }));
   }
 
-  const avgGrade = (MOCK_STUDENTS.reduce((acc, s) => acc + getCalcGrade(s), 0) / MOCK_STUDENTS.length).toFixed(1);
+  // Média usa as notas finais editáveis pelo professor
+  const avgGrade = (
+    Object.values(manualGrades).reduce((acc, g) => acc + Number(g), 0) /
+    MOCK_STUDENTS.length
+  ).toFixed(1);
+
   const avgTime = Math.round(MOCK_STUDENTS.reduce((acc, s) => acc + s.avgResponseTime, 0) / MOCK_STUDENTS.length);
   const formatTime = s => `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`;
 
@@ -64,7 +73,6 @@ function ProfessorPanel({ onBack }) {
         <button style={styles.exportBtn}>↓ Exportar</button>
       </div>
 
-      {/* RESUMO */}
       <div style={styles.summary}>
         {[
           { val: MOCK_STUDENTS.length, lbl: 'Alunos' },
@@ -79,7 +87,6 @@ function ProfessorPanel({ onBack }) {
         ))}
       </div>
 
-      {/* PESOS */}
       <div style={styles.sectionTitle}>pesos da nota automática</div>
       <div style={styles.weights}>
         {[
@@ -101,7 +108,6 @@ function ProfessorPanel({ onBack }) {
         ))}
       </div>
 
-      {/* TABELA */}
       <div style={styles.sectionTitle}>desempenho dos alunos</div>
       <div style={styles.tableWrap}>
         <div style={styles.tableHeader}>
