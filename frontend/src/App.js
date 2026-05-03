@@ -3,6 +3,7 @@ import LoginScreen from './screens/LoginScreen';
 import HomeScreen from './screens/HomeScreen';
 import GameScreen from './screens/GameScreen';
 import RankingScreen from './screens/RankingScreen';
+import ProfessorPanel from './screens/ProfessorPanel';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -34,6 +35,10 @@ function App() {
     setScreen('ranking');
   }
 
+  function handleViewPanel() {
+    setScreen('professor');
+  }
+
   if (!user) {
     return <LoginScreen onLogin={handleLogin} />;
   }
@@ -46,12 +51,17 @@ function App() {
     return <RankingScreen user={user} onBack={handleBack} />;
   }
 
+  if (screen === 'professor') {
+    return <ProfessorPanel onBack={handleBack} />;
+  }
+
   return (
     <HomeScreen
       user={user}
       onSelectMode={handleSelectMode}
       onLogout={handleLogout}
       onViewRanking={handleViewRanking}
+      onViewPanel={handleViewPanel}
     />
   );
 }

@@ -1,6 +1,6 @@
 import React from 'react';
 
-function HomeScreen({ user, onSelectMode, onLogout, onViewRanking }) {
+function HomeScreen({ user, onSelectMode, onLogout, onViewRanking, onViewPanel }) {
   const initials = user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
 
   const mockRanking = [
@@ -98,8 +98,13 @@ function HomeScreen({ user, onSelectMode, onLogout, onViewRanking }) {
       </div>
 
       <div style={styles.footer}>
-        <button style={styles.logout} onClick={onLogout}>sair da conta</button>
-      </div>
+  {user.mode === 'professor' && (
+    <button style={styles.panelBtn} onClick={onViewPanel}>
+      Acessar Painel do Professor
+    </button>
+  )}
+  <button style={styles.logout} onClick={onLogout}>sair da conta</button>
+</div>
 
     </div>
   );
@@ -194,7 +199,24 @@ const styles = {
   rankPts: { fontSize: '12px', color: 'rgba(255,255,255,0.5)' },
   rankPtsMe: { color: 'white', fontWeight: '600' },
   footer: { marginTop: 'auto', padding: '1rem 1.5rem', display: 'flex', justifyContent: 'center' },
-  logout: { fontSize: '11px', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', background: 'none', border: 'none', fontFamily: 'inherit' },
+  logout: { fontSize: '11px', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', background: 'none', border: 'none', fontFamily: 'inherit' 
+  },
+
+  panelBtn: {
+  width: '100%',
+  padding: '12px',
+  borderRadius: '10px',
+  border: 'none',
+  backgroundColor: 'white',
+  color: '#7B2FBE',
+  fontSize: '14px',
+  fontWeight: '700',
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+  marginBottom: '8px',
+},
+
+
 };
 
 export default HomeScreen;
