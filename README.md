@@ -68,7 +68,7 @@ O app abrirá automaticamente em http://localhost:3000
 
 Se você usar este software em sua pesquisa, por favor cite conforme o arquivo CITATION.cff:
 
-Jeronimo, R. (2026). Phisys — Gamified Educational Application for Cardiovascular and Renal Physiology (v0.1.0). https://github.com/RitaJeronimo/Phisys
+Jerônimo da Silva, R. C. (2026). Phisys — Gamified Educational Application for Cardiovascular and Renal Physiology (v0.1.0). https://github.com/RitaJeronimo/Phisys
 
 ---
 
@@ -80,6 +80,6 @@ Este projeto está licenciado sob a MIT License. Veja o arquivo LICENSE para mai
 
 ## Autora
 
-Rita Jerônimo
+Rita de Cássia Jerônimo da Silva
 Doutora em Ciência da Computação — CIn/UFPE
 ORCID: https://orcid.org/0009-0006-6534-1027
