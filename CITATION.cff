@@ -3,8 +3,8 @@ title: Phisys
 message: "If you use this software, please cite it as below."
 type: software
 authors:
-  - family-names: Jeronimo
-    given-names: Rita
+  - family-names: Jerônimo da Silva
+    given-names: Rita de Cássia
     orcid: "https://orcid.org/0009-0006-6534-1027"
 repository-code: "https://github.com/RitaJeronimo/Phisys"
 abstract: >
