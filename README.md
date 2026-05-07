@@ -10,7 +10,7 @@ Phisys é um objeto de aprendizagem gamificado (Serious Game) voltado a estudant
 
 O Phisys foi desenvolvido como alternativa ética e pedagógica às aulas práticas de Fisiologia com animais vivos. O aluno controla um mascote virtual cujos cinco parâmetros fisiológicos devem ser mantidos dentro das faixas normais por meio de respostas corretas a desafios progressivos.
 
-**Focos pedagógicos:**
+Focos pedagógicos:
 - Fisiologia Cardiovascular — pressão arterial e frequência cardíaca
 - Fisiologia Renal — sede, fome e volume urinário
 
@@ -40,14 +40,47 @@ O Phisys foi desenvolvido como alternativa ética e pedagógica às aulas práti
 
 ## Como Rodar Localmente
 
-Pré-requisitos: Node.js instalado
+### Pré-requisitos
 
-1. Clone o repositório: git clone https://github.com/RitaJeronimo/Phisys.git
-2. Entre na pasta: cd Phisys/frontend
-3. Instale as dependências: npm install
-4. Rode o app: npm start
+Antes de começar, instale os seguintes programas na ordem abaixo:
 
-O app abrirá automaticamente em http://localhost:3000
+1. Node.js — https://nodejs.org (baixe a versão LTS)
+2. Git — https://git-scm.com/download/win (instale com todas as opções padrão)
+
+Atenção: o GitHub Desktop é diferente do Git para terminal. É necessário instalar o Git pelo link acima mesmo que já tenha o GitHub Desktop instalado.
+
+Após instalar, feche e reabra o PowerShell antes de continuar.
+
+### Acesso ao repositório
+
+O repositório é privado. Para cloná-lo você precisa:
+- Ter uma conta no GitHub
+- Ter sido adicionada como colaboradora pela desenvolvedora
+- Quando solicitado, informar seu usuário e senha do GitHub no terminal
+
+### Passo a passo
+
+Abra o PowerShell e execute os comandos abaixo, um de cada vez, esperando cada um terminar antes de digitar o próximo:
+
+Passo 1 — Clone o repositório:
+git clone https://github.com/RitaJeronimo/Phisys.git
+
+Passo 2 — Entre na pasta do frontend:
+cd Phisys/frontend
+
+Passo 3 — Instale as dependências:
+npm install
+
+Passo 4 — Rode o app:
+npm start
+
+O app abrirá automaticamente no navegador em http://localhost:3000
+
+### Erros comuns
+
+- git não é reconhecido: o Git não está instalado. Baixe em https://git-scm.com/download/win, instale e reabra o PowerShell.
+- Não é possível localizar o caminho: você pulou o Passo 1 ou o clone não foi concluído. Volte ao Passo 1.
+- npm error ENOENT: você está na pasta errada. Certifique-se de ter executado o Passo 2 antes do npm install.
 
 ---
 
