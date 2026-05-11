@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { PRIMARY_PARAMS, calcularSaude, getMascotStatus, STATUS, DAILY_CARES, aplicarCuidado } from '../engine/mascotEngine';
+import { PRIMARY_PARAMS, calcularSaude, getMascotStatus, STATUS, DAILY_CARES, aplicarCuidado, aplicarIntervencao, getDefaultPrimaryValues } from '../engine/mascotEngine';
 
 const GRADIENT = 'linear-gradient(160deg, #1B4FCC 0%, #7B2FBE 50%, #CC1B1B 100%)';
 
@@ -23,42 +23,82 @@ function ParamCard({ param, value }) {
 }
 
 function Mascot({ status }) {
-  const bodyColor = status === STATUS.SAUDAVEL ? '#D6D6D6' : status === STATUS.DEBILITADO ? '#FAC775' : '#F09595';
-  const eyeColor  = status === STATUS.SAUDAVEL ? '#7B2FBE' : status === STATUS.DEBILITADO ? '#633806' : '#791F1F';
-  const mouth     = status === STATUS.SAUDAVEL ? 'M 187 176 Q 200 190 213 176' : status === STATUS.DEBILITADO ? 'M 187 178 Q 200 178 213 178' : 'M 187 184 Q 200 174 213 184';
-  const emoji     = status === STATUS.SAUDAVEL ? '😊 Saudável' : status === STATUS.DEBILITADO ? '😰 Debilitado' : '😵 Crítico';
-  const statusColor = status === STATUS.SAUDAVEL ? '#32C878' : status === STATUS.DEBILITADO ? '#EF9F27' : '#E24B4A';
+  const bodyColor  = status === STATUS.SAUDAVEL ? '#D4D4D4' : status === STATUS.DEBILITADO ? '#FAC775' : '#F09595';
+  const earIn      = status === STATUS.SAUDAVEL ? '#FFD0DC' : status === STATUS.DEBILITADO ? '#F5CC80' : '#FFB0B0';
+  const eyeOuter   = status === STATUS.SAUDAVEL ? '#7B2FBE' : status === STATUS.DEBILITADO ? '#633806' : '#791F1F';
+  const eyeInner   = status === STATUS.SAUDAVEL ? '#3A1A6A' : status === STATUS.DEBILITADO ? '#3A1A00' : '#3A0000';
+  const cheek      = status === STATUS.SAUDAVEL ? '#FFB0C8' : status === STATUS.DEBILITADO ? '#F5CC80' : '#FFB0B0';
+  const statusColor= status === STATUS.SAUDAVEL ? '#32C878' : status === STATUS.DEBILITADO ? '#EF9F27' : '#E24B4A';
+  const emoji      = status === STATUS.SAUDAVEL ? '😊 Saudável' : status === STATUS.DEBILITADO ? '😰 Debilitado' : '😵 Crítico';
+
+  const mouth = status === STATUS.SAUDAVEL
+    ? <path d="M188 184 Q200 196 212 184" stroke="#666" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+    : status === STATUS.DEBILITADO
+    ? <path d="M188 188 Q200 188 212 188" stroke="#888" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+    : <path d="M188 192 Q200 182 212 192" stroke="#AA4444" strokeWidth="2.5" fill="none" strokeLinecap="round"/>;
+
+  const eyeL = status === STATUS.CRITICO
+    ? <><ellipse cx="168" cy="152" rx="22" ry="22" fill="white"/>
+        <line x1="158" y1="142" x2="178" y2="162" stroke={eyeOuter} strokeWidth="4" strokeLinecap="round"/>
+        <line x1="178" y1="142" x2="158" y2="162" stroke={eyeOuter} strokeWidth="4" strokeLinecap="round"/></>
+    : status === STATUS.DEBILITADO
+    ? <><ellipse cx="168" cy="152" rx="22" ry="22" fill="white"/>
+        <ellipse cx="168" cy="156" rx="16" ry="10" fill={eyeOuter}/>
+        <ellipse cx="168" cy="156" rx="8"  ry="5"  fill={eyeInner}/>
+        <path d="M148 148 Q168 138 188 148" stroke="#999" strokeWidth="2" fill="none"/>
+        <ellipse cx="176" cy="150" rx="5" ry="3" fill="white" opacity=".8"/></>
+    : <><ellipse cx="168" cy="152" rx="22" ry="26" fill="white"/>
+        <ellipse cx="168" cy="155" rx="16" ry="20" fill={eyeOuter}/>
+        <ellipse cx="168" cy="155" rx="8"  ry="10" fill={eyeInner}/>
+        <ellipse cx="176" cy="144" rx="6"  ry="7"  fill="white" opacity=".9"/>
+        <ellipse cx="162" cy="160" rx="3"  ry="3.5" fill="white" opacity=".5"/></>;
+
+  const eyeR = status === STATUS.CRITICO
+    ? <><ellipse cx="232" cy="152" rx="22" ry="22" fill="white"/>
+        <line x1="222" y1="142" x2="242" y2="162" stroke={eyeOuter} strokeWidth="4" strokeLinecap="round"/>
+        <line x1="242" y1="142" x2="222" y2="162" stroke={eyeOuter} strokeWidth="4" strokeLinecap="round"/></>
+    : status === STATUS.DEBILITADO
+    ? <><ellipse cx="232" cy="152" rx="22" ry="22" fill="white"/>
+        <ellipse cx="232" cy="156" rx="16" ry="10" fill={eyeOuter}/>
+        <ellipse cx="232" cy="156" rx="8"  ry="5"  fill={eyeInner}/>
+        <path d="M212 148 Q232 138 252 148" stroke="#999" strokeWidth="2" fill="none"/>
+        <ellipse cx="240" cy="150" rx="5" ry="3" fill="white" opacity=".8"/></>
+    : <><ellipse cx="232" cy="152" rx="22" ry="26" fill="white"/>
+        <ellipse cx="232" cy="155" rx="16" ry="20" fill={eyeOuter}/>
+        <ellipse cx="232" cy="155" rx="8"  ry="10" fill={eyeInner}/>
+        <ellipse cx="240" cy="144" rx="6"  ry="7"  fill="white" opacity=".9"/>
+        <ellipse cx="226" cy="160" rx="3"  ry="3.5" fill="white" opacity=".5"/></>;
+
   return (
     <div style={styles.animalBg}>
       <div style={styles.animalLabel}>Mantenha o animal em homeostase</div>
       <div style={{ ...styles.animalStatus, color: statusColor }}>{emoji}</div>
-      <svg viewBox="0 0 400 360" style={{ width: '160px', height: '160px', marginTop: 24 }}>
-        <ellipse cx="140" cy="106" rx="30" ry="38" fill={bodyColor}/>
-        <ellipse cx="140" cy="106" rx="18" ry="24" fill="#F4C0D1"/>
-        <ellipse cx="260" cy="106" rx="30" ry="38" fill={bodyColor}/>
-        <ellipse cx="260" cy="106" rx="18" ry="24" fill="#F4C0D1"/>
-        <ellipse cx="200" cy="140" rx="68" ry="64" fill={bodyColor}/>
-        <ellipse cx="200" cy="162" rx="30" ry="24" fill={bodyColor} opacity=".85"/>
-        <ellipse cx="152" cy="158" rx="18" ry="12" fill="#F4C0D1" opacity=".55"/>
-        <ellipse cx="248" cy="158" rx="18" ry="12" fill="#F4C0D1" opacity=".55"/>
-        <line x1="172" y1="164" x2="112" y2="154" stroke="#888" strokeWidth="1.8" opacity=".4" strokeLinecap="round"/>
-        <line x1="172" y1="170" x2="108" y2="170" stroke="#888" strokeWidth="1.8" opacity=".4" strokeLinecap="round"/>
-        <line x1="228" y1="164" x2="288" y2="154" stroke="#888" strokeWidth="1.8" opacity=".4" strokeLinecap="round"/>
-        <line x1="228" y1="170" x2="292" y2="170" stroke="#888" strokeWidth="1.8" opacity=".4" strokeLinecap="round"/>
-        <circle cx="178" cy="134" r="16" fill="white"/>
-        <circle cx="181" cy="137" r="9"  fill={eyeColor}/>
-        <circle cx="184" cy="130" r="4"  fill="white" opacity=".8"/>
-        <circle cx="222" cy="134" r="16" fill="white"/>
-        <circle cx="225" cy="137" r="9"  fill={eyeColor}/>
-        <circle cx="228" cy="130" r="4"  fill="white" opacity=".8"/>
-        <ellipse cx="200" cy="163" rx="10" ry="7" fill="#F4C0D1"/>
-        <path d={mouth} stroke={eyeColor} strokeWidth="3" fill="none" strokeLinecap="round"/>
-        <ellipse cx="200" cy="222" rx="82" ry="70" fill={bodyColor}/>
-        <ellipse cx="200" cy="228" rx="48" ry="42" fill="white" opacity=".15"/>
-        <rect x="112" y="186" width="20" height="48" rx="10" fill={bodyColor}/>
-        <rect x="268" y="186" width="20" height="48" rx="10" fill={bodyColor}/>
-        <rect x="162" y="268" width="22" height="44" rx="11" fill={bodyColor}/>
-        <rect x="216" y="268" width="22" height="44" rx="11" fill={bodyColor}/>
+      <svg viewBox="0 0 400 380" style={{ width:'180px', height:'180px', marginTop:20 }}>
+        <path d="M188 350 Q162 358 148 340 Q136 322 144 308 Q152 295 164 305" stroke="#C8C8C8" strokeWidth="7" fill="none" strokeLinecap="round"/>
+        <ellipse cx="166" cy="335" rx="22" ry="13" fill={bodyColor}/>
+        <ellipse cx="234" cy="335" rx="22" ry="13" fill={bodyColor}/>
+        <ellipse cx="200" cy="285" rx="82" ry="78" fill={bodyColor}/>
+        <ellipse cx="200" cy="295" rx="48" ry="50" fill="white" opacity=".2"/>
+        <ellipse cx="118" cy="268" rx="22" ry="15" fill={bodyColor} transform="rotate(-20,118,268)"/>
+        <ellipse cx="282" cy="268" rx="22" ry="15" fill={bodyColor} transform="rotate(20,282,268)"/>
+        <ellipse cx="110" cy="135" rx="38" ry="48" fill={bodyColor}/>
+        <ellipse cx="110" cy="135" rx="24" ry="34" fill={earIn}/>
+        <ellipse cx="290" cy="135" rx="38" ry="48" fill={bodyColor}/>
+        <ellipse cx="290" cy="135" rx="24" ry="34" fill={earIn}/>
+        <ellipse cx="200" cy="158" rx="82" ry="78" fill={bodyColor}/>
+        <ellipse cx="136" cy="170" rx="20" ry="14" fill={cheek} opacity=".6"/>
+        <ellipse cx="264" cy="170" rx="20" ry="14" fill={cheek} opacity=".6"/>
+        {eyeL}
+        {eyeR}
+        <ellipse cx="200" cy="175" rx="8" ry="6" fill="#FF8FAA"/>
+        {mouth}
+        {status !== STATUS.SAUDAVEL && (
+          <ellipse cx="290" cy="120" rx="7" ry="11" fill="#85B7EB" opacity=".8"/>
+        )}
+        {status === STATUS.SAUDAVEL && (<>
+          <text x="316" y="100" fontSize="18" fill="white" opacity=".9">✦</text>
+          <text x="72"  y="112" fontSize="12" fill="white" opacity=".8">✦</text>
+        </>)}
       </svg>
     </div>
   );
@@ -124,6 +164,30 @@ function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, on
         </div>
       </div>
 
+      {/* 🧪 MODO TESTE */}
+      <div style={styles.caresLabel}>🧪 simular cenário (teste)</div>
+      <div style={styles.cares}>
+        <div style={{ ...styles.careCard, background:'rgba(239,159,39,.2)', borderColor:'#EF9F27' }}
+          onClick={() => setValues(prev => aplicarIntervencao(prev, 'desidratacao'))}>
+          <div style={styles.careIcon}>💧</div>
+          <div style={styles.careName}>Desidratação</div>
+          <div style={styles.careDesc}>Simular</div>
+        </div>
+        <div style={{ ...styles.careCard, background:'rgba(220,60,60,.2)', borderColor:'#E24B4A' }}
+          onClick={() => setValues(prev => aplicarIntervencao(prev, 'hipertensao'))}>
+          <div style={styles.careIcon}>❤️</div>
+          <div style={styles.careName}>Hipertensão</div>
+          <div style={styles.careDesc}>Simular</div>
+        </div>
+        <div style={{ ...styles.careCard, background:'rgba(50,200,120,.2)', borderColor:'#32C878' }}
+          onClick={() => { setValues(getDefaultPrimaryValues()); setCaresDone({}); }}>
+          <div style={styles.careIcon}>🔄</div>
+          <div style={styles.careName}>Resetar</div>
+          <div style={styles.careDesc}>Voltar ao normal</div>
+        </div>
+      </div>
+
+      {/* CUIDADOS DIÁRIOS */}
       <div style={styles.caresLabel}>cuidados diários</div>
       <div style={styles.cares}>
         {Object.values(DAILY_CARES).map(c => (
@@ -156,56 +220,55 @@ function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, on
         )}
         <button style={styles.logoutBtn} onClick={onLogout}>sair da conta</button>
       </div>
-
     </div>
   );
 }
 
 const styles = {
-  screen:            { width:'100%', maxWidth:'400px', minHeight:'100vh', display:'flex', flexDirection:'column', background:GRADIENT, margin:'0 auto', paddingBottom:'1rem', overflowX:'hidden' },
-  topbar:            { padding:'1rem 1rem .5rem', display:'flex', justifyContent:'space-between', alignItems:'center' },
-  userName:          { fontSize:'16px', fontWeight:'700', color:'white' },
-  userSub:           { fontSize:'11px', color:'rgba(255,255,255,.6)' },
-  xpBadge:           { background:'rgba(255,255,255,.15)', border:'1px solid rgba(255,255,255,.3)', borderRadius:'20px', padding:'4px 12px', fontSize:'12px', color:'white', fontWeight:'600' },
-  paramsGrid:        { padding:'.25rem 1rem', display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:'5px' },
-  paramsGridBottom:  { padding:'0 1rem .25rem', display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'5px' },
-  paramCard:         { background:'rgba(255,255,255,.12)', border:'1px solid rgba(255,255,255,.2)', borderRadius:'10px', padding:'6px 4px', display:'flex', flexDirection:'column', alignItems:'center', gap:'3px' },
-  paramIcon:         { fontSize:'14px' },
-  paramVal:          { fontSize:'12px', fontWeight:'700', color:'white' },
-  paramName:         { fontSize:'8px', color:'rgba(255,255,255,.6)', textAlign:'center', letterSpacing:'.03em' },
-  paramBar:          { width:'100%', height:'3px', background:'rgba(255,255,255,.15)', borderRadius:'2px', overflow:'hidden' },
-  paramFill:         { height:'100%', borderRadius:'2px' },
-  animalArea:        { margin:'0 1rem .25rem' },
-  animalBg:          { background:'rgba(255,255,255,.08)', borderRadius:'20px', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', border:'1px solid rgba(255,255,255,.15)', position:'relative', padding:'8px', minHeight:'200px', overflow:'hidden' },
-  animalLabel:       { position:'absolute', top:'8px', left:'10px', fontSize:'10px', color:'rgba(255,255,255,.5)', letterSpacing:'.04em' },
-  animalStatus:      { position:'absolute', top:'8px', right:'10px', fontSize:'12px', fontWeight:'600' },
-  actionBtns:        { margin:'0 1rem .5rem', display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'7px' },
-  actionBtn:         { background:'rgba(255,255,255,.15)', border:'1px solid rgba(255,255,255,.25)', borderRadius:'12px', padding:'10px 6px', display:'flex', flexDirection:'column', alignItems:'center', gap:'4px', cursor:'pointer' },
-  actionBtnIcon:     { fontSize:'18px' },
-  actionBtnLabel:    { fontSize:'9px', color:'white', fontWeight:'600', textAlign:'center' },
-  caresLabel:        { padding:'.25rem 1rem', fontSize:'10px', color:'rgba(255,255,255,.6)', letterSpacing:'.08em', textTransform:'uppercase' },
-  cares:             { margin:'0 1rem .5rem', display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'7px' },
-  careCard:          { background:'rgba(255,255,255,.14)', border:'1px solid rgba(255,255,255,.25)', borderRadius:'12px', padding:'.625rem .5rem', display:'flex', flexDirection:'column', alignItems:'center', gap:'3px', cursor:'pointer' },
-  careDone:          { background:'rgba(50,200,120,.25)', borderColor:'#32C878' },
-  careIcon:          { fontSize:'20px' },
-  careName:          { fontSize:'11px', fontWeight:'600', color:'white', textAlign:'center' },
-  careDesc:          { fontSize:'9px', color:'rgba(255,255,255,.55)', textAlign:'center' },
-  rankingMini:       { margin:'.25rem 1rem .5rem', background:'rgba(255,255,255,.1)', border:'1px solid rgba(255,255,255,.18)', borderRadius:'12px', padding:'.75rem 1rem' },
-  rankHeader:        { display:'flex', justifyContent:'space-between', marginBottom:'8px' },
-  rankTitle:         { fontSize:'10px', color:'rgba(255,255,255,.6)', letterSpacing:'.06em', textTransform:'uppercase' },
-  rankVer:           { fontSize:'10px', color:'rgba(255,255,255,.45)', cursor:'pointer' },
-  rankRow:           { display:'flex', alignItems:'center', gap:'8px', marginBottom:'4px' },
-  rankPos:           { fontSize:'11px', fontWeight:'700', color:'rgba(255,255,255,.5)', width:'14px' },
-  rankPosMe:         { color:'#FFD700' },
-  rankAv:            { width:'22px', height:'22px', borderRadius:'50%', background:'rgba(255,255,255,.2)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'9px', fontWeight:'700', color:'white' },
-  rankAvMe:          { background:'white', color:'#7B2FBE' },
-  rankName:          { flex:1, fontSize:'11px', color:'rgba(255,255,255,.7)' },
-  rankNameMe:        { color:'white', fontWeight:'600' },
-  rankXp:            { fontSize:'10px', color:'rgba(255,255,255,.5)' },
-  rankXpMe:          { color:'white', fontWeight:'600' },
-  footer:            { padding:'.5rem 1rem 0', display:'flex', flexDirection:'column', alignItems:'center', gap:'6px' },
-  panelBtn:          { width:'100%', padding:'10px', borderRadius:'10px', border:'none', background:'white', color:'#7B2FBE', fontSize:'13px', fontWeight:'700', cursor:'pointer', fontFamily:'inherit' },
-  logoutBtn:         { fontSize:'11px', color:'rgba(255,255,255,.4)', cursor:'pointer', background:'none', border:'none', fontFamily:'inherit' },
+  screen:           { width:'100%', maxWidth:'400px', minHeight:'100vh', display:'flex', flexDirection:'column', background:GRADIENT, margin:'0 auto', paddingBottom:'1rem', overflowX:'hidden' },
+  topbar:           { padding:'1rem 1rem .5rem', display:'flex', justifyContent:'space-between', alignItems:'center' },
+  userName:         { fontSize:'16px', fontWeight:'700', color:'white' },
+  userSub:          { fontSize:'11px', color:'rgba(255,255,255,.6)' },
+  xpBadge:          { background:'rgba(255,255,255,.15)', border:'1px solid rgba(255,255,255,.3)', borderRadius:'20px', padding:'4px 12px', fontSize:'12px', color:'white', fontWeight:'600' },
+  paramsGrid:       { padding:'.25rem 1rem', display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:'5px' },
+  paramsGridBottom: { padding:'0 1rem .25rem', display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'5px' },
+  paramCard:        { background:'rgba(255,255,255,.12)', border:'1px solid rgba(255,255,255,.2)', borderRadius:'10px', padding:'6px 4px', display:'flex', flexDirection:'column', alignItems:'center', gap:'3px' },
+  paramIcon:        { fontSize:'14px' },
+  paramVal:         { fontSize:'12px', fontWeight:'700', color:'white' },
+  paramName:        { fontSize:'8px', color:'rgba(255,255,255,.6)', textAlign:'center', letterSpacing:'.03em' },
+  paramBar:         { width:'100%', height:'3px', background:'rgba(255,255,255,.15)', borderRadius:'2px', overflow:'hidden' },
+  paramFill:        { height:'100%', borderRadius:'2px' },
+  animalArea:       { margin:'0 1rem .25rem' },
+  animalBg:         { background:'rgba(255,255,255,.08)', borderRadius:'20px', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', border:'1px solid rgba(255,255,255,.15)', position:'relative', padding:'8px', minHeight:'220px', overflow:'hidden' },
+  animalLabel:      { position:'absolute', top:'8px', left:'10px', fontSize:'10px', color:'rgba(255,255,255,.5)', letterSpacing:'.04em' },
+  animalStatus:     { position:'absolute', top:'8px', right:'10px', fontSize:'12px', fontWeight:'600' },
+  actionBtns:       { margin:'0 1rem .5rem', display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'7px' },
+  actionBtn:        { background:'rgba(255,255,255,.15)', border:'1px solid rgba(255,255,255,.25)', borderRadius:'12px', padding:'10px 6px', display:'flex', flexDirection:'column', alignItems:'center', gap:'4px', cursor:'pointer' },
+  actionBtnIcon:    { fontSize:'18px' },
+  actionBtnLabel:   { fontSize:'9px', color:'white', fontWeight:'600', textAlign:'center' },
+  caresLabel:       { padding:'.25rem 1rem', fontSize:'10px', color:'rgba(255,255,255,.6)', letterSpacing:'.08em', textTransform:'uppercase' },
+  cares:            { margin:'0 1rem .5rem', display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'7px' },
+  careCard:         { background:'rgba(255,255,255,.14)', border:'1px solid rgba(255,255,255,.25)', borderRadius:'12px', padding:'.625rem .5rem', display:'flex', flexDirection:'column', alignItems:'center', gap:'3px', cursor:'pointer' },
+  careDone:         { background:'rgba(50,200,120,.25)', borderColor:'#32C878' },
+  careIcon:         { fontSize:'20px' },
+  careName:         { fontSize:'11px', fontWeight:'600', color:'white', textAlign:'center' },
+  careDesc:         { fontSize:'9px', color:'rgba(255,255,255,.55)', textAlign:'center' },
+  rankingMini:      { margin:'.25rem 1rem .5rem', background:'rgba(255,255,255,.1)', border:'1px solid rgba(255,255,255,.18)', borderRadius:'12px', padding:'.75rem 1rem' },
+  rankHeader:       { display:'flex', justifyContent:'space-between', marginBottom:'8px' },
+  rankTitle:        { fontSize:'10px', color:'rgba(255,255,255,.6)', letterSpacing:'.06em', textTransform:'uppercase' },
+  rankVer:          { fontSize:'10px', color:'rgba(255,255,255,.45)', cursor:'pointer' },
+  rankRow:          { display:'flex', alignItems:'center', gap:'8px', marginBottom:'4px' },
+  rankPos:          { fontSize:'11px', fontWeight:'700', color:'rgba(255,255,255,.5)', width:'14px' },
+  rankPosMe:        { color:'#FFD700' },
+  rankAv:           { width:'22px', height:'22px', borderRadius:'50%', background:'rgba(255,255,255,.2)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'9px', fontWeight:'700', color:'white' },
+  rankAvMe:         { background:'white', color:'#7B2FBE' },
+  rankName:         { flex:1, fontSize:'11px', color:'rgba(255,255,255,.7)' },
+  rankNameMe:       { color:'white', fontWeight:'600' },
+  rankXp:           { fontSize:'10px', color:'rgba(255,255,255,.5)' },
+  rankXpMe:         { color:'white', fontWeight:'600' },
+  footer:           { padding:'.5rem 1rem 0', display:'flex', flexDirection:'column', alignItems:'center', gap:'6px' },
+  panelBtn:         { width:'100%', padding:'10px', borderRadius:'10px', border:'none', background:'white', color:'#7B2FBE', fontSize:'13px', fontWeight:'700', cursor:'pointer', fontFamily:'inherit' },
+  logoutBtn:        { fontSize:'11px', color:'rgba(255,255,255,.4)', cursor:'pointer', background:'none', border:'none', fontFamily:'inherit' },
 };
 
 export default HomeScreen;
