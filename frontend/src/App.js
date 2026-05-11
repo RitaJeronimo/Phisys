@@ -5,6 +5,7 @@ import GameScreen from './screens/GameScreen';
 import RankingScreen from './screens/RankingScreen';
 import ProfessorPanel from './screens/ProfessorPanel';
 import { getDefaultPrimaryValues } from './engine/mascotEngine';
+import SecondaryScreen from './screens/SecondaryScreen';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -57,13 +58,7 @@ function App() {
   }
 
   if (screen === 'secondary') {
-    return (
-      <div style={{ background:'linear-gradient(160deg,#1B4FCC,#7B2FBE,#CC1B1B)', minHeight:'100vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', color:'white', fontFamily:'monospace', gap:'1rem', padding:'2rem' }}>
-        <div style={{ fontSize:'18px', fontWeight:'700' }}>📊 Parâmetros Secundários</div>
-        <div style={{ fontSize:'13px', color:'rgba(255,255,255,.7)', textAlign:'center' }}>Em construção — próxima tela a implementar!</div>
-        <button style={{ padding:'10px 24px', borderRadius:'20px', border:'none', background:'white', color:'#7B2FBE', fontWeight:'700', cursor:'pointer', fontFamily:'inherit' }} onClick={handleBack}>← Voltar</button>
-      </div>
-    );
+    return <SecondaryScreen values={values} onBack={handleBack} />;
   }
 
   return (
