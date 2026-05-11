@@ -1,222 +1,224 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { PRIMARY_PARAMS, calcularSaude, getMascotStatus, STATUS, DAILY_CARES, aplicarCuidado } from '../engine/mascotEngine';
 
-function HomeScreen({ user, onSelectMode, onLogout, onViewRanking, onViewPanel }) {
-  const initials = user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+const GRADIENT = 'linear-gradient(160deg, #1B4FCC 0%, #7B2FBE 50%, #CC1B1B 100%)';
+
+function ParamCard({ param, value }) {
+  const pct = ((value - param.min) / (param.max - param.min)) * 100;
+  const inRange = value >= param.normal[0] && value <= param.normal[1];
+  const deviation = Math.abs(value - (param.normal[0] + param.normal[1]) / 2) / ((param.normal[1] - param.normal[0]) / 2);
+  const color = inRange ? '#32C878' : deviation > 2 ? '#E24B4A' : '#EF9F27';
+  const display = param.step < 1 ? value.toFixed(1) : param.id === 'pas' ? `${value}` : Math.round(value);
+  const isHealth = param.id === 'saude';
+
+  return (
+    <div style={{ ...styles.paramCard, ...(isHealth ? { background: inRange ? 'rgba(50,200,120,.2)' : 'rgba(220,60,60,.2)', borderColor: color } : {}) }}>
+      <div style={styles.paramIcon}>{param.icon}</div>
+      <div style={{ ...styles.paramVal, ...(isHealth ? { color } : {}) }}>{display}{param.unit === '%' ? '%' : ''}</div>
+      <div style={styles.paramName}>{param.name}</div>
+      <div style={styles.paramBar}>
+        <div style={{ ...styles.paramFill, width: Math.min(pct, 100) + '%', background: color }} />
+      </div>
+    </div>
+  );
+}
+
+function Mascot({ status }) {
+  const bodyColor = status === STATUS.SAUDAVEL ? '#D6D6D6' : status === STATUS.DEBILITADO ? '#FAC775' : '#F09595';
+  const eyeColor = status === STATUS.SAUDAVEL ? '#7B2FBE' : status === STATUS.DEBILITADO ? '#633806' : '#791F1F';
+  const mouth = status === STATUS.SAUDAVEL ? 'M 187 176 Q 200 190 213 176' : status === STATUS.DEBILITADO ? 'M 187 178 Q 200 178 213 178' : 'M 187 184 Q 200 174 213 184';
+  const emoji = status === STATUS.SAUDAVEL ? '😊 Saudável' : status === STATUS.DEBILITADO ? '😰 Debilitado' : '😵 Crítico';
+
+  return (
+    <div style={styles.animalBg}>
+      <div style={styles.animalLabel}>Mantenha o animal em homeostase</div>
+      <div style={{ ...styles.animalStatus, color: status === STATUS.SAUDAVEL ? '#32C878' : status === STATUS.DEBILITADO ? '#EF9F27' : '#E24B4A' }}>{emoji}</div>
+      <svg width="160" height="160" viewBox="0 0 400 360" style={{ marginTop: 24 }}>
+        <ellipse cx="140" cy="106" rx="30" ry="38" fill={bodyColor}/>
+        <ellipse cx="140" cy="106" rx="18" ry="24" fill="#F4C0D1"/>
+        <ellipse cx="260" cy="106" rx="30" ry="38" fill={bodyColor}/>
+        <ellipse cx="260" cy="106" rx="18" ry="24" fill="#F4C0D1"/>
+        <ellipse cx="200" cy="140" rx="68" ry="64" fill={bodyColor}/>
+        <ellipse cx="200" cy="162" rx="30" ry="24" fill={bodyColor} opacity=".85"/>
+        <ellipse cx="152" cy="158" rx="18" ry="12" fill="#F4C0D1" opacity=".55"/>
+        <ellipse cx="248" cy="158" rx="18" ry="12" fill="#F4C0D1" opacity=".55"/>
+        <line x1="172" y1="164" x2="112" y2="154" stroke="#888" stroke-width="1.8" opacity=".4" stroke-linecap="round"/>
+        <line x1="172" y1="170" x2="108" y2="170" stroke="#888" stroke-width="1.8" opacity=".4" stroke-linecap="round"/>
+        <line x1="228" y1="164" x2="288" y2="154" stroke="#888" stroke-width="1.8" opacity=".4" stroke-linecap="round"/>
+        <line x1="228" y1="170" x2="292" y2="170" stroke="#888" stroke-width="1.8" opacity=".4" stroke-linecap="round"/>
+        <circle cx="178" cy="134" r="16" fill="white"/>
+        <circle cx="181" cy="137" r="9" fill={eyeColor}/>
+        <circle cx="184" cy="130" r="4" fill="white" opacity=".8"/>
+        <circle cx="222" cy="134" r="16" fill="white"/>
+        <circle cx="225" cy="137" r="9" fill={eyeColor}/>
+        <circle cx="228" cy="130" r="4" fill="white" opacity=".8"/>
+        <ellipse cx="200" cy="163" rx="10" ry="7" fill="#F4C0D1"/>
+        <path d={mouth} stroke={eyeColor} strokeWidth="3" fill="none" strokeLinecap="round"/>
+        <ellipse cx="200" cy="222" rx="82" ry="70" fill={bodyColor}/>
+        <ellipse cx="200" cy="228" rx="48" ry="42" fill="white" opacity=".15"/>
+        <rect x="112" y="186" width="20" height="48" rx="10" fill={bodyColor}/>
+        <rect x="268" y="186" width="20" height="48" rx="10" fill={bodyColor}/>
+        <rect x="162" y="268" width="22" height="44" rx="11" fill={bodyColor}/>
+        <rect x="216" y="268" width="22" height="44" rx="11" fill={bodyColor}/>
+      </svg>
+    </div>
+  );
+}
+
+function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, onViewRanking, onViewPanel, onViewSecondary }) {
+  const [caresDone, setCaresDone] = useState({});
+
+  const saude = calcularSaude(values);
+  const status = getMascotStatus(values);
+  const valsWithSaude = { ...values, saude };
+
+  const line1 = PRIMARY_PARAMS.filter(p => ['energia', 'hidratacao', 'pas', 'fc'].includes(p.id));
+  const line2 = PRIMARY_PARAMS.filter(p => ['peso', 'saude'].includes(p.id));
+  const idadeParam = { id: 'idade', name: 'Idade', unit: '', min: 0, max: 730, normal: [0, 730], default: 90, step: 1, icon: '🗓️' };
+
+  function handleCare(cuidadoId) {
+    if (caresDone[cuidadoId]) return;
+    setValues(prev => aplicarCuidado(prev, cuidadoId));
+    setCaresDone(prev => ({ ...prev, [cuidadoId]: true }));
+  }
 
   const mockRanking = [
-    { pos: 1, name: 'Carlos M.', pts: 520, initials: 'CM', me: false },
-    { pos: 2, name: 'Juliana S.', pts: 480, initials: 'JS', me: false },
-    { pos: 3, name: user.name.split(' ')[0] + ' (você)', pts: 340, initials, me: true },
+    { pos: 1, name: 'Carlos M.',           initials: 'CM', xp: 520, me: false },
+    { pos: 2, name: 'Juliana S.',           initials: 'JS', xp: 480, me: false },
+    { pos: 3, name: user.name.split(' ')[0] + ' (você)', initials: user.name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase(), xp: score, me: true },
   ];
 
   return (
     <div style={styles.screen}>
 
-      <div style={styles.header}>
-        <div style={styles.greeting}>
-          <div style={styles.greetingHi}>Olá,</div>
-          <div style={styles.greetingName}>{user.name.split(' ')[0]} 👋</div>
+      {/* TOPBAR */}
+      <div style={styles.topbar}>
+        <div>
+          <div style={styles.userName}>{user.name.split(' ')[0]} 👋</div>
+          <div style={styles.userSub}>Modelo Experimental</div>
         </div>
-        <div style={styles.xpBadge}>⚡ 340 XP</div>
+        <div style={styles.xpBadge}>⚡ {Math.round(score)} XP</div>
       </div>
 
-      <div style={styles.mascotCard}>
-        <svg width="64" height="64" viewBox="0 0 76 76">
-          <ellipse cx="22" cy="24" rx="12" ry="15" fill="white" opacity="0.9"/>
-          <ellipse cx="54" cy="24" rx="12" ry="15" fill="white" opacity="0.9"/>
-          <ellipse cx="22" cy="25" rx="7" ry="9" fill="#F4C0D1"/>
-          <ellipse cx="54" cy="25" rx="7" ry="9" fill="#F4C0D1"/>
-          <circle cx="38" cy="42" r="28" fill="white" opacity="0.92"/>
-          <circle cx="30" cy="39" r="5" fill="#7B2FBE"/>
-          <circle cx="46" cy="39" r="5" fill="#7B2FBE"/>
-          <circle cx="31" cy="40" r="3" fill="white"/>
-          <circle cx="47" cy="40" r="3" fill="white"/>
-          <ellipse cx="38" cy="49" rx="4" ry="3" fill="#F4C0D1"/>
-          <path d="M 30 57 Q 38 63 46 57" stroke="#7B2FBE" strokeWidth="2" fill="none" strokeLinecap="round"/>
-        </svg>
-        <div style={styles.mascotInfo}>
-          <div style={styles.mascotStatus}>status do mascote</div>
-          <div style={styles.mascotState}>😊 Saudável</div>
-          <div style={styles.paramsMini}>
-            {[
-              { name: 'PA', pct: 60 },
-              { name: 'FC', pct: 55 },
-              { name: 'Vol. Urin.', pct: 65 },
-            ].map(p => (
-              <div key={p.name} style={styles.paramRow}>
-                <div style={styles.paramName}>{p.name}</div>
-                <div style={styles.paramBar}>
-                  <div style={{ ...styles.paramFill, width: p.pct + '%' }}/>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+      {/* PARÂMETROS — linha 1 */}
+      <div style={styles.paramsGrid}>
+        {line1.map(p => (
+          <ParamCard key={p.id} param={p} value={valsWithSaude[p.id] ?? p.default}/>
+        ))}
       </div>
 
-      <div style={styles.sectionTitle}>escolha o modo</div>
+      {/* PARÂMETROS — linha 2 */}
+      <div style={styles.paramsGridBottom}>
+        {line2.map(p => (
+          <ParamCard key={p.id} param={p} value={valsWithSaude[p.id] ?? p.default}/>
+        ))}
+        <ParamCard param={{ ...idadeParam, icon: '🗓️' }} value={90}/>
+      </div>
 
-      <div style={styles.modes}>
-        <div style={{ ...styles.modeCard, ...styles.modeCardPrimary }} onClick={() => onSelectMode('livre')}>
-          <div style={styles.modeHeader}>
-            <div style={{ ...styles.modeName, color: '#7B2FBE' }}>Modo Livre</div>
-            <div style={{ ...styles.modeTag, background: 'rgba(123,47,190,0.1)', color: '#7B2FBE' }}>disponível</div>
+      {/* ANIMAL + BOTÕES LATERAIS */}
+      <div style={styles.animalArea}>
+        <Mascot status={status}/>
+        <div style={styles.sideBtns}>
+          <div style={styles.sideBtn} onClick={onViewSecondary}>
+            <span style={styles.sideBtnIcon}>📊</span>
+            <span style={styles.sideBtnLabel}>Parâm.{'\n'}Sec.</span>
           </div>
-          <div style={{ ...styles.modeDesc, color: 'rgba(123,47,190,0.7)' }}>
-            Jogue sozinho a qualquer momento e acumule XP
+          <div style={styles.sideBtn} onClick={() => onSelectMode(null)}>
+            <span style={styles.sideBtnIcon}>🎮</span>
+            <span style={styles.sideBtnLabel}>Opções</span>
           </div>
-        </div>
-
-        <div style={{ ...styles.modeCard, ...styles.modeCardSecondary }} onClick={() => onSelectMode('sessao')}>
-          <div style={styles.modeHeader}>
-            <div style={{ ...styles.modeName, color: 'white' }}>Modo Sessão</div>
-            <div style={{ ...styles.modeTag, background: 'rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.8)' }}>
-              aguardando professor
-            </div>
-          </div>
-          <div style={{ ...styles.modeDesc, color: 'rgba(255,255,255,0.6)' }}>
-            Participe de uma aula guiada pelo professor
+          <div style={styles.sideBtn} onClick={onViewRanking}>
+            <span style={styles.sideBtnIcon}>🏆</span>
+            <span style={styles.sideBtnLabel}>Ranking</span>
           </div>
         </div>
       </div>
 
-      <div style={styles.ranking}>
+      {/* CUIDADOS DIÁRIOS */}
+      <div style={styles.caresLabel}>cuidados diários</div>
+      <div style={styles.cares}>
+        {Object.values(DAILY_CARES).map(c => (
+          <div key={c.id} style={{ ...styles.careCard, ...(caresDone[c.id] ? styles.careDone : {}) }} onClick={() => handleCare(c.id)}>
+            <div style={styles.careIcon}>{c.icon}</div>
+            <div style={styles.careName}>{c.label.split(' ')[0]}</div>
+            <div style={styles.careDesc}>{caresDone[c.id] ? '✓ Feito' : c.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* RANKING MINI */}
+      <div style={styles.rankingMini}>
         <div style={styles.rankHeader}>
           <div style={styles.rankTitle}>ranking da turma</div>
-          <div style={styles.rankVer} onClick={onViewRanking}>ver tudo</div>
+          <div style={styles.rankVer} onClick={onViewRanking}>ver tudo →</div>
         </div>
-        <div style={styles.rankRows}>
-          {mockRanking.map(r => (
-            <div key={r.pos} style={styles.rankRow}>
-              <div style={{ ...styles.rankPos, ...(r.me ? styles.rankPosMe : {}) }}>{r.pos}</div>
-              <div style={{ ...styles.rankAvatar, ...(r.me ? styles.rankAvatarMe : {}) }}>{r.initials}</div>
-              <div style={{ ...styles.rankName, ...(r.me ? styles.rankNameMe : {}) }}>{r.name}</div>
-              <div style={{ ...styles.rankPts, ...(r.me ? styles.rankPtsMe : {}) }}>{r.pts} pts</div>
-            </div>
-          ))}
-        </div>
+        {mockRanking.map(r => (
+          <div key={r.initials} style={styles.rankRow}>
+            <div style={{ ...styles.rankPos, ...(r.me ? styles.rankPosMe : {}) }}>{r.pos}</div>
+            <div style={{ ...styles.rankAv, ...(r.me ? styles.rankAvMe : {}) }}>{r.initials}</div>
+            <div style={{ ...styles.rankName, ...(r.me ? styles.rankNameMe : {}) }}>{r.name}</div>
+            <div style={{ ...styles.rankXp, ...(r.me ? styles.rankXpMe : {}) }}>{r.xp} XP</div>
+          </div>
+        ))}
       </div>
 
+      {/* FOOTER */}
       <div style={styles.footer}>
-  {user.mode === 'professor' && (
-    <button style={styles.panelBtn} onClick={onViewPanel}>
-      Acessar Painel do Professor
-    </button>
-  )}
-  <button style={styles.logout} onClick={onLogout}>sair da conta</button>
-</div>
+        {user.mode === 'professor' && (
+          <button style={styles.panelBtn} onClick={onViewPanel}>Painel do Professor</button>
+        )}
+        <button style={styles.logoutBtn} onClick={onLogout}>sair da conta</button>
+      </div>
 
     </div>
   );
 }
 
-const GRADIENT = 'linear-gradient(160deg, #1B4FCC 0%, #7B2FBE 50%, #CC1B1B 100%)';
-
 const styles = {
-  screen: {
-    width: '100%',
-    maxWidth: '400px',
-    minHeight: '100vh',
-    display: 'flex',
-    flexDirection: 'column',
-    background: GRADIENT,
-    margin: '0 auto',
-  },
-  header: {
-    padding: '2rem 1.5rem 1.25rem',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  greeting: { display: 'flex', flexDirection: 'column', gap: '2px' },
-  greetingHi: { fontSize: '13px', color: 'rgba(255,255,255,0.65)', letterSpacing: '0.04em' },
-  greetingName: { fontSize: '22px', fontWeight: '700', color: 'white' },
-  xpBadge: {
-    background: 'rgba(255,255,255,0.15)',
-    border: '1px solid rgba(255,255,255,0.25)',
-    borderRadius: '20px',
-    padding: '5px 14px',
-    fontSize: '12px',
-    color: 'white',
-    fontWeight: '600',
-  },
-  mascotCard: {
-    margin: '0 1.5rem',
-    background: 'rgba(255,255,255,0.12)',
-    border: '1px solid rgba(255,255,255,0.2)',
-    borderRadius: '16px',
-    padding: '1.25rem',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '1rem',
-  },
-  mascotInfo: { flex: 1 },
-  mascotStatus: { fontSize: '11px', color: 'rgba(255,255,255,0.65)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '4px' },
-  mascotState: { fontSize: '18px', fontWeight: '700', color: 'white', marginBottom: '10px' },
-  paramsMini: { display: 'flex', flexDirection: 'column', gap: '5px' },
-  paramRow: { display: 'flex', alignItems: 'center', gap: '8px' },
-  paramName: { fontSize: '10px', color: 'rgba(255,255,255,0.6)', width: '60px' },
-  paramBar: { flex: 1, height: '5px', background: 'rgba(255,255,255,0.15)', borderRadius: '3px', overflow: 'hidden' },
-  paramFill: { height: '100%', borderRadius: '3px', background: 'white' },
-  sectionTitle: {
-    padding: '1.5rem 1.5rem 0.75rem',
-    fontSize: '11px',
-    color: 'rgba(255,255,255,0.6)',
-    letterSpacing: '0.08em',
-    textTransform: 'uppercase',
-  },
-  modes: { padding: '0 1.5rem', display: 'flex', flexDirection: 'column', gap: '12px' },
-  modeCard: { borderRadius: '14px', padding: '1.25rem', cursor: 'pointer' },
-  modeCardPrimary: { background: 'white', border: '1px solid white' },
-  modeCardSecondary: { background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)' },
-  modeHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' },
-  modeName: { fontSize: '16px', fontWeight: '700' },
-  modeTag: { fontSize: '10px', padding: '3px 10px', borderRadius: '20px', fontWeight: '600' },
-  modeDesc: { fontSize: '12px' },
-  ranking: {
-    margin: '1.25rem 1.5rem',
-    background: 'rgba(255,255,255,0.12)',
-    border: '1px solid rgba(255,255,255,0.2)',
-    borderRadius: '14px',
-    padding: '1rem 1.25rem',
-  },
-  rankHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' },
-  rankTitle: { fontSize: '12px', color: 'rgba(255,255,255,0.65)', letterSpacing: '0.06em', textTransform: 'uppercase' },
-  rankVer: { fontSize: '11px', color: 'rgba(255,255,255,0.5)', cursor: 'pointer' },
-  rankRows: { display: 'flex', flexDirection: 'column', gap: '8px' },
-  rankRow: { display: 'flex', alignItems: 'center', gap: '10px' },
-  rankPos: { fontSize: '13px', fontWeight: '700', color: 'rgba(255,255,255,0.5)', width: '20px' },
-  rankPosMe: { color: 'white' },
-  rankAvatar: {
-    width: '28px', height: '28px', borderRadius: '50%',
-    background: 'rgba(255,255,255,0.2)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontSize: '11px', color: 'white', fontWeight: '600',
-  },
-  rankAvatarMe: { background: 'white', color: '#7B2FBE' },
-  rankName: { flex: 1, fontSize: '13px', color: 'rgba(255,255,255,0.7)' },
-  rankNameMe: { color: 'white', fontWeight: '600' },
-  rankPts: { fontSize: '12px', color: 'rgba(255,255,255,0.5)' },
-  rankPtsMe: { color: 'white', fontWeight: '600' },
-  footer: { marginTop: 'auto', padding: '1rem 1.5rem', display: 'flex', justifyContent: 'center' },
-  logout: { fontSize: '11px', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', background: 'none', border: 'none', fontFamily: 'inherit' 
-  },
-
-  panelBtn: {
-  width: '100%',
-  padding: '12px',
-  borderRadius: '10px',
-  border: 'none',
-  backgroundColor: 'white',
-  color: '#7B2FBE',
-  fontSize: '14px',
-  fontWeight: '700',
-  cursor: 'pointer',
-  fontFamily: 'inherit',
-  marginBottom: '8px',
-},
-
-
+  screen: { width:'100%', maxWidth:'400px', minHeight:'100vh', display:'flex', flexDirection:'column', background:GRADIENT, margin:'0 auto', paddingBottom:'1rem' },
+  topbar: { padding:'1rem 1rem .5rem', display:'flex', justifyContent:'space-between', alignItems:'center' },
+  userName: { fontSize:'16px', fontWeight:'700', color:'white' },
+  userSub: { fontSize:'11px', color:'rgba(255,255,255,.6)' },
+  xpBadge: { background:'rgba(255,255,255,.15)', border:'1px solid rgba(255,255,255,.3)', borderRadius:'20px', padding:'4px 12px', fontSize:'12px', color:'white', fontWeight:'600' },
+  paramsGrid: { padding:'.25rem 1rem', display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:'5px' },
+  paramsGridBottom: { padding:'0 1rem .25rem', display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'5px' },
+  paramCard: { background:'rgba(255,255,255,.12)', border:'1px solid rgba(255,255,255,.2)', borderRadius:'10px', padding:'6px 4px', display:'flex', flexDirection:'column', alignItems:'center', gap:'3px' },
+  paramIcon: { fontSize:'14px' },
+  paramVal: { fontSize:'12px', fontWeight:'700', color:'white' },
+  paramName: { fontSize:'8px', color:'rgba(255,255,255,.6)', textAlign:'center', letterSpacing:'.03em' },
+  paramBar: { width:'100%', height:'3px', background:'rgba(255,255,255,.15)', borderRadius:'2px', overflow:'hidden' },
+  paramFill: { height:'100%', borderRadius:'2px' },
+  animalArea: { flex:1, display:'flex', justifyContent:'center', alignItems:'center', padding:'.5rem 1rem', position:'relative' },
+  animalBg: { width:'100%', background:'rgba(255,255,255,.08)', borderRadius:'20px', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', border:'1px solid rgba(255,255,255,.15)', position:'relative', padding:'8px', minHeight:'200px' },
+  animalLabel: { position:'absolute', top:'8px', left:'10px', fontSize:'10px', color:'rgba(255,255,255,.5)', letterSpacing:'.04em' },
+  animalStatus: { position:'absolute', top:'8px', right:'10px', fontSize:'12px', fontWeight:'600' },
+  sideBtns: { position:'absolute', right:'-4px', top:'50%', transform:'translateY(-50%)', display:'flex', flexDirection:'column', gap:'6px' },
+  sideBtn: { width:'38px', height:'38px', borderRadius:'10px', background:'rgba(255,255,255,.18)', border:'1px solid rgba(255,255,255,.3)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', cursor:'pointer', gap:'1px' },
+  sideBtnIcon: { fontSize:'13px' },
+  sideBtnLabel: { fontSize:'7px', color:'rgba(255,255,255,.75)', textAlign:'center', whiteSpace:'pre' },
+  caresLabel: { padding:'.25rem 1rem', fontSize:'10px', color:'rgba(255,255,255,.6)', letterSpacing:'.08em', textTransform:'uppercase' },
+  cares: { padding:'0 1rem .5rem', display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'7px' },
+  careCard: { background:'rgba(255,255,255,.14)', border:'1px solid rgba(255,255,255,.25)', borderRadius:'12px', padding:'.625rem .5rem', display:'flex', flexDirection:'column', alignItems:'center', gap:'3px', cursor:'pointer' },
+  careDone: { background:'rgba(50,200,120,.25)', borderColor:'#32C878' },
+  careIcon: { fontSize:'20px' },
+  careName: { fontSize:'11px', fontWeight:'600', color:'white', textAlign:'center' },
+  careDesc: { fontSize:'9px', color:'rgba(255,255,255,.55)', textAlign:'center' },
+  rankingMini: { margin:'.25rem 1rem .5rem', background:'rgba(255,255,255,.1)', border:'1px solid rgba(255,255,255,.18)', borderRadius:'12px', padding:'.75rem 1rem' },
+  rankHeader: { display:'flex', justifyContent:'space-between', marginBottom:'8px' },
+  rankTitle: { fontSize:'10px', color:'rgba(255,255,255,.6)', letterSpacing:'.06em', textTransform:'uppercase' },
+  rankVer: { fontSize:'10px', color:'rgba(255,255,255,.45)', cursor:'pointer' },
+  rankRow: { display:'flex', alignItems:'center', gap:'8px', marginBottom:'4px' },
+  rankPos: { fontSize:'11px', fontWeight:'700', color:'rgba(255,255,255,.5)', width:'14px' },
+  rankPosMe: { color:'#FFD700' },
+  rankAv: { width:'22px', height:'22px', borderRadius:'50%', background:'rgba(255,255,255,.2)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'9px', fontWeight:'700', color:'white' },
+  rankAvMe: { background:'white', color:'#7B2FBE' },
+  rankName: { flex:1, fontSize:'11px', color:'rgba(255,255,255,.7)' },
+  rankNameMe: { color:'white', fontWeight:'600' },
+  rankXp: { fontSize:'10px', color:'rgba(255,255,255,.5)' },
+  rankXpMe: { color:'white', fontWeight:'600' },
+  footer: { padding:'.5rem 1rem 0', display:'flex', flexDirection:'column', alignItems:'center', gap:'6px' },
+  panelBtn: { width:'100%', padding:'10px', borderRadius:'10px', border:'none', background:'white', color:'#7B2FBE', fontSize:'13px', fontWeight:'700', cursor:'pointer', fontFamily:'inherit' },
+  logoutBtn: { fontSize:'11px', color:'rgba(255,255,255,.4)', cursor:'pointer', background:'none', border:'none', fontFamily:'inherit' },
 };
 
 export default HomeScreen;
