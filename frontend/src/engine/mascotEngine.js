@@ -167,7 +167,7 @@ export function getDefaultSecondaryValues() {
 // Baseado nas relações descritas no documento estrutural
 
 export function calcularSecundarios(primarios) {
-  const { hidratacao, fc, peso, pas, pad } = primarios;
+  const { hidratacao, fc, peso } = primarios;
 
   // Volume Urinário: aumenta com hidratação, diminui com desidratação
   const vol_urinario = Math.round(
