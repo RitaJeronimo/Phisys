@@ -106,6 +106,7 @@ function Mascot({ status }) {
 
 function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, onViewRanking, onViewPanel, onViewSecondary }) {
   const [caresDone, setCaresDone] = useState({});
+  const [showModes, setShowModes] = useState(false);
   const saude = calcularSaude(values);
   const status = getMascotStatus(values);
   const valsWithSaude = { ...values, saude };
@@ -119,14 +120,28 @@ function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, on
     setCaresDone(prev => ({ ...prev, [id]: true }));
   }
 
-  const mockRanking = [
-    { pos:1, name:'Carlos M.',  initials:'CM', xp:520, me:false },
-    { pos:2, name:'Juliana S.', initials:'JS', xp:480, me:false },
-    { pos:3, name:user.name.split(' ')[0]+' (você)', initials:user.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase(), xp:score, me:true },
-  ];
-
   return (
     <div style={styles.screen}>
+
+      {/* MODAL SELEÇÃO DE MODO */}
+      {showModes && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.modalCard}>
+            <div style={styles.modalTitle}>Escolha o Modo de Jogo</div>
+            <div style={styles.modeBtn} onClick={() => { setShowModes(false); onSelectMode('livre'); }}>
+              <div style={styles.modeBtnIcon}>🎯</div>
+              <div style={styles.modeBtnTitle}>Modo Livre</div>
+              <div style={styles.modeBtnDesc}>Quiz individual. Quantidade de perguntas limitada pela energia do animal.</div>
+            </div>
+            <div style={styles.modeBtn} onClick={() => { setShowModes(false); onSelectMode('sessao'); }}>
+              <div style={styles.modeBtnIcon}>📋</div>
+              <div style={styles.modeBtnTitle}>Modo Sessão</div>
+              <div style={styles.modeBtnDesc}>Desafios criados pelo professor sobre um tema específico.</div>
+            </div>
+            <button style={styles.modalCancel} onClick={() => setShowModes(false)}>Cancelar</button>
+          </div>
+        </div>
+      )}
 
       <div style={styles.topbar}>
         <div>
@@ -154,7 +169,7 @@ function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, on
           <span style={styles.actionBtnIcon}>📊</span>
           <span style={styles.actionBtnLabel}>Parâm. Secundários</span>
         </div>
-        <div style={styles.actionBtn} onClick={() => onSelectMode(null)}>
+        <div style={styles.actionBtn} onClick={() => setShowModes(true)}>
           <span style={styles.actionBtnIcon}>🎮</span>
           <span style={styles.actionBtnLabel}>Opções de Jogo</span>
         </div>
@@ -199,21 +214,6 @@ function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, on
         ))}
       </div>
 
-      <div style={styles.rankingMini}>
-        <div style={styles.rankHeader}>
-          <div style={styles.rankTitle}>ranking da turma</div>
-          <div style={styles.rankVer} onClick={onViewRanking}>ver tudo →</div>
-        </div>
-        {mockRanking.map(r => (
-          <div key={r.initials} style={styles.rankRow}>
-            <div style={{ ...styles.rankPos,  ...(r.me ? styles.rankPosMe  : {}) }}>{r.pos}</div>
-            <div style={{ ...styles.rankAv,   ...(r.me ? styles.rankAvMe   : {}) }}>{r.initials}</div>
-            <div style={{ ...styles.rankName, ...(r.me ? styles.rankNameMe : {}) }}>{r.name}</div>
-            <div style={{ ...styles.rankXp,   ...(r.me ? styles.rankXpMe   : {}) }}>{r.xp} XP</div>
-          </div>
-        ))}
-      </div>
-
       <div style={styles.footer}>
         {user.mode === 'professor' && (
           <button style={styles.panelBtn} onClick={onViewPanel}>Painel do Professor</button>
@@ -253,22 +253,17 @@ const styles = {
   careIcon:         { fontSize:'20px' },
   careName:         { fontSize:'11px', fontWeight:'600', color:'white', textAlign:'center' },
   careDesc:         { fontSize:'9px', color:'rgba(255,255,255,.55)', textAlign:'center' },
-  rankingMini:      { margin:'.25rem 1rem .5rem', background:'rgba(255,255,255,.1)', border:'1px solid rgba(255,255,255,.18)', borderRadius:'12px', padding:'.75rem 1rem' },
-  rankHeader:       { display:'flex', justifyContent:'space-between', marginBottom:'8px' },
-  rankTitle:        { fontSize:'10px', color:'rgba(255,255,255,.6)', letterSpacing:'.06em', textTransform:'uppercase' },
-  rankVer:          { fontSize:'10px', color:'rgba(255,255,255,.45)', cursor:'pointer' },
-  rankRow:          { display:'flex', alignItems:'center', gap:'8px', marginBottom:'4px' },
-  rankPos:          { fontSize:'11px', fontWeight:'700', color:'rgba(255,255,255,.5)', width:'14px' },
-  rankPosMe:        { color:'#FFD700' },
-  rankAv:           { width:'22px', height:'22px', borderRadius:'50%', background:'rgba(255,255,255,.2)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'9px', fontWeight:'700', color:'white' },
-  rankAvMe:         { background:'white', color:'#7B2FBE' },
-  rankName:         { flex:1, fontSize:'11px', color:'rgba(255,255,255,.7)' },
-  rankNameMe:       { color:'white', fontWeight:'600' },
-  rankXp:           { fontSize:'10px', color:'rgba(255,255,255,.5)' },
-  rankXpMe:         { color:'white', fontWeight:'600' },
   footer:           { padding:'.5rem 1rem 0', display:'flex', flexDirection:'column', alignItems:'center', gap:'6px' },
   panelBtn:         { width:'100%', padding:'10px', borderRadius:'10px', border:'none', background:'white', color:'#7B2FBE', fontSize:'13px', fontWeight:'700', cursor:'pointer', fontFamily:'inherit' },
   logoutBtn:        { fontSize:'11px', color:'rgba(255,255,255,.4)', cursor:'pointer', background:'none', border:'none', fontFamily:'inherit' },
+  modalOverlay:     { position:'fixed', top:0, left:0, width:'100%', height:'100%', background:'rgba(0,0,0,.6)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:100 },
+  modalCard:        { background:'linear-gradient(160deg,#1B4FCC,#7B2FBE,#CC1B1B)', borderRadius:'20px', padding:'1.5rem', width:'90%', maxWidth:'340px', display:'flex', flexDirection:'column', gap:'12px' },
+  modalTitle:       { fontSize:'16px', fontWeight:'700', color:'white', textAlign:'center', marginBottom:'4px' },
+  modeBtn:          { background:'rgba(255,255,255,.15)', border:'1px solid rgba(255,255,255,.3)', borderRadius:'14px', padding:'1rem', cursor:'pointer' },
+  modeBtnIcon:      { fontSize:'24px', marginBottom:'4px' },
+  modeBtnTitle:     { fontSize:'14px', fontWeight:'700', color:'white', marginBottom:'4px' },
+  modeBtnDesc:      { fontSize:'11px', color:'rgba(255,255,255,.75)', lineHeight:'1.4' },
+  modalCancel:      { background:'rgba(255,255,255,.1)', border:'1px solid rgba(255,255,255,.2)', borderRadius:'20px', padding:'8px', color:'rgba(255,255,255,.7)', fontSize:'12px', cursor:'pointer', fontFamily:'inherit' },
 };
 
 export default HomeScreen;
