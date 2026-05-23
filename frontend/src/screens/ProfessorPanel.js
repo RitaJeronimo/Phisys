@@ -235,7 +235,6 @@ function ProfessorPanel({ onBack, onApplySimulation }) {
 
           {PRIMARY_PARAMS.filter(p => p.id !== 'saude').map(p => {
             const val = simForm.params[p.id] ?? p.default;
-            const pct = ((val - p.min) / (p.max - p.min)) * 100;
             const inRange = val >= p.normal[0] && val <= p.normal[1];
             const color = inRange ? '#32C878' : '#E24B4A';
             return (
