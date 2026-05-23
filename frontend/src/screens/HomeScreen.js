@@ -3,7 +3,51 @@ import { PRIMARY_PARAMS, calcularSaude, getMascotStatus, STATUS, DAILY_CARES, ap
 
 const GRADIENT = 'linear-gradient(160deg, #1B4FCC 0%, #7B2FBE 50%, #CC1B1B 100%)';
 
-function ParamCard({ param, value }) {
+// ─── CONTEÚDO EDUCATIVO DOS PARÂMETROS ───────────────────────────────────────
+const PARAM_INFO = {
+  energia: {
+    pergunta: 'O que compõe a energia do animal e o que a influencia?',
+    resposta: 'A energia representa a quantidade de ações disponíveis. Ela é consumida a cada desafio respondido e recarregada com alimentação diária. Animais bem alimentados têm mais energia para participar de quizzes no Modo Livre.',
+    dica: '💡 Alimente o animal diariamente para manter a energia alta!',
+  },
+  hidratacao: {
+    pergunta: 'Quais parâmetros são influenciados pela hidratação?',
+    resposta: 'A hidratação influencia diretamente: Volume Urinário (↑ hidratação → ↑ diurese), Resistência Vascular Periférica (↑ hidratação → ↓ RVP) e Pressão Arterial (↑ hidratação → ↑ volemia → PA normaliza). A desidratação reduz a pré-carga e o débito cardíaco, gerando FC compensatória.',
+    dica: '💡 Troque a água diariamente para manter a homeostase cardiovascular e renal!',
+  },
+  pas: {
+    pergunta: 'O que influencia a Pressão Arterial Sistólica?',
+    resposta: 'A PAS é determinada pelo Débito Cardíaco e pela Resistência Vascular Periférica (PA = DC × RVP). Ela é influenciada pela pré-carga (volume circulante), pós-carga (RVP) e pela força de contração cardíaca. Desidratação reduz a PAS; vasoconstrição e hipervolemia a elevam.',
+    dica: '💡 Faixa normal: 90–120 mmHg. Valores fora dessa faixa indicam desequilíbrio cardiovascular!',
+  },
+  pad: {
+    pergunta: 'O que determina a Pressão Arterial Diastólica?',
+    resposta: 'A PAD representa a pressão quando o coração está em relaxamento. É mais sensível à Resistência Vascular Periférica — quanto maior a RVP, maior a PAD. Condições como obesidade, desidratação e envelhecimento elevam a RVP e consequentemente a PAD.',
+    dica: '💡 Faixa normal: 60–80 mmHg. PAD elevada indica aumento da resistência vascular!',
+  },
+  fc: {
+    pergunta: 'Como a Frequência Cardíaca se relaciona com o Débito Cardíaco?',
+    resposta: 'O Débito Cardíaco é o produto da FC pelo Volume Sistólico (DC = FC × VS). Quando o débito cardíaco cai (ex: desidratação, insuficiência cardíaca), o organismo aumenta a FC como mecanismo compensatório para manter a perfusão tecidual. Bradicardia reduz o DC mesmo com VS normal.',
+    dica: '💡 Faixa normal: 60–100 bpm. FC elevada pode indicar compensação cardiovascular!',
+  },
+  peso: {
+    pergunta: 'Como o peso corporal influencia os parâmetros cardiovasculares?',
+    resposta: 'O excesso de peso aumenta a Resistência Vascular Periférica, elevando a pós-carga cardíaca e consequentemente a Pressão Arterial. Animais obesos têm maior risco de hipertensão e insuficiência cardíaca. O peso também influencia o Débito Cardíaco necessário para perfundir os tecidos.',
+    dica: '💡 Peso normal: 200–400g. Obesidade é fator de risco cardiovascular!',
+  },
+  saude: {
+    pergunta: 'O que determina o índice de Saúde do animal?',
+    resposta: 'A Saúde é calculada automaticamente com base em quantos parâmetros primários estão dentro da faixa normal (Hidratação, PAS, PAD e FC). Cada parâmetro fora da faixa reduz a saúde. Saúde ≥75% = Saudável; 40–74% = Debilitado; <40% = Crítico.',
+    dica: '💡 Mantenha todos os parâmetros na faixa normal para máxima saúde!',
+  },
+  idade: {
+    pergunta: 'Como a idade do animal influencia seus parametros fisiologicos?',
+    resposta: 'A medida que o animal envelhece, a Frequencia Cardiaca tende a diminuir, a Resistencia Vascular Periferica aumenta gradualmente e a resposta compensatoria a eventos como desidratacao e hipertensao pode ser menos eficiente. Animais mais velhos exigem cuidados mais frequentes para manter a homeostase.',
+    dica: 'Acompanhe a evolucao do animal — cada fase tem suas proprias faixas normais de FC!',
+  },
+};
+
+function ParamCard({ param, value, onClick }) {
   const pct = ((value - param.min) / (param.max - param.min)) * 100;
   const inRange = value >= param.normal[0] && value <= param.normal[1];
   const deviation = Math.abs(value - (param.normal[0] + param.normal[1]) / 2) / ((param.normal[1] - param.normal[0]) / 2);
@@ -11,12 +55,49 @@ function ParamCard({ param, value }) {
   const display = param.step < 1 ? value.toFixed(1) : Math.round(value);
   const isHealth = param.id === 'saude';
   return (
-    <div style={{ ...styles.paramCard, ...(isHealth ? { background: inRange ? 'rgba(50,200,120,.2)' : 'rgba(220,60,60,.2)', borderColor: color } : {}) }}>
+    <div
+      style={{ ...styles.paramCard, ...(isHealth ? { background: inRange ? 'rgba(50,200,120,.2)' : 'rgba(220,60,60,.2)', borderColor: color } : {}), cursor:'pointer' }}
+      onClick={() => onClick(param.id)}
+    >
       <div style={styles.paramIcon}>{param.icon}</div>
       <div style={{ ...styles.paramVal, ...(isHealth ? { color } : {}) }}>{display}{param.unit === '%' ? '%' : ''}</div>
       <div style={styles.paramName}>{param.name}</div>
       <div style={styles.paramBar}>
         <div style={{ ...styles.paramFill, width: Math.min(pct, 100) + '%', background: color }} />
+      </div>
+    </div>
+  );
+}
+
+function ParamModal({ paramId, onClose }) {
+  const [showAnswer, setShowAnswer] = useState(false);
+  const info = PARAM_INFO[paramId];
+  const param = PRIMARY_PARAMS.find(p => p.id === paramId) || { id:'idade', name:'Idade', unit:'', icon:'🗓️' };
+  if (!info) return null;
+
+  return (
+    <div style={styles.modalOverlay} onClick={onClose}>
+      <div style={styles.infoCard} onClick={e => e.stopPropagation()}>
+        <div style={styles.infoHeader}>
+          <span style={styles.infoIcon}>{param.icon}</span>
+          <span style={styles.infoTitle}>{param.name}</span>
+          <button style={styles.infoClose} onClick={onClose}>✕</button>
+        </div>
+
+        <div style={styles.infoQuestion}>{info.pergunta}</div>
+
+        {!showAnswer ? (
+          <button style={styles.showAnswerBtn} onClick={() => setShowAnswer(true)}>
+            💡 Ver Resposta
+          </button>
+        ) : (
+          <>
+            <div style={styles.infoAnswer}>{info.resposta}</div>
+            <div style={styles.infoDica}>{info.dica}</div>
+          </>
+        )}
+
+        <button style={styles.infoCloseBtn} onClick={onClose}>Fechar</button>
       </div>
     </div>
   );
@@ -107,6 +188,8 @@ function Mascot({ status }) {
 function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, onViewRanking, onViewPanel, onViewSecondary }) {
   const [caresDone, setCaresDone] = useState({});
   const [showModes, setShowModes] = useState(false);
+  const [activeParam, setActiveParam] = useState(null);
+
   const saude = calcularSaude(values);
   const status = getMascotStatus(values);
   const valsWithSaude = { ...values, saude };
@@ -122,6 +205,11 @@ function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, on
 
   return (
     <div style={styles.screen}>
+
+      {/* MODAL INFO PARÂMETRO */}
+      {activeParam && (
+        <ParamModal paramId={activeParam} onClose={() => setActiveParam(null)}/>
+      )}
 
       {/* MODAL SELEÇÃO DE MODO */}
       {showModes && (
@@ -152,12 +240,12 @@ function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, on
       </div>
 
       <div style={styles.paramsGrid}>
-        {line1.map(p => <ParamCard key={p.id} param={p} value={valsWithSaude[p.id] ?? p.default}/>)}
+        {line1.map(p => <ParamCard key={p.id} param={p} value={valsWithSaude[p.id] ?? p.default} onClick={setActiveParam}/>)}
       </div>
 
       <div style={styles.paramsGridBottom}>
-        {line2.map(p => <ParamCard key={p.id} param={p} value={valsWithSaude[p.id] ?? p.default}/>)}
-        <ParamCard param={idadeParam} value={90}/>
+        {line2.map(p => <ParamCard key={p.id} param={p} value={valsWithSaude[p.id] ?? p.default} onClick={setActiveParam}/>)}
+        <ParamCard param={idadeParam} value={90} onClick={setActiveParam}/>
       </div>
 
       <div style={styles.animalArea}>
@@ -264,6 +352,16 @@ const styles = {
   modeBtnTitle:     { fontSize:'14px', fontWeight:'700', color:'white', marginBottom:'4px' },
   modeBtnDesc:      { fontSize:'11px', color:'rgba(255,255,255,.75)', lineHeight:'1.4' },
   modalCancel:      { background:'rgba(255,255,255,.1)', border:'1px solid rgba(255,255,255,.2)', borderRadius:'20px', padding:'8px', color:'rgba(255,255,255,.7)', fontSize:'12px', cursor:'pointer', fontFamily:'inherit' },
+  infoCard:         { background:'linear-gradient(160deg,#1B4FCC,#7B2FBE,#CC1B1B)', borderRadius:'20px', padding:'1.5rem', width:'90%', maxWidth:'340px', display:'flex', flexDirection:'column', gap:'12px' },
+  infoHeader:       { display:'flex', alignItems:'center', gap:'10px' },
+  infoIcon:         { fontSize:'24px' },
+  infoTitle:        { flex:1, fontSize:'16px', fontWeight:'700', color:'white' },
+  infoClose:        { background:'none', border:'none', color:'rgba(255,255,255,.6)', fontSize:'18px', cursor:'pointer', fontFamily:'inherit' },
+  infoQuestion:     { background:'rgba(255,255,255,.15)', borderRadius:'12px', padding:'1rem', fontSize:'13px', color:'white', fontWeight:'600', lineHeight:'1.5' },
+  showAnswerBtn:    { background:'white', border:'none', borderRadius:'20px', padding:'10px', color:'#7B2FBE', fontSize:'13px', fontWeight:'700', cursor:'pointer', fontFamily:'inherit' },
+  infoAnswer:       { background:'rgba(255,255,255,.1)', borderRadius:'12px', padding:'1rem', fontSize:'12px', color:'rgba(255,255,255,.9)', lineHeight:'1.6' },
+  infoDica:         { background:'rgba(50,200,120,.2)', border:'1px solid rgba(50,200,120,.4)', borderRadius:'10px', padding:'.75rem', fontSize:'11px', color:'white', lineHeight:'1.4' },
+  infoCloseBtn:     { background:'rgba(255,255,255,.1)', border:'1px solid rgba(255,255,255,.2)', borderRadius:'20px', padding:'8px', color:'rgba(255,255,255,.7)', fontSize:'12px', cursor:'pointer', fontFamily:'inherit' },
 };
 
 export default HomeScreen;
