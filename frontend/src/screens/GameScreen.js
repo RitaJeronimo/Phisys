@@ -132,7 +132,7 @@ function ParamBar({ param, value }) {
   );
 }
 
-function GameScreen({ user, mode, onBack }) {
+function GameScreen({ user, mode, onBack, onFinish }) {
   const [values, setValues] = useState(getDefaultValues());
   const [score, setScore] = useState(100);
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -174,7 +174,17 @@ function GameScreen({ user, mode, onBack }) {
 
   function handleNext() {
     if (currentIdx + 1 >= MOCK_CHALLENGES.length) {
-      setFinished(true);
+      if (onFinish) {
+        onFinish({
+          seconds,
+          solvedChallenges: solvedCount,
+          totalChallenges: MOCK_CHALLENGES.length,
+          errors: errorCount,
+          paramHistory: null,
+        });
+      } else {
+        setFinished(true);
+      }
     } else {
       setCurrentIdx(i => i + 1);
       setSelected(null);

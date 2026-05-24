@@ -6,7 +6,8 @@ import GameScreen from './screens/GameScreen';
 import RankingScreen from './screens/RankingScreen';
 import ProfessorPanel from './screens/ProfessorPanel';
 import SecondaryScreen from './screens/SecondaryScreen';
-import { getDefaultPrimaryValues } from './engine/mascotEngine';
+import FinalScreen from './screens/FinalScreen';
+import { getDefaultPrimaryValues, calcularSaude } from './engine/mascotEngine';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -14,6 +15,7 @@ function App() {
   const [mode, setMode] = useState(null);
   const [values, setValues] = useState(getDefaultPrimaryValues());
   const [score, setScore] = useState(100);
+  const [sessionData, setSessionData] = useState(null);
 
   function handleLogin(userData) {
     setUser(userData);
@@ -30,6 +32,7 @@ function App() {
     setScreen('home');
     setValues(getDefaultPrimaryValues());
     setScore(100);
+    setSessionData(null);
   }
 
   function handleBack() {
@@ -40,6 +43,11 @@ function App() {
   function handleSelectMode(selectedMode) {
     setMode(selectedMode);
     setScreen('game');
+  }
+
+  function handleGameFinish(data) {
+    setSessionData(data);
+    setScreen('final');
   }
 
   function handleViewRanking()   { setScreen('ranking'); }
@@ -55,7 +63,28 @@ function App() {
   }
 
   if (screen === 'game') {
-    return <GameScreen user={user} mode={mode} values={values} setValues={setValues} score={score} setScore={setScore} onBack={handleBack} />;
+    return <GameScreen
+      user={user} mode={mode}
+      values={values} setValues={setValues}
+      score={score} setScore={setScore}
+      onBack={handleBack}
+      onFinish={handleGameFinish}
+    />;
+  }
+
+  if (screen === 'final') {
+    const saude = calcularSaude(values);
+    return <FinalScreen
+      user={user}
+      score={score}
+      saude={saude}
+      seconds={sessionData?.seconds || 0}
+      solvedChallenges={sessionData?.solvedChallenges || 0}
+      totalChallenges={sessionData?.totalChallenges || 3}
+      errors={sessionData?.errors || 0}
+      paramHistory={sessionData?.paramHistory || null}
+      onBack={handleBack}
+    />;
   }
 
   if (screen === 'ranking') {
