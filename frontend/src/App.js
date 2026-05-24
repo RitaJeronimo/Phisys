@@ -16,6 +16,7 @@ function App() {
   const [values, setValues] = useState(getDefaultPrimaryValues());
   const [score, setScore] = useState(100);
   const [sessionData, setSessionData] = useState(null);
+  const [ageDays, setAgeDays] = useState(90);
 
   function handleLogin(userData) {
     setUser(userData);
@@ -92,7 +93,7 @@ function App() {
   }
 
   if (screen === 'professor') {
-    return <ProfessorPanel onBack={handleBack} />;
+    return <ProfessorPanel onBack={handleBack} ageDays={ageDays} setAgeDays={setAgeDays}/>;
   }
 
   if (screen === 'secondary') {
@@ -105,6 +106,7 @@ function App() {
       values={values}
       setValues={setValues}
       score={score}
+      ageDays={ageDays}
       onSelectMode={handleSelectMode}
       onLogout={handleLogout}
       onViewRanking={handleViewRanking}

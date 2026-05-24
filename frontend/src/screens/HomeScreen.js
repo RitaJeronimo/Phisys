@@ -3,6 +3,19 @@ import { PRIMARY_PARAMS, calcularSaude, getMascotStatus, STATUS, DAILY_CARES, ap
 
 const GRADIENT = 'linear-gradient(160deg, #1B4FCC 0%, #7B2FBE 50%, #CC1B1B 100%)';
 
+// ─── FASES DE CRESCIMENTO ─────────────────────────────────────────────────────
+export const GROWTH_STAGES = {
+  RECEM_NASCIDO: { id:'RECEM_NASCIDO', label:'Recém-nascido', icon:'🐣', minDays:0,  maxDays:30  },
+  JUVENIL:       { id:'JUVENIL',       label:'Juvenil',       icon:'🐭', minDays:31, maxDays:180 },
+  ADULTO:        { id:'ADULTO',        label:'Adulto',        icon:'🐀', minDays:181,maxDays:9999 },
+};
+
+export function getGrowthStage(days) {
+  if (days <= 30)  return GROWTH_STAGES.RECEM_NASCIDO;
+  if (days <= 180) return GROWTH_STAGES.JUVENIL;
+  return GROWTH_STAGES.ADULTO;
+}
+
 const PARAM_INFO = {
   energia: {
     pergunta: 'O que compõe a energia do animal e o que a influencia?',
@@ -41,7 +54,6 @@ const PARAM_INFO = {
   },
 };
 
-// Card de PA unificado (PAS/PAD)
 function PACard({ pas, pad, onClick }) {
   const pasOk = pas >= 90 && pas <= 120;
   const padOk = pad >= 60 && pad <= 80;
@@ -67,10 +79,7 @@ function ParamCard({ param, value, onClick }) {
   const display = param.step < 1 ? value.toFixed(1) : Math.round(value);
   const isHealth = param.id === 'saude';
   return (
-    <div
-      style={{ ...styles.paramCard, ...(isHealth ? { background: inRange ? 'rgba(50,200,120,.2)' : 'rgba(220,60,60,.2)', borderColor: color } : {}), cursor:'pointer' }}
-      onClick={() => onClick(param.id)}
-    >
+    <div style={{ ...styles.paramCard, ...(isHealth ? { background: inRange ? 'rgba(50,200,120,.2)' : 'rgba(220,60,60,.2)', borderColor: color } : {}), cursor:'pointer' }} onClick={() => onClick(param.id)}>
       <div style={styles.paramIcon}>{param.icon}</div>
       <div style={{ ...styles.paramVal, ...(isHealth ? { color } : {}) }}>{display}{param.unit === '%' ? '%' : ''}</div>
       <div style={styles.paramName}>{param.name}</div>
@@ -88,7 +97,6 @@ function ParamModal({ paramId, onClose }) {
   if (!info) return null;
   const icon = paramId === 'pa' ? '❤️' : param.icon;
   const name = paramId === 'pa' ? 'Pressão Arterial' : param.name;
-
   return (
     <div style={styles.modalOverlay} onClick={onClose}>
       <div style={styles.infoCard} onClick={e => e.stopPropagation()}>
@@ -112,7 +120,10 @@ function ParamModal({ paramId, onClose }) {
   );
 }
 
-function Mascot({ status }) {
+// ─── MASCOTE COM 3 FASES VISUAIS ─────────────────────────────────────────────
+function Mascot({ status, ageDays }) {
+  const stage = getGrowthStage(ageDays || 90);
+
   const bodyColor  = status === STATUS.SAUDAVEL ? '#D4D4D4' : status === STATUS.DEBILITADO ? '#FAC775' : '#F09595';
   const earIn      = status === STATUS.SAUDAVEL ? '#FFD0DC' : status === STATUS.DEBILITADO ? '#F5CC80' : '#FFB0B0';
   const eyeOuter   = status === STATUS.SAUDAVEL ? '#7B2FBE' : status === STATUS.DEBILITADO ? '#633806' : '#791F1F';
@@ -159,32 +170,97 @@ function Mascot({ status }) {
         <ellipse cx="240" cy="144" rx="6"  ry="7"  fill="white" opacity=".9"/>
         <ellipse cx="226" cy="160" rx="3"  ry="3.5" fill="white" opacity=".5"/></>;
 
+  // Tamanho e proporções por fase
+  const isFilhote = stage.id === 'RECEM_NASCIDO';
+  const isJuvenil = stage.id === 'JUVENIL';
+  const svgSize   = isFilhote ? 110 : isJuvenil ? 150 : 180;
+
   return (
     <div style={styles.animalBg}>
       <div style={styles.animalLabel}>Mantenha o animal em homeostase</div>
       <div style={{ ...styles.animalStatus, color: statusColor }}>{emoji}</div>
-      <svg viewBox="0 0 400 380" style={{ width:'180px', height:'180px', marginTop:20 }}>
-        <path d="M188 350 Q162 358 148 340 Q136 322 144 308 Q152 295 164 305" stroke="#C8C8C8" strokeWidth="7" fill="none" strokeLinecap="round"/>
+
+      {/* BADGE DE FASE */}
+      <div style={{ ...styles.stageBadge }}>
+        {stage.icon} {stage.label}
+      </div>
+
+      <svg viewBox="0 0 400 380" style={{ width:`${svgSize}px`, height:`${svgSize}px`, marginTop:20 }}>
+
+        {/* CAUDA — só juvenil e adulto */}
+        {!isFilhote && (
+          <path d="M188 350 Q162 358 148 340 Q136 322 144 308 Q152 295 164 305" stroke="#C8C8C8" strokeWidth="7" fill="none" strokeLinecap="round"/>
+        )}
+
+        {/* PERNAS */}
         <ellipse cx="166" cy="335" rx="22" ry="13" fill={bodyColor}/>
         <ellipse cx="234" cy="335" rx="22" ry="13" fill={bodyColor}/>
+
+        {/* CORPO */}
         <ellipse cx="200" cy="285" rx="82" ry="78" fill={bodyColor}/>
         <ellipse cx="200" cy="295" rx="48" ry="50" fill="white" opacity=".2"/>
-        <ellipse cx="118" cy="268" rx="22" ry="15" fill={bodyColor} transform="rotate(-20,118,268)"/>
-        <ellipse cx="282" cy="268" rx="22" ry="15" fill={bodyColor} transform="rotate(20,282,268)"/>
-        <ellipse cx="110" cy="135" rx="38" ry="48" fill={bodyColor}/>
-        <ellipse cx="110" cy="135" rx="24" ry="34" fill={earIn}/>
-        <ellipse cx="290" cy="135" rx="38" ry="48" fill={bodyColor}/>
-        <ellipse cx="290" cy="135" rx="24" ry="34" fill={earIn}/>
-        <ellipse cx="200" cy="158" rx="82" ry="78" fill={bodyColor}/>
+
+        {/* BRAÇOS — só juvenil e adulto */}
+        {!isFilhote && (<>
+          <ellipse cx="118" cy="268" rx="22" ry="15" fill={bodyColor} transform="rotate(-20,118,268)"/>
+          <ellipse cx="282" cy="268" rx="22" ry="15" fill={bodyColor} transform="rotate(20,282,268)"/>
+        </>)}
+
+        {/* ORELHAS — filhote tem orelhas menores e mais arredondadas */}
+        {isFilhote ? (<>
+          <ellipse cx="130" cy="145" rx="28" ry="34" fill={bodyColor}/>
+          <ellipse cx="130" cy="145" rx="17" ry="23" fill={earIn}/>
+          <ellipse cx="270" cy="145" rx="28" ry="34" fill={bodyColor}/>
+          <ellipse cx="270" cy="145" rx="17" ry="23" fill={earIn}/>
+        </>) : (<>
+          <ellipse cx="110" cy="135" rx="38" ry="48" fill={bodyColor}/>
+          <ellipse cx="110" cy="135" rx="24" ry="34" fill={earIn}/>
+          <ellipse cx="290" cy="135" rx="38" ry="48" fill={bodyColor}/>
+          <ellipse cx="290" cy="135" rx="24" ry="34" fill={earIn}/>
+        </>)}
+
+        {/* CABEÇA — filhote tem cabeça proporcionalmente maior */}
+        <ellipse cx="200" cy="158" rx={isFilhote ? 90 : 82} ry={isFilhote ? 86 : 78} fill={bodyColor}/>
+
+        {/* BOCHECHAS */}
         <ellipse cx="136" cy="170" rx="20" ry="14" fill={cheek} opacity=".6"/>
         <ellipse cx="264" cy="170" rx="20" ry="14" fill={cheek} opacity=".6"/>
-        {eyeL}
-        {eyeR}
+
+        {/* OLHOS — filhote tem olhos ainda maiores */}
+        {isFilhote ? (<>
+          <ellipse cx="168" cy="150" rx="26" ry="30" fill="white"/>
+          <ellipse cx="168" cy="153" rx="19" ry="23" fill={eyeOuter}/>
+          <ellipse cx="168" cy="153" rx="9"  ry="11" fill={eyeInner}/>
+          <ellipse cx="178" cy="141" rx="7"  ry="8"  fill="white" opacity=".9"/>
+          <ellipse cx="232" cy="150" rx="26" ry="30" fill="white"/>
+          <ellipse cx="232" cy="153" rx="19" ry="23" fill={eyeOuter}/>
+          <ellipse cx="232" cy="153" rx="9"  ry="11" fill={eyeInner}/>
+          <ellipse cx="242" cy="141" rx="7"  ry="8"  fill="white" opacity=".9"/>
+        </>) : (<>
+          {eyeL}
+          {eyeR}
+        </>)}
+
+        {/* NARIZ */}
         <ellipse cx="200" cy="175" rx="8" ry="6" fill="#FF8FAA"/>
+
+        {/* BOCA */}
         {mouth}
+
+        {/* BIGODES — só adulto */}
+        {!isFilhote && !isJuvenil && (<>
+          <line x1="170" y1="178" x2="120" y2="168" stroke="rgba(255,255,255,.4)" strokeWidth="1.5" strokeLinecap="round"/>
+          <line x1="170" y1="183" x2="118" y2="183" stroke="rgba(255,255,255,.4)" strokeWidth="1.5" strokeLinecap="round"/>
+          <line x1="230" y1="178" x2="280" y2="168" stroke="rgba(255,255,255,.4)" strokeWidth="1.5" strokeLinecap="round"/>
+          <line x1="230" y1="183" x2="282" y2="183" stroke="rgba(255,255,255,.4)" strokeWidth="1.5" strokeLinecap="round"/>
+        </>)}
+
+        {/* SUOR */}
         {status !== STATUS.SAUDAVEL && (
           <ellipse cx="290" cy="120" rx="7" ry="11" fill="#85B7EB" opacity=".8"/>
         )}
+
+        {/* ESTRELINHAS */}
         {status === STATUS.SAUDAVEL && (<>
           <text x="316" y="100" fontSize="18" fill="white" opacity=".9">✦</text>
           <text x="72"  y="112" fontSize="12" fill="white" opacity=".8">✦</text>
@@ -194,7 +270,7 @@ function Mascot({ status }) {
   );
 }
 
-function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, onViewRanking, onViewPanel, onViewSecondary }) {
+function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, onViewRanking, onViewPanel, onViewSecondary, ageDays }) {
   const [caresDone, setCaresDone] = useState({});
   const [showModes, setShowModes] = useState(false);
   const [activeParam, setActiveParam] = useState(null);
@@ -204,7 +280,8 @@ function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, on
   const valsWithSaude = { ...values, saude };
   const line1 = PRIMARY_PARAMS.filter(p => ['energia','hidratacao','fc'].includes(p.id));
   const line2 = PRIMARY_PARAMS.filter(p => ['peso','saude'].includes(p.id));
-  const idadeParam = { id:'idade', name:'Idade', unit:'', min:0, max:730, normal:[0,730], default:90, step:1, icon:'🗓️' };
+  const currentAge = ageDays || 90;
+  const idadeParam = { id:'idade', name:'Idade', unit:'', min:0, max:730, normal:[0,730], default:currentAge, step:1, icon:'🗓️' };
 
   function handleCare(id) {
     if (caresDone[id]) return;
@@ -246,20 +323,18 @@ function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, on
         <div style={styles.xpBadge}>⚡ {Math.round(score)} XP</div>
       </div>
 
-      {/* LINHA 1: Energia, Hidratação, PA (120/80), FC */}
       <div style={styles.paramsGrid}>
         {line1.map(p => <ParamCard key={p.id} param={p} value={valsWithSaude[p.id] ?? p.default} onClick={setActiveParam}/>)}
         <PACard pas={valsWithSaude.pas ?? 110} pad={valsWithSaude.pad ?? 70} onClick={setActiveParam}/>
       </div>
 
-      {/* LINHA 2: Peso, Saúde, Idade */}
       <div style={styles.paramsGridBottom}>
         {line2.map(p => <ParamCard key={p.id} param={p} value={valsWithSaude[p.id] ?? p.default} onClick={setActiveParam}/>)}
-        <ParamCard param={idadeParam} value={90} onClick={setActiveParam}/>
+        <ParamCard param={idadeParam} value={currentAge} onClick={setActiveParam}/>
       </div>
 
       <div style={styles.animalArea}>
-        <Mascot status={status}/>
+        <Mascot status={status} ageDays={currentAge}/>
       </div>
 
       <div style={styles.actionBtns}>
@@ -316,6 +391,7 @@ const styles = {
   animalBg:         { background:'rgba(255,255,255,.08)', borderRadius:'20px', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', border:'1px solid rgba(255,255,255,.15)', position:'relative', padding:'8px', minHeight:'220px', overflow:'hidden' },
   animalLabel:      { position:'absolute', top:'8px', left:'10px', fontSize:'10px', color:'rgba(255,255,255,.5)', letterSpacing:'.04em' },
   animalStatus:     { position:'absolute', top:'8px', right:'10px', fontSize:'12px', fontWeight:'600' },
+  stageBadge:       { position:'absolute', bottom:'8px', left:'50%', transform:'translateX(-50%)', background:'rgba(255,255,255,.15)', borderRadius:'20px', padding:'3px 10px', fontSize:'10px', color:'rgba(255,255,255,.8)', whiteSpace:'nowrap' },
   actionBtns:       { margin:'0 1rem .5rem', display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'7px' },
   actionBtn:        { background:'rgba(255,255,255,.15)', border:'1px solid rgba(255,255,255,.25)', borderRadius:'12px', padding:'10px 6px', display:'flex', flexDirection:'column', alignItems:'center', gap:'4px', cursor:'pointer' },
   actionBtnIcon:    { fontSize:'18px' },

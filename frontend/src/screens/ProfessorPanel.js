@@ -69,7 +69,7 @@ const EMPTY_SIMULATION = {
   params: getDefaultSimParams(),
 };
 
-function ProfessorPanel({ onBack, onApplySimulation }) {
+function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
   const [motivationMessages, setMotivationMessages] = useState({...DEFAULT_MOTIVATION_MESSAGES});
   const [tab, setTab] = useState('desafios');
   const [challenges, setChallenges] = useState(INITIAL_CHALLENGES);
@@ -280,7 +280,7 @@ function ProfessorPanel({ onBack, onApplySimulation }) {
 
       {/* TABS */}
       <div style={styles.tabs}>
-        {[['desafios','🎯 Desafios'],['simulacoes','🔬 Simulações'],['alunos','👥 Alunos'],['pesos','⚖️ Pesos'],['mensagens','💬 Mensagens']].map(([id,label])=>(
+        {[['desafios','🎯 Desafios'],['simulacoes','🔬 Simulações'],['alunos','👥 Alunos'],['pesos','⚖️ Pesos'],['mensagens','💬 Mensagens'],['crescimento','🐭 Crescimento']].map(([id,label])=>(
           <div key={id} style={{...styles.tab,...(tab===id?styles.tabActive:{})}} onClick={()=>setTab(id)}>{label}</div>
         ))}
       </div>
@@ -465,6 +465,68 @@ function ProfessorPanel({ onBack, onApplySimulation }) {
               onClick={() => setMotivationMessages({...DEFAULT_MOTIVATION_MESSAGES})}>
               🔄 Restaurar mensagens padrão
             </button>
+          </div>
+          <div style={{height:'1rem'}}/>
+        </>
+      )}
+
+      {/* ── TAB CRESCIMENTO ── */}
+      {tab==='crescimento' && (
+        <>
+          <div style={styles.sectionTitle}>fases de crescimento do animal</div>
+          <div style={styles.simInfo}>
+            🐭 Configure quantos dias dura cada fase do animal. O professor controla o ritmo de crescimento conforme o módulo da disciplina.
+          </div>
+
+          <div style={styles.challengeCard}>
+            <div style={{ fontSize:'13px', fontWeight:'700', color:'white', marginBottom:'12px' }}>
+              📅 Idade atual do animal
+            </div>
+            <div style={{ display:'flex', alignItems:'center', gap:'12px', marginBottom:'8px' }}>
+              <input
+                type="range" min="0" max="365" step="1"
+                value={ageDays || 90}
+                onChange={e => setAgeDays && setAgeDays(Number(e.target.value))}
+                style={{ flex:1, accentColor:'white' }}
+              />
+              <div style={{ fontSize:'16px', fontWeight:'700', color:'white', width:'60px', textAlign:'right' }}>
+                {ageDays || 90} dias
+              </div>
+            </div>
+            <div style={{ display:'flex', gap:'6px' }}>
+              {[
+                { label:'🐣 Recém-nascido', days:10, color:'#FFD700' },
+                { label:'🐭 Juvenil',       days:90, color:'#85B7EB' },
+                { label:'🐀 Adulto',        days:200, color:'#32C878' },
+              ].map(preset => (
+                <div
+                  key={preset.days}
+                  style={{ flex:1, background:`${preset.color}22`, border:`1px solid ${preset.color}55`, borderRadius:'8px', padding:'6px 4px', textAlign:'center', cursor:'pointer', fontSize:'10px', color:'white' }}
+                  onClick={() => setAgeDays && setAgeDays(preset.days)}
+                >
+                  {preset.label}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div style={styles.challengeCard}>
+            <div style={{ fontSize:'13px', fontWeight:'700', color:'white', marginBottom:'8px' }}>
+              📋 Fases e limites
+            </div>
+            {[
+              { icon:'🐣', label:'Recém-nascido', range:'0–30 dias',   color:'#FFD700', desc:'Cabeça grande, sem cauda, olhos enormes, sem braços visíveis' },
+              { icon:'🐭', label:'Juvenil',       range:'31–180 dias', color:'#85B7EB', desc:'Tamanho médio, orelhas maiores, braços aparecem, cauda presente' },
+              { icon:'🐀', label:'Adulto',        range:'181+ dias',   color:'#32C878', desc:'Tamanho completo, bigodes visíveis, cauda longa, proporções adultas' },
+            ].map(fase => (
+              <div key={fase.label} style={{ display:'flex', gap:'10px', alignItems:'flex-start', marginBottom:'10px' }}>
+                <div style={{ fontSize:'20px' }}>{fase.icon}</div>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:'12px', fontWeight:'700', color: fase.color }}>{fase.label} — {fase.range}</div>
+                  <div style={{ fontSize:'10px', color:'rgba(255,255,255,.6)', marginTop:'2px' }}>{fase.desc}</div>
+                </div>
+              </div>
+            ))}
           </div>
           <div style={{height:'1rem'}}/>
         </>
