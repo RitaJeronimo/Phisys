@@ -59,7 +59,7 @@ function LoginScreen({ onLogin }) {
         <ChibiMascot size={90}/>
 
         <div style={styles.brandName}>Phisys</div>
-        <div style={styles.brandSub}>Fisiologia Cardiovascular &amp; Renal</div>
+        <div style={styles.brandSub}>Simulador Cardiorrenal Interativo</div>
 
         <div style={styles.divider}/>
 
@@ -120,8 +120,8 @@ function LoginScreen({ onLogin }) {
 const GRADIENT = 'linear-gradient(135deg, #1B4FCC 0%, #7B2FBE 50%, #CC1B1B 100%)';
 
 const styles = {
-  wrap: { display:'flex', justifyContent:'center', alignItems:'center', minHeight:'100vh', backgroundColor:'#f0f0f0', padding:'2rem 1rem' },
-  card: { background:GRADIENT, borderRadius:'16px', padding:'2.5rem 2rem', width:'100%', maxWidth:'370px', display:'flex', flexDirection:'column', alignItems:'center', gap:'1.25rem', boxShadow:'0 8px 40px rgba(123,47,190,0.35)' },
+  wrap: { display:'flex', justifyContent:'center', alignItems:'center', minHeight:'100vh', background:'#f0f0f0', padding:'2rem 1rem', boxSizing:'border-box', width:'100%' },
+  card: { background:GRADIENT, borderRadius:'16px', padding:'2.5rem 2rem', width:'100%', maxWidth:'370px', display:'flex', flexDirection:'column', alignItems:'center', gap:'1.25rem', boxShadow:'0 8px 40px rgba(123,47,190,0.35)', margin:'0 auto', overflow:'hidden', boxSizing:'border-box' },
   brandName: { fontSize:'34px', fontWeight:'700', fontFamily:'monospace', letterSpacing:'-0.02em', color:'white' },
   brandSub: { fontSize:'11px', letterSpacing:'0.08em', textTransform:'uppercase', color:'rgba(255,255,255,0.75)' },
   divider: { width:'100%', height:'2px', borderRadius:'2px', background:'rgba(255,255,255,0.35)' },
@@ -129,9 +129,9 @@ const styles = {
   modeBtn: { flex:1, padding:'9px', borderRadius:'8px', fontSize:'12px', fontWeight:'500', cursor:'pointer', fontFamily:'inherit', transition:'all 0.2s' },
   modeBtnActive: { background:'white', color:'#7B2FBE', border:'1.5px solid white', fontWeight:'700' },
   modeBtnInactive: { border:'1.5px solid rgba(255,255,255,0.4)', background:'transparent', color:'rgba(255,255,255,0.7)' },
-  formGroup: { width:'100%', display:'flex', flexDirection:'column', gap:'0.4rem' },
+  formGroup: { width:'100%', display:'flex', flexDirection:'column', gap:'0.4rem', boxSizing:'border-box' },
   label: { fontSize:'11px', color:'rgba(255,255,255,0.7)', letterSpacing:'0.05em', textTransform:'uppercase' },
-  input: { width:'100%', padding:'11px 14px', borderRadius:'8px', fontSize:'14px', border:'1.5px solid rgba(255,255,255,0.3)', background:'rgba(255,255,255,0.15)', color:'white', fontFamily:'inherit', outline:'none' },
+  input: { width:'100%', padding:'11px 14px', borderRadius:'8px', fontSize:'14px', border:'1.5px solid rgba(255,255,255,0.3)', background:'rgba(255,255,255,0.15)', color:'white', fontFamily:'inherit', outline:'none', boxSizing:'border-box' },
   error: { width:'100%', fontSize:'12px', color:'white', backgroundColor:'rgba(255,255,255,0.2)', border:'1.5px solid rgba(255,255,255,0.5)', borderRadius:'8px', padding:'8px 12px' },
   submitBtn: { width:'100%', padding:'13px', borderRadius:'10px', border:'none', backgroundColor:'white', color:'#7B2FBE', fontSize:'14px', fontWeight:'700', cursor:'pointer', fontFamily:'inherit', letterSpacing:'0.03em', boxShadow:'0 4px 20px rgba(0,0,0,0.2)' },
   footerNote: { fontSize:'10px', color:'rgba(255,255,255,0.55)', textAlign:'center', lineHeight:'1.6' },
