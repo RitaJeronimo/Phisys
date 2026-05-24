@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { PRIMARY_PARAMS, calcularSaude, getMascotStatus, STATUS, DAILY_CARES, aplicarCuidado, aplicarIntervencao, getDefaultPrimaryValues } from '../engine/mascotEngine';
+import { PRIMARY_PARAMS, calcularSaude, getMascotStatus, STATUS, DAILY_CARES, aplicarCuidado } from '../engine/mascotEngine';
 
 const GRADIENT = 'linear-gradient(160deg, #1B4FCC 0%, #7B2FBE 50%, #CC1B1B 100%)';
 
-// ─── CONTEÚDO EDUCATIVO DOS PARÂMETROS ───────────────────────────────────────
 const PARAM_INFO = {
   energia: {
     pergunta: 'O que compõe a energia do animal e o que a influencia?',
@@ -15,15 +14,10 @@ const PARAM_INFO = {
     resposta: 'A hidratação influencia diretamente: Volume Urinário (↑ hidratação → ↑ diurese), Resistência Vascular Periférica (↑ hidratação → ↓ RVP) e Pressão Arterial (↑ hidratação → ↑ volemia → PA normaliza). A desidratação reduz a pré-carga e o débito cardíaco, gerando FC compensatória.',
     dica: '💡 Troque a água diariamente para manter a homeostase cardiovascular e renal!',
   },
-  pas: {
-    pergunta: 'O que influencia a Pressão Arterial Sistólica?',
-    resposta: 'A PAS é determinada pelo Débito Cardíaco e pela Resistência Vascular Periférica (PA = DC × RVP). Ela é influenciada pela pré-carga (volume circulante), pós-carga (RVP) e pela força de contração cardíaca. Desidratação reduz a PAS; vasoconstrição e hipervolemia a elevam.',
-    dica: '💡 Faixa normal: 90–120 mmHg. Valores fora dessa faixa indicam desequilíbrio cardiovascular!',
-  },
-  pad: {
-    pergunta: 'O que determina a Pressão Arterial Diastólica?',
-    resposta: 'A PAD representa a pressão quando o coração está em relaxamento. É mais sensível à Resistência Vascular Periférica — quanto maior a RVP, maior a PAD. Condições como obesidade, desidratação e envelhecimento elevam a RVP e consequentemente a PAD.',
-    dica: '💡 Faixa normal: 60–80 mmHg. PAD elevada indica aumento da resistência vascular!',
+  pa: {
+    pergunta: 'O que influencia a Pressão Arterial?',
+    resposta: 'A PA é determinada pelo Débito Cardíaco e pela Resistência Vascular Periférica (PA = DC × RVP). A PAS reflete a ejeção cardíaca e a PAD reflete a resistência vascular em repouso. Desidratação reduz a PA; vasoconstrição e hipervolemia a elevam.',
+    dica: '💡 Faixa normal: 90–120/60–80 mmHg. Valores fora dessa faixa indicam desequilíbrio cardiovascular!',
   },
   fc: {
     pergunta: 'Como a Frequência Cardíaca se relaciona com o Débito Cardíaco?',
@@ -46,6 +40,24 @@ const PARAM_INFO = {
     dica: 'Acompanhe a evolucao do animal — cada fase tem suas proprias faixas normais de FC!',
   },
 };
+
+// Card de PA unificado (PAS/PAD)
+function PACard({ pas, pad, onClick }) {
+  const pasOk = pas >= 90 && pas <= 120;
+  const padOk = pad >= 60 && pad <= 80;
+  const inRange = pasOk && padOk;
+  const color = inRange ? '#32C878' : '#E24B4A';
+  return (
+    <div style={{ ...styles.paramCard, cursor:'pointer' }} onClick={() => onClick('pa')}>
+      <div style={styles.paramIcon}>❤️</div>
+      <div style={{ ...styles.paramVal, fontSize:'11px' }}>{Math.round(pas)}/{Math.round(pad)}</div>
+      <div style={styles.paramName}>PA (mmHg)</div>
+      <div style={styles.paramBar}>
+        <div style={{ ...styles.paramFill, width: Math.min(((pas-60)/(200-60))*100, 100) + '%', background: color }} />
+      </div>
+    </div>
+  );
+}
 
 function ParamCard({ param, value, onClick }) {
   const pct = ((value - param.min) / (param.max - param.min)) * 100;
@@ -74,29 +86,26 @@ function ParamModal({ paramId, onClose }) {
   const info = PARAM_INFO[paramId];
   const param = PRIMARY_PARAMS.find(p => p.id === paramId) || { id:'idade', name:'Idade', unit:'', icon:'🗓️' };
   if (!info) return null;
+  const icon = paramId === 'pa' ? '❤️' : param.icon;
+  const name = paramId === 'pa' ? 'Pressão Arterial' : param.name;
 
   return (
     <div style={styles.modalOverlay} onClick={onClose}>
       <div style={styles.infoCard} onClick={e => e.stopPropagation()}>
         <div style={styles.infoHeader}>
-          <span style={styles.infoIcon}>{param.icon}</span>
-          <span style={styles.infoTitle}>{param.name}</span>
+          <span style={styles.infoIcon}>{icon}</span>
+          <span style={styles.infoTitle}>{name}</span>
           <button style={styles.infoClose} onClick={onClose}>✕</button>
         </div>
-
         <div style={styles.infoQuestion}>{info.pergunta}</div>
-
         {!showAnswer ? (
-          <button style={styles.showAnswerBtn} onClick={() => setShowAnswer(true)}>
-            💡 Ver Resposta
-          </button>
+          <button style={styles.showAnswerBtn} onClick={() => setShowAnswer(true)}>💡 Ver Resposta</button>
         ) : (
           <>
             <div style={styles.infoAnswer}>{info.resposta}</div>
             <div style={styles.infoDica}>{info.dica}</div>
           </>
         )}
-
         <button style={styles.infoCloseBtn} onClick={onClose}>Fechar</button>
       </div>
     </div>
@@ -193,7 +202,7 @@ function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, on
   const saude = calcularSaude(values);
   const status = getMascotStatus(values);
   const valsWithSaude = { ...values, saude };
-  const line1 = PRIMARY_PARAMS.filter(p => ['energia','hidratacao','pas','fc'].includes(p.id));
+  const line1 = PRIMARY_PARAMS.filter(p => ['energia','hidratacao','fc'].includes(p.id));
   const line2 = PRIMARY_PARAMS.filter(p => ['peso','saude'].includes(p.id));
   const idadeParam = { id:'idade', name:'Idade', unit:'', min:0, max:730, normal:[0,730], default:90, step:1, icon:'🗓️' };
 
@@ -206,12 +215,10 @@ function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, on
   return (
     <div style={styles.screen}>
 
-      {/* MODAL INFO PARÂMETRO */}
       {activeParam && (
         <ParamModal paramId={activeParam} onClose={() => setActiveParam(null)}/>
       )}
 
-      {/* MODAL SELEÇÃO DE MODO */}
       {showModes && (
         <div style={styles.modalOverlay}>
           <div style={styles.modalCard}>
@@ -239,10 +246,13 @@ function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, on
         <div style={styles.xpBadge}>⚡ {Math.round(score)} XP</div>
       </div>
 
+      {/* LINHA 1: Energia, Hidratação, PA (120/80), FC */}
       <div style={styles.paramsGrid}>
         {line1.map(p => <ParamCard key={p.id} param={p} value={valsWithSaude[p.id] ?? p.default} onClick={setActiveParam}/>)}
+        <PACard pas={valsWithSaude.pas ?? 110} pad={valsWithSaude.pad ?? 70} onClick={setActiveParam}/>
       </div>
 
+      {/* LINHA 2: Peso, Saúde, Idade */}
       <div style={styles.paramsGridBottom}>
         {line2.map(p => <ParamCard key={p.id} param={p} value={valsWithSaude[p.id] ?? p.default} onClick={setActiveParam}/>)}
         <ParamCard param={idadeParam} value={90} onClick={setActiveParam}/>
@@ -267,30 +277,6 @@ function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, on
         </div>
       </div>
 
-      {/* 🧪 MODO TESTE */}
-      <div style={styles.caresLabel}>🧪 simular cenário (teste)</div>
-      <div style={styles.cares}>
-        <div style={{ ...styles.careCard, background:'rgba(239,159,39,.2)', borderColor:'#EF9F27' }}
-          onClick={() => setValues(prev => aplicarIntervencao(prev, 'desidratacao'))}>
-          <div style={styles.careIcon}>💧</div>
-          <div style={styles.careName}>Desidratação</div>
-          <div style={styles.careDesc}>Simular</div>
-        </div>
-        <div style={{ ...styles.careCard, background:'rgba(220,60,60,.2)', borderColor:'#E24B4A' }}
-          onClick={() => setValues(prev => aplicarIntervencao(prev, 'hipertensao'))}>
-          <div style={styles.careIcon}>❤️</div>
-          <div style={styles.careName}>Hipertensão</div>
-          <div style={styles.careDesc}>Simular</div>
-        </div>
-        <div style={{ ...styles.careCard, background:'rgba(50,200,120,.2)', borderColor:'#32C878' }}
-          onClick={() => { setValues(getDefaultPrimaryValues()); setCaresDone({}); }}>
-          <div style={styles.careIcon}>🔄</div>
-          <div style={styles.careName}>Resetar</div>
-          <div style={styles.careDesc}>Voltar ao normal</div>
-        </div>
-      </div>
-
-      {/* CUIDADOS DIÁRIOS */}
       <div style={styles.caresLabel}>cuidados diários</div>
       <div style={styles.cares}>
         {Object.values(DAILY_CARES).map(c => (
