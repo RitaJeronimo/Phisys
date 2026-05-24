@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import LoginScreen from './screens/LoginScreen';
+import MotivationScreen from './screens/MotivationScreen';
 import HomeScreen from './screens/HomeScreen';
 import GameScreen from './screens/GameScreen';
 import RankingScreen from './screens/RankingScreen';
 import ProfessorPanel from './screens/ProfessorPanel';
-import { getDefaultPrimaryValues } from './engine/mascotEngine';
 import SecondaryScreen from './screens/SecondaryScreen';
+import { getDefaultPrimaryValues } from './engine/mascotEngine';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -16,6 +17,10 @@ function App() {
 
   function handleLogin(userData) {
     setUser(userData);
+    setScreen('motivation');
+  }
+
+  function handleMotivation() {
     setScreen('home');
   }
 
@@ -37,12 +42,16 @@ function App() {
     setScreen('game');
   }
 
-  function handleViewRanking() { setScreen('ranking'); }
-  function handleViewPanel()   { setScreen('professor'); }
-  function handleViewSecondary(){ setScreen('secondary'); }
+  function handleViewRanking()   { setScreen('ranking'); }
+  function handleViewPanel()     { setScreen('professor'); }
+  function handleViewSecondary() { setScreen('secondary'); }
 
   if (!user) {
     return <LoginScreen onLogin={handleLogin} />;
+  }
+
+  if (screen === 'motivation') {
+    return <MotivationScreen user={user} onContinue={handleMotivation} />;
   }
 
   if (screen === 'game') {
