@@ -1,0 +1,25 @@
+{
+  "name": "phisys-backend",
+  "version": "1.0.0",
+  "description": "Backend do Phisys - Simulador Cardiorrenal Interativo",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "db:setup": "node src/db/schema.js"
+  },
+  "keywords": ["phisys", "fisiologia", "educacao"],
+  "author": "Rita Jeronimo",
+  "license": "MIT",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.0",
+    "express": "^4.18.0",
+    "jsonwebtoken": "^9.0.0",
+    "pg": "^8.11.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.0"
+  }
+}
