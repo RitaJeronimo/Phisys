@@ -19,9 +19,13 @@ function App() {
   const [ageDays, setAgeDays] = useState(90);
 
   function handleLogin(userData) {
-    setUser(userData);
+  setUser(userData);
+  if (userData.modo === 'professor') {
+    setScreen('professor');
+  } else {
     setScreen('motivation');
   }
+}
 
   function handleMotivation() {
     setScreen('home');

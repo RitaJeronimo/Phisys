@@ -1,4 +1,7 @@
 import React, { useState } from 'react';
+import { auth, setToken } from '../api';
+
+const PROFESSOR_CODE = 'PROF2026';
 
 function ChibiMascot({ size = 76 }) {
   return (
@@ -27,98 +30,91 @@ function ChibiMascot({ size = 76 }) {
       <ellipse cx="240" cy="144" rx="6" ry="7" fill="white" opacity=".9"/>
       <ellipse cx="200" cy="175" rx="8" ry="6" fill="#FF8FAA"/>
       <path d="M188 184 Q200 196 212 184" stroke="#666" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
-      <text x="316" y="100" fontSize="18" fill="white" opacity=".9">✦</text>
-      <text x="72" y="112" fontSize="12" fill="white" opacity=".8">✦</text>
     </svg>
   );
 }
 
 function LoginScreen({ onLogin }) {
-  const [mode, setMode] = useState('aluno');
-  const [name, setName] = useState('');
+  const [mode, setMode]           = useState('aluno');
+  const [name, setName]           = useState('');
   const [credential, setCredential] = useState('');
-  const [error, setError] = useState('');
+  const [error, setError]         = useState('');
+  const [loading, setLoading]     = useState(false);
 
-  function handleSubmit() {
-    if (!name.trim()) {
-      setError('Por favor, informe seu nome completo.');
+  async function handleSubmit() {
+    if (!name.trim())       { setError('Por favor, informe seu nome completo.'); return; }
+    if (!credential.trim()) { setError(mode === 'aluno' ? 'Por favor, informe sua matricula.' : 'Por favor, informe o codigo de acesso.'); return; }
+
+    if (mode === 'professor' && credential.trim() !== PROFESSOR_CODE) {
+      setError('Codigo de professor invalido.');
       return;
     }
-    if (!credential.trim()) {
-      setError(mode === 'aluno' ? 'Por favor, informe sua matricula.' : 'Por favor, informe o codigo do professor.');
-      return;
-    }
+
     setError('');
-    onLogin({ mode, name: name.trim(), credential: credential.trim() });
+    setLoading(true);
+
+    const matricula = mode === 'aluno'
+      ? credential.trim()
+      : 'prof_' + name.trim().toLowerCase().replace(/[^a-z0-9]/g, '_');
+    const senha = mode === 'aluno' ? credential.trim() + '_phisys' : PROFESSOR_CODE;
+
+    try {
+      let data;
+      try {
+        data = await auth.login(matricula, senha, mode);
+      } catch {
+        data = await auth.registro(name.trim(), matricula, senha, mode);
+      }
+      setToken(data.token);
+      onLogin({ ...data.usuario });
+    } catch (err) {
+      setError(err.message || 'Erro ao entrar. Tente novamente.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
     <div style={styles.wrap}>
       <div style={styles.card}>
-
         <ChibiMascot size={90}/>
-
         <div style={styles.brandName}>Phisys</div>
         <div style={styles.brandSub}>Simulador Cardiorrenal Interativo</div>
-
         <div style={styles.divider}/>
-
         <div style={styles.modeToggle}>
-          <button
-            style={{ ...styles.modeBtn, ...(mode === 'aluno' ? styles.modeBtnActive : styles.modeBtnInactive) }}
-            onClick={() => { setMode('aluno'); setCredential(''); setError(''); }}
-          >
+          <button style={{ ...styles.modeBtn, ...(mode === 'aluno' ? styles.modeBtnActive : styles.modeBtnInactive) }}
+            onClick={() => { setMode('aluno'); setCredential(''); setError(''); }}>
             Sou aluno
           </button>
-          <button
-            style={{ ...styles.modeBtn, ...(mode === 'professor' ? styles.modeBtnActive : styles.modeBtnInactive) }}
-            onClick={() => { setMode('professor'); setCredential(''); setError(''); }}
-          >
+          <button style={{ ...styles.modeBtn, ...(mode === 'professor' ? styles.modeBtnActive : styles.modeBtnInactive) }}
+            onClick={() => { setMode('professor'); setCredential(''); setError(''); }}>
             Sou professor
           </button>
         </div>
-
         <div style={styles.formGroup}>
           <label style={styles.label}>nome completo</label>
-          <input
-            style={styles.input}
-            type="text"
-            placeholder="Ex: Ana Paula Silva"
-            value={name}
-            onChange={e => { setName(e.target.value); setError(''); }}
-          />
+          <input style={styles.input} type="text" placeholder="Ex: Ana Paula Silva"
+            value={name} onChange={e => { setName(e.target.value); setError(''); }}/>
         </div>
-
         <div style={styles.formGroup}>
-          <label style={styles.label}>
-            {mode === 'aluno' ? 'matricula' : 'codigo do professor'}
-          </label>
-          <input
-            style={styles.input}
-            type="text"
-            placeholder={mode === 'aluno' ? 'Ex: 2024001234' : 'codigo fornecido pela instituicao'}
-            value={credential}
-            onChange={e => { setCredential(e.target.value); setError(''); }}
-          />
+          <label style={styles.label}>{mode === 'aluno' ? 'matricula' : 'codigo de acesso'}</label>
+          <input style={styles.input} type={mode === 'professor' ? 'password' : 'text'}
+            placeholder={mode === 'aluno' ? 'Ex: 2024001234' : 'Codigo fornecido pela instituicao'}
+            value={credential} onChange={e => { setCredential(e.target.value); setError(''); }}/>
         </div>
-
         {error ? <div style={styles.error}>{error}</div> : null}
-
-        <button style={styles.submitBtn} onClick={handleSubmit}>
-          Entrar no Phisys
+        <button style={{ ...styles.submitBtn, opacity: loading ? 0.7 : 1 }} onClick={handleSubmit} disabled={loading}>
+          {loading ? 'Entrando...' : 'Entrar no Phisys'}
         </button>
-
         <div style={styles.footerNote}>
           Seus dados sao usados apenas para registro de desempenho e nao sao compartilhados.
         </div>
-
       </div>
     </div>
   );
 }
 
 const GRADIENT = 'linear-gradient(135deg, #1B4FCC 0%, #7B2FBE 50%, #CC1B1B 100%)';
-
 const styles = {
   wrap: { display:'flex', justifyContent:'center', alignItems:'center', minHeight:'100vh', background:'#f0f0f0', padding:'2rem 1rem', boxSizing:'border-box', width:'100%' },
   card: { background:GRADIENT, borderRadius:'16px', padding:'2.5rem 2rem', width:'100%', maxWidth:'370px', display:'flex', flexDirection:'column', alignItems:'center', gap:'1.25rem', boxShadow:'0 8px 40px rgba(123,47,190,0.35)', margin:'0 auto', overflow:'hidden', boxSizing:'border-box' },
