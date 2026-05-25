@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import LoginScreen from './screens/LoginScreen';
 import MotivationScreen from './screens/MotivationScreen';
 import HomeScreen from './screens/HomeScreen';

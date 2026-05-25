@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { auth, setToken } from '../api';
 
 const PROFESSOR_CODE = 'PROF2026';
