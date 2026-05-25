@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import LoginScreen from './screens/LoginScreen';
 import MotivationScreen from './screens/MotivationScreen';
 import HomeScreen from './screens/HomeScreen';
@@ -11,17 +11,17 @@ import { getDefaultPrimaryValues, calcularSaude } from './engine/mascotEngine';
 import { animal as animalApi } from './api';
 
 function App() {
-  const [user, setUser]             = useState(null);
-  const [screen, setScreen]         = useState('home');
-  const [mode, setMode]             = useState(null);
-  const [values, setValues]         = useState(getDefaultPrimaryValues());
-  const [score, setScore]           = useState(100);
+  const [user, setUser]               = useState(null);
+  const [screen, setScreen]           = useState('home');
+  const [mode, setMode]               = useState(null);
+  const [values, setValues]           = useState(getDefaultPrimaryValues());
+  const [score, setScore]             = useState(100);
   const [sessionData, setSessionData] = useState(null);
-  const [ageDays, setAgeDays]       = useState(90);
+  const [ageDays, setAgeDays]         = useState(90);
 
   async function handleLogin(userData) {
-    const user = { ...userData, name: userData.nome, mode: userData.modo };
-    setUser(user);
+    const loggedUser = { ...userData, name: userData.nome, mode: userData.modo };
+    setUser(loggedUser);
 
     if (userData.modo === 'professor') {
       setScreen('professor');
@@ -31,16 +31,16 @@ function App() {
     try {
       const a = await animalApi.get();
       setValues({
-        energia:   Number(a.energia),
-        hidratacao:Number(a.hidratacao),
-        pas:       Number(a.pas),
-        pad:       Number(a.pad),
-        fc:        Number(a.fc),
-        peso:      Number(a.peso),
+        energia:    Number(a.energia),
+        hidratacao: Number(a.hidratacao),
+        pas:        Number(a.pas),
+        pad:        Number(a.pad),
+        fc:         Number(a.fc),
+        peso:       Number(a.peso),
       });
       setAgeDays(Number(a.age_days) || 90);
     } catch(e) {
-      console.log('Animal nao encontrado, usando valores padrao');
+      console.log('Usando valores padrao do animal');
     }
 
     setScreen('motivation');
@@ -62,23 +62,14 @@ function App() {
     }
   }
 
-  function handleMotivation() { setScreen('home'); }
-
-  function handleLogout() {
-    setUser(null);
-    setMode(null);
-    setScreen('home');
-    setValues(getDefaultPrimaryValues());
-    setScore(100);
-    setSessionData(null);
-  }
-
-  function handleBack()                { setMode(null); setScreen('home'); }
-  function handleSelectMode(m)         { setMode(m); setScreen('game'); }
-  function handleGameFinish(data)      { setSessionData(data); setScreen('final'); }
-  function handleViewRanking()         { setScreen('ranking'); }
-  function handleViewPanel()           { setScreen('professor'); }
-  function handleViewSecondary()       { setScreen('secondary'); }
+  function handleMotivation()      { setScreen('home'); }
+  function handleLogout()          { setUser(null); setMode(null); setScreen('home'); setValues(getDefaultPrimaryValues()); setScore(100); setSessionData(null); }
+  function handleBack()            { setMode(null); setScreen('home'); }
+  function handleSelectMode(m)     { setMode(m); setScreen('game'); }
+  function handleGameFinish(data)  { setSessionData(data); setScreen('final'); }
+  function handleViewRanking()     { setScreen('ranking'); }
+  function handleViewPanel()       { setScreen('professor'); }
+  function handleViewSecondary()   { setScreen('secondary'); }
 
   if (!user) return <LoginScreen onLogin={handleLogin}/>;
 
