@@ -1,13 +1,13 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { PRIMARY_PARAMS, calcularSaude, getMascotStatus, STATUS, DAILY_CARES, aplicarCuidado } from '../engine/mascotEngine';
 
 const GRADIENT = 'linear-gradient(160deg, #1B4FCC 0%, #7B2FBE 50%, #CC1B1B 100%)';
 
-// ─── FASES DE CRESCIMENTO ─────────────────────────────────────────────────────
+// â”€â”€â”€ FASES DE CRESCIMENTO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const GROWTH_STAGES = {
-  RECEM_NASCIDO: { id:'RECEM_NASCIDO', label:'Recém-nascido', icon:'🐣', minDays:0,  maxDays:30  },
-  JUVENIL:       { id:'JUVENIL',       label:'Juvenil',       icon:'🐭', minDays:31, maxDays:180 },
-  ADULTO:        { id:'ADULTO',        label:'Adulto',        icon:'🐀', minDays:181,maxDays:9999 },
+  RECEM_NASCIDO: { id:'RECEM_NASCIDO', label:'RecÃ©m-nascido', icon:'ðŸ£', minDays:0,  maxDays:30  },
+  JUVENIL:       { id:'JUVENIL',       label:'Juvenil',       icon:'ðŸ­', minDays:31, maxDays:180 },
+  ADULTO:        { id:'ADULTO',        label:'Adulto',        icon:'ðŸ€', minDays:181,maxDays:9999 },
 };
 
 export function getGrowthStage(days) {
@@ -18,39 +18,39 @@ export function getGrowthStage(days) {
 
 const PARAM_INFO = {
   energia: {
-    pergunta: 'O que compõe a energia do animal e o que a influencia?',
-    resposta: 'A energia representa a quantidade de ações disponíveis. Ela é consumida a cada desafio respondido e recarregada com alimentação diária. Animais bem alimentados têm mais energia para participar de quizzes no Modo Livre.',
-    dica: '💡 Alimente o animal diariamente para manter a energia alta!',
+    pergunta: 'O que compÃµe a energia do animal e o que a influencia?',
+    resposta: 'A energia representa a quantidade de aÃ§Ãµes disponÃ­veis. Ela Ã© consumida a cada desafio respondido e recarregada com alimentaÃ§Ã£o diÃ¡ria. Animais bem alimentados tÃªm mais energia para participar de quizzes no Modo Livre.',
+    dica: 'ðŸ’¡ Alimente o animal diariamente para manter a energia alta!',
   },
   hidratacao: {
-    pergunta: 'Quais parâmetros são influenciados pela hidratação?',
-    resposta: 'A hidratação influencia diretamente: Volume Urinário (↑ hidratação → ↑ diurese), Resistência Vascular Periférica (↑ hidratação → ↓ RVP) e Pressão Arterial (↑ hidratação → ↑ volemia → PA normaliza). A desidratação reduz a pré-carga e o débito cardíaco, gerando FC compensatória.',
-    dica: '💡 Troque a água diariamente para manter a homeostase cardiovascular e renal!',
+    pergunta: 'Quais parÃ¢metros sÃ£o influenciados pela hidrataÃ§Ã£o?',
+    resposta: 'A hidrataÃ§Ã£o influencia diretamente: Volume UrinÃ¡rio (â†‘ hidrataÃ§Ã£o â†’ â†‘ diurese), ResistÃªncia Vascular PerifÃ©rica (â†‘ hidrataÃ§Ã£o â†’ â†“ RVP) e PressÃ£o Arterial (â†‘ hidrataÃ§Ã£o â†’ â†‘ volemia â†’ PA normaliza). A desidrataÃ§Ã£o reduz a prÃ©-carga e o dÃ©bito cardÃ­aco, gerando FC compensatÃ³ria.',
+    dica: 'ðŸ’¡ Troque a Ã¡gua diariamente para manter a homeostase cardiovascular e renal!',
   },
   pa: {
-    pergunta: 'O que influencia a Pressão Arterial?',
-    resposta: 'A PA é determinada pelo Débito Cardíaco e pela Resistência Vascular Periférica (PA = DC × RVP). A PAS reflete a ejeção cardíaca e a PAD reflete a resistência vascular em repouso. Desidratação reduz a PA; vasoconstrição e hipervolemia a elevam.',
-    dica: '💡 Faixa normal: 90–120/60–80 mmHg. Valores fora dessa faixa indicam desequilíbrio cardiovascular!',
+    pergunta: 'O que influencia a PressÃ£o Arterial?',
+    resposta: 'A PA Ã© determinada pelo DÃ©bito CardÃ­aco e pela ResistÃªncia Vascular PerifÃ©rica (PA = DC Ã— RVP). A PAS reflete a ejeÃ§Ã£o cardÃ­aca e a PAD reflete a resistÃªncia vascular em repouso. DesidrataÃ§Ã£o reduz a PA; vasoconstriÃ§Ã£o e hipervolemia a elevam.',
+    dica: 'ðŸ’¡ Faixa normal: 90â€“120/60â€“80 mmHg. Valores fora dessa faixa indicam desequilÃ­brio cardiovascular!',
   },
   fc: {
-    pergunta: 'Como a Frequência Cardíaca se relaciona com o Débito Cardíaco?',
-    resposta: 'O Débito Cardíaco é o produto da FC pelo Volume Sistólico (DC = FC × VS). Quando o débito cardíaco cai (ex: desidratação, insuficiência cardíaca), o organismo aumenta a FC como mecanismo compensatório para manter a perfusão tecidual. Bradicardia reduz o DC mesmo com VS normal.',
-    dica: '💡 Faixa normal: 60–100 bpm. FC elevada pode indicar compensação cardiovascular!',
+    pergunta: 'Como a FrequÃªncia CardÃ­aca se relaciona com o DÃ©bito CardÃ­aco?',
+    resposta: 'O DÃ©bito CardÃ­aco Ã© o produto da FC pelo Volume SistÃ³lico (DC = FC Ã— VS). Quando o dÃ©bito cardÃ­aco cai (ex: desidrataÃ§Ã£o, insuficiÃªncia cardÃ­aca), o organismo aumenta a FC como mecanismo compensatÃ³rio para manter a perfusÃ£o tecidual. Bradicardia reduz o DC mesmo com VS normal.',
+    dica: 'ðŸ’¡ Faixa normal: 60â€“100 bpm. FC elevada pode indicar compensaÃ§Ã£o cardiovascular!',
   },
   peso: {
-    pergunta: 'Como o peso corporal influencia os parâmetros cardiovasculares?',
-    resposta: 'O excesso de peso aumenta a Resistência Vascular Periférica, elevando a pós-carga cardíaca e consequentemente a Pressão Arterial. Animais obesos têm maior risco de hipertensão e insuficiência cardíaca. O peso também influencia o Débito Cardíaco necessário para perfundir os tecidos.',
-    dica: '💡 Peso normal: 200–400g. Obesidade é fator de risco cardiovascular!',
+    pergunta: 'Como o peso corporal influencia os parÃ¢metros cardiovasculares?',
+    resposta: 'O excesso de peso aumenta a ResistÃªncia Vascular PerifÃ©rica, elevando a pÃ³s-carga cardÃ­aca e consequentemente a PressÃ£o Arterial. Animais obesos tÃªm maior risco de hipertensÃ£o e insuficiÃªncia cardÃ­aca. O peso tambÃ©m influencia o DÃ©bito CardÃ­aco necessÃ¡rio para perfundir os tecidos.',
+    dica: 'ðŸ’¡ Peso normal: 200â€“400g. Obesidade Ã© fator de risco cardiovascular!',
   },
   saude: {
-    pergunta: 'O que determina o índice de Saúde do animal?',
-    resposta: 'A Saúde é calculada automaticamente com base em quantos parâmetros primários estão dentro da faixa normal (Hidratação, PAS, PAD e FC). Cada parâmetro fora da faixa reduz a saúde. Saúde ≥75% = Saudável; 40–74% = Debilitado; <40% = Crítico.',
-    dica: '💡 Mantenha todos os parâmetros na faixa normal para máxima saúde!',
+    pergunta: 'O que determina o Ã­ndice de SaÃºde do animal?',
+    resposta: 'A SaÃºde Ã© calculada automaticamente com base em quantos parÃ¢metros primÃ¡rios estÃ£o dentro da faixa normal (HidrataÃ§Ã£o, PAS, PAD e FC). Cada parÃ¢metro fora da faixa reduz a saÃºde. SaÃºde â‰¥75% = SaudÃ¡vel; 40â€“74% = Debilitado; <40% = CrÃ­tico.',
+    dica: 'ðŸ’¡ Mantenha todos os parÃ¢metros na faixa normal para mÃ¡xima saÃºde!',
   },
   idade: {
     pergunta: 'Como a idade do animal influencia seus parametros fisiologicos?',
     resposta: 'A medida que o animal envelhece, a Frequencia Cardiaca tende a diminuir, a Resistencia Vascular Periferica aumenta gradualmente e a resposta compensatoria a eventos como desidratacao e hipertensao pode ser menos eficiente. Animais mais velhos exigem cuidados mais frequentes para manter a homeostase.',
-    dica: 'Acompanhe a evolucao do animal — cada fase tem suas proprias faixas normais de FC!',
+    dica: 'Acompanhe a evolucao do animal â€” cada fase tem suas proprias faixas normais de FC!',
   },
 };
 
@@ -61,7 +61,7 @@ function PACard({ pas, pad, onClick }) {
   const color = inRange ? '#32C878' : '#E24B4A';
   return (
     <div style={{ ...styles.paramCard, cursor:'pointer' }} onClick={() => onClick('pa')}>
-      <div style={styles.paramIcon}>❤️</div>
+      <div style={styles.paramIcon}>â¤ï¸</div>
       <div style={{ ...styles.paramVal, fontSize:'11px' }}>{Math.round(pas)}/{Math.round(pad)}</div>
       <div style={styles.paramName}>PA (mmHg)</div>
       <div style={styles.paramBar}>
@@ -93,21 +93,21 @@ function ParamCard({ param, value, onClick }) {
 function ParamModal({ paramId, onClose }) {
   const [showAnswer, setShowAnswer] = useState(false);
   const info = PARAM_INFO[paramId];
-  const param = PRIMARY_PARAMS.find(p => p.id === paramId) || { id:'idade', name:'Idade', unit:'', icon:'🗓️' };
+  const param = PRIMARY_PARAMS.find(p => p.id === paramId) || { id:'idade', name:'Idade', unit:'', icon:'ðŸ—“ï¸' };
   if (!info) return null;
-  const icon = paramId === 'pa' ? '❤️' : param.icon;
-  const name = paramId === 'pa' ? 'Pressão Arterial' : param.name;
+  const icon = paramId === 'pa' ? 'â¤ï¸' : param.icon;
+  const name = paramId === 'pa' ? 'PressÃ£o Arterial' : param.name;
   return (
     <div style={styles.modalOverlay} onClick={onClose}>
       <div style={styles.infoCard} onClick={e => e.stopPropagation()}>
         <div style={styles.infoHeader}>
           <span style={styles.infoIcon}>{icon}</span>
           <span style={styles.infoTitle}>{name}</span>
-          <button style={styles.infoClose} onClick={onClose}>✕</button>
+          <button style={styles.infoClose} onClick={onClose}>âœ•</button>
         </div>
         <div style={styles.infoQuestion}>{info.pergunta}</div>
         {!showAnswer ? (
-          <button style={styles.showAnswerBtn} onClick={() => setShowAnswer(true)}>💡 Ver Resposta</button>
+          <button style={styles.showAnswerBtn} onClick={() => setShowAnswer(true)}>ðŸ’¡ Ver Resposta</button>
         ) : (
           <>
             <div style={styles.infoAnswer}>{info.resposta}</div>
@@ -120,7 +120,7 @@ function ParamModal({ paramId, onClose }) {
   );
 }
 
-// ─── MASCOTE COM 3 FASES VISUAIS ─────────────────────────────────────────────
+// â”€â”€â”€ MASCOTE COM 3 FASES VISUAIS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function Mascot({ status, ageDays }) {
   const stage = getGrowthStage(ageDays || 90);
 
@@ -130,7 +130,7 @@ function Mascot({ status, ageDays }) {
   const eyeInner   = status === STATUS.SAUDAVEL ? '#3A1A6A' : status === STATUS.DEBILITADO ? '#3A1A00' : '#3A0000';
   const cheek      = status === STATUS.SAUDAVEL ? '#FFB0C8' : status === STATUS.DEBILITADO ? '#F5CC80' : '#FFB0B0';
   const statusColor= status === STATUS.SAUDAVEL ? '#32C878' : status === STATUS.DEBILITADO ? '#EF9F27' : '#E24B4A';
-  const emoji      = status === STATUS.SAUDAVEL ? '😊 Saudável' : status === STATUS.DEBILITADO ? '😰 Debilitado' : '😵 Crítico';
+  const emoji      = status === STATUS.SAUDAVEL ? 'ðŸ˜Š SaudÃ¡vel' : status === STATUS.DEBILITADO ? 'ðŸ˜° Debilitado' : 'ðŸ˜µ CrÃ­tico';
 
   const mouth = status === STATUS.SAUDAVEL
     ? <path d="M188 184 Q200 196 212 184" stroke="#666" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
@@ -170,7 +170,7 @@ function Mascot({ status, ageDays }) {
         <ellipse cx="240" cy="144" rx="6"  ry="7"  fill="white" opacity=".9"/>
         <ellipse cx="226" cy="160" rx="3"  ry="3.5" fill="white" opacity=".5"/></>;
 
-  // Tamanho e proporções por fase
+  // Tamanho e proporÃ§Ãµes por fase
   const isFilhote = stage.id === 'RECEM_NASCIDO';
   const isJuvenil = stage.id === 'JUVENIL';
   const svgSize   = isFilhote ? 110 : isJuvenil ? 150 : 180;
@@ -187,7 +187,7 @@ function Mascot({ status, ageDays }) {
 
       <svg viewBox="0 0 400 380" style={{ width:`${svgSize}px`, height:`${svgSize}px`, marginTop:20 }}>
 
-        {/* CAUDA — só juvenil e adulto */}
+        {/* CAUDA â€” sÃ³ juvenil e adulto */}
         {!isFilhote && (
           <path d="M188 350 Q162 358 148 340 Q136 322 144 308 Q152 295 164 305" stroke="#C8C8C8" strokeWidth="7" fill="none" strokeLinecap="round"/>
         )}
@@ -200,13 +200,13 @@ function Mascot({ status, ageDays }) {
         <ellipse cx="200" cy="285" rx="82" ry="78" fill={bodyColor}/>
         <ellipse cx="200" cy="295" rx="48" ry="50" fill="white" opacity=".2"/>
 
-        {/* BRAÇOS — só juvenil e adulto */}
+        {/* BRAÃ‡OS â€” sÃ³ juvenil e adulto */}
         {!isFilhote && (<>
           <ellipse cx="118" cy="268" rx="22" ry="15" fill={bodyColor} transform="rotate(-20,118,268)"/>
           <ellipse cx="282" cy="268" rx="22" ry="15" fill={bodyColor} transform="rotate(20,282,268)"/>
         </>)}
 
-        {/* ORELHAS — filhote tem orelhas menores e mais arredondadas */}
+        {/* ORELHAS â€” filhote tem orelhas menores e mais arredondadas */}
         {isFilhote ? (<>
           <ellipse cx="130" cy="145" rx="28" ry="34" fill={bodyColor}/>
           <ellipse cx="130" cy="145" rx="17" ry="23" fill={earIn}/>
@@ -219,14 +219,14 @@ function Mascot({ status, ageDays }) {
           <ellipse cx="290" cy="135" rx="24" ry="34" fill={earIn}/>
         </>)}
 
-        {/* CABEÇA — filhote tem cabeça proporcionalmente maior */}
+        {/* CABEÃ‡A â€” filhote tem cabeÃ§a proporcionalmente maior */}
         <ellipse cx="200" cy="158" rx={isFilhote ? 90 : 82} ry={isFilhote ? 86 : 78} fill={bodyColor}/>
 
         {/* BOCHECHAS */}
         <ellipse cx="136" cy="170" rx="20" ry="14" fill={cheek} opacity=".6"/>
         <ellipse cx="264" cy="170" rx="20" ry="14" fill={cheek} opacity=".6"/>
 
-        {/* OLHOS — filhote tem olhos ainda maiores */}
+        {/* OLHOS â€” filhote tem olhos ainda maiores */}
         {isFilhote ? (<>
           <ellipse cx="168" cy="150" rx="26" ry="30" fill="white"/>
           <ellipse cx="168" cy="153" rx="19" ry="23" fill={eyeOuter}/>
@@ -247,7 +247,7 @@ function Mascot({ status, ageDays }) {
         {/* BOCA */}
         {mouth}
 
-        {/* BIGODES — só adulto */}
+        {/* BIGODES â€” sÃ³ adulto */}
         {!isFilhote && !isJuvenil && (<>
           <line x1="170" y1="178" x2="120" y2="168" stroke="rgba(255,255,255,.4)" strokeWidth="1.5" strokeLinecap="round"/>
           <line x1="170" y1="183" x2="118" y2="183" stroke="rgba(255,255,255,.4)" strokeWidth="1.5" strokeLinecap="round"/>
@@ -262,15 +262,15 @@ function Mascot({ status, ageDays }) {
 
         {/* ESTRELINHAS */}
         {status === STATUS.SAUDAVEL && (<>
-          <text x="316" y="100" fontSize="18" fill="white" opacity=".9">✦</text>
-          <text x="72"  y="112" fontSize="12" fill="white" opacity=".8">✦</text>
+          <text x="316" y="100" fontSize="18" fill="white" opacity=".9">âœ¦</text>
+          <text x="72"  y="112" fontSize="12" fill="white" opacity=".8">âœ¦</text>
         </>)}
       </svg>
     </div>
   );
 }
 
-function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, onViewRanking, onViewPanel, onViewSecondary, ageDays, OnCare }) {
+function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, onViewRanking, onViewPanel, onViewSecondary, ageDays, onCare }) {
   const [caresDone, setCaresDone] = useState({});
   const [showModes, setShowModes] = useState(false);
   const [activeParam, setActiveParam] = useState(null);
@@ -281,7 +281,7 @@ function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, on
   const line1 = PRIMARY_PARAMS.filter(p => ['energia','hidratacao','fc'].includes(p.id));
   const line2 = PRIMARY_PARAMS.filter(p => ['peso','saude'].includes(p.id));
   const currentAge = ageDays || 90;
-  const idadeParam = { id:'idade', name:'Idade', unit:'', min:0, max:730, normal:[0,730], default:currentAge, step:1, icon:'🗓️' };
+  const idadeParam = { id:'idade', name:'Idade', unit:'', min:0, max:730, normal:[0,730], default:currentAge, step:1, icon:'ðŸ—“ï¸' };
 
   function handleCare(id) {
   if (caresDone[id]) return;
@@ -303,14 +303,14 @@ function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, on
           <div style={styles.modalCard}>
             <div style={styles.modalTitle}>Escolha o Modo de Jogo</div>
             <div style={styles.modeBtn} onClick={() => { setShowModes(false); onSelectMode('livre'); }}>
-              <div style={styles.modeBtnIcon}>🎯</div>
+              <div style={styles.modeBtnIcon}>ðŸŽ¯</div>
               <div style={styles.modeBtnTitle}>Modo Livre</div>
               <div style={styles.modeBtnDesc}>Quiz individual. Quantidade de perguntas limitada pela energia do animal.</div>
             </div>
             <div style={styles.modeBtn} onClick={() => { setShowModes(false); onSelectMode('sessao'); }}>
-              <div style={styles.modeBtnIcon}>📋</div>
-              <div style={styles.modeBtnTitle}>Modo Sessão</div>
-              <div style={styles.modeBtnDesc}>Desafios criados pelo professor sobre um tema específico.</div>
+              <div style={styles.modeBtnIcon}>ðŸ“‹</div>
+              <div style={styles.modeBtnTitle}>Modo SessÃ£o</div>
+              <div style={styles.modeBtnDesc}>Desafios criados pelo professor sobre um tema especÃ­fico.</div>
             </div>
             <button style={styles.modalCancel} onClick={() => setShowModes(false)}>Cancelar</button>
           </div>
@@ -319,10 +319,10 @@ function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, on
 
       <div style={styles.topbar}>
         <div>
-          <div style={styles.userName}>{user.name.split(' ')[0]} 👋</div>
+          <div style={styles.userName}>{user.name.split(' ')[0]} ðŸ‘‹</div>
           <div style={styles.userSub}>Modelo Experimental</div>
         </div>
-        <div style={styles.xpBadge}>⚡ {Math.round(score)} XP</div>
+        <div style={styles.xpBadge}>âš¡ {Math.round(score)} XP</div>
       </div>
 
       <div style={styles.paramsGrid}>
@@ -341,26 +341,26 @@ function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, on
 
       <div style={styles.actionBtns}>
         <div style={styles.actionBtn} onClick={onViewSecondary}>
-          <span style={styles.actionBtnIcon}>📊</span>
-          <span style={styles.actionBtnLabel}>Parâm. Secundários</span>
+          <span style={styles.actionBtnIcon}>ðŸ“Š</span>
+          <span style={styles.actionBtnLabel}>ParÃ¢m. SecundÃ¡rios</span>
         </div>
         <div style={styles.actionBtn} onClick={() => setShowModes(true)}>
-          <span style={styles.actionBtnIcon}>🎮</span>
-          <span style={styles.actionBtnLabel}>Opções de Jogo</span>
+          <span style={styles.actionBtnIcon}>ðŸŽ®</span>
+          <span style={styles.actionBtnLabel}>OpÃ§Ãµes de Jogo</span>
         </div>
         <div style={styles.actionBtn} onClick={onViewRanking}>
-          <span style={styles.actionBtnIcon}>🏆</span>
+          <span style={styles.actionBtnIcon}>ðŸ†</span>
           <span style={styles.actionBtnLabel}>Ranking</span>
         </div>
       </div>
 
-      <div style={styles.caresLabel}>cuidados diários</div>
+      <div style={styles.caresLabel}>cuidados diÃ¡rios</div>
       <div style={styles.cares}>
         {Object.values(DAILY_CARES).map(c => (
           <div key={c.id} style={{ ...styles.careCard, ...(caresDone[c.id] ? styles.careDone : {}) }} onClick={() => handleCare(c.id)}>
             <div style={styles.careIcon}>{c.icon}</div>
             <div style={styles.careName}>{c.label.split(' ')[0]}</div>
-            <div style={styles.careDesc}>{caresDone[c.id] ? '✓ Feito' : c.label}</div>
+            <div style={styles.careDesc}>{caresDone[c.id] ? 'âœ“ Feito' : c.label}</div>
           </div>
         ))}
       </div>
@@ -429,3 +429,4 @@ const styles = {
 };
 
 export default HomeScreen;
+
