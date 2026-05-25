@@ -1,9 +1,10 @@
 const BASE = process.env.REACT_APP_API_URL || 'https://phisys-production.up.railway.app';
 
 async function req(path, options = {}) {
+  const { headers: optHeaders, ...restOptions } = options;
   const res = await fetch(`${BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...options.headers },
-    ...options,
+    headers: { 'Content-Type': 'application/json', ...optHeaders },
+    ...restOptions,
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.erro || 'Erro na requisicao');

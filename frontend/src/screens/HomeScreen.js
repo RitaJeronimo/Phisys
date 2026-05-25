@@ -285,18 +285,19 @@ function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, on
   const idadeParam = { id:'idade', name:'Idade', unit:'', min:0, max:730, normal:[0,730], default:currentAge, step:1, icon:'🗓️' };
 
   async function handleCare(id) {
-    if (caresDone[id]) return;
-    const newValues = aplicarCuidado(values, id);
-    setValues(newValues);
-    setCaresDone(prev => ({ ...prev, [id]: true }));
-    try { await animalApi.cuidado(id); } catch(e) {}
-    try {
-      await animalApi.update({
-        energia: newValues.energia, hidratacao: newValues.hidratacao,
-        pas: newValues.pas, pad: newValues.pad, fc: newValues.fc, peso: newValues.peso,
-      });
-    } catch(e) { console.log('Erro:', e.message); }
-  }
+  if (caresDone[id]) return;
+  alert('handleCare chamado: ' + id);
+  const newValues = aplicarCuidado(values, id);
+  setValues(newValues);
+  setCaresDone(prev => ({ ...prev, [id]: true }));
+  try { await animalApi.cuidado(id); } catch(e) {}
+  try {
+    await animalApi.update({
+      energia: newValues.energia, hidratacao: newValues.hidratacao,
+      pas: newValues.pas, pad: newValues.pad, fc: newValues.fc, peso: newValues.peso,
+    });
+  } catch(e) { console.log('Erro:', e.message); }
+}
 
   return (
     <div style={styles.screen}>
