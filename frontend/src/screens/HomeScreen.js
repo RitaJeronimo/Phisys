@@ -270,7 +270,7 @@ function Mascot({ status, ageDays }) {
   );
 }
 
-function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, onViewRanking, onViewPanel, onViewSecondary, ageDays }) {
+function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, onViewRanking, onViewPanel, onViewSecondary, ageDays, OnCare }) {
   const [caresDone, setCaresDone] = useState({});
   const [showModes, setShowModes] = useState(false);
   const [activeParam, setActiveParam] = useState(null);
@@ -284,10 +284,12 @@ function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, on
   const idadeParam = { id:'idade', name:'Idade', unit:'', min:0, max:730, normal:[0,730], default:currentAge, step:1, icon:'🗓️' };
 
   function handleCare(id) {
-    if (caresDone[id]) return;
-    setValues(prev => aplicarCuidado(prev, id));
-    setCaresDone(prev => ({ ...prev, [id]: true }));
-  }
+  if (caresDone[id]) return;
+  const newValues = aplicarCuidado(values, id);
+  setValues(newValues);
+  setCaresDone(prev => ({ ...prev, [id]: true }));
+  if (onCare) onCare(id, newValues);
+}
 
   return (
     <div style={styles.screen}>
