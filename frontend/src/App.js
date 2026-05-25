@@ -28,6 +28,8 @@ function App() {
       return;
     }
 
+    setScreen('motivation');
+
     try {
       const a = await animalApi.get();
       setValues({
@@ -42,13 +44,11 @@ function App() {
     } catch(e) {
       console.log('Usando valores padrao do animal');
     }
-
-    setScreen('motivation');
   }
 
   async function handleCare(careId, newValues) {
+    try { await animalApi.cuidado(careId); } catch(e) { console.log('Cuidado:', e.message); }
     try {
-      await animalApi.cuidado(careId);
       await animalApi.update({
         energia:    newValues.energia,
         hidratacao: newValues.hidratacao,
@@ -58,7 +58,7 @@ function App() {
         peso:       newValues.peso,
       });
     } catch(e) {
-      console.log('Erro ao salvar cuidado:', e.message);
+      console.log('Erro ao salvar animal:', e.message);
     }
   }
 
@@ -112,4 +112,5 @@ function App() {
   );
 }
 
-export default App;
+export default App;
+

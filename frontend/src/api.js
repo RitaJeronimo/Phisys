@@ -25,7 +25,7 @@ export const auth = {
 export const animal = {
   get:     ()     => req('/api/animal', { headers: authHeaders() }),
   update:  (data) => req('/api/animal', { method: 'PUT', headers: authHeaders(), body: JSON.stringify(data) }),
-  cuidado: (tipo) => req('/api/animal/cuidado', { method: 'POST', headers: authHeaders(), body: JSON.stringify({ tipo }) }),
+  cuidado: (tipo) => req('/api/animal/cuidado', { method: 'POST', headers: authHeaders(), body: JSON.stringify({ cuidado_id: tipo }) }),
 };
 
 export const ranking = {
