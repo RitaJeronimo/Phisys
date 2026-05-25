@@ -286,7 +286,6 @@ function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, on
 
   async function handleCare(id) {
   if (caresDone[id]) return;
-  alert('handleCare chamado: ' + id);
   const newValues = aplicarCuidado(values, id);
   setValues(newValues);
   setCaresDone(prev => ({ ...prev, [id]: true }));
