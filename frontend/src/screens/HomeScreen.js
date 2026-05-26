@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { animal as animalApi } from '../api';
+import { animal as animalApi, ranking as rankingApi } from '../api';
 import { PRIMARY_PARAMS, calcularSaude, getMascotStatus, STATUS, DAILY_CARES, aplicarCuidado } from '../engine/mascotEngine';
 
 const GRADIENT = 'linear-gradient(160deg, #1B4FCC 0%, #7B2FBE 50%, #CC1B1B 100%)';
@@ -121,10 +121,8 @@ function ParamModal({ paramId, onClose }) {
   );
 }
 
-// ─── MASCOTE COM 3 FASES VISUAIS ─────────────────────────────────────────────
 function Mascot({ status, ageDays }) {
   const stage = getGrowthStage(ageDays || 90);
-
   const bodyColor  = status === STATUS.SAUDAVEL ? '#D4D4D4' : status === STATUS.DEBILITADO ? '#FAC775' : '#F09595';
   const earIn      = status === STATUS.SAUDAVEL ? '#FFD0DC' : status === STATUS.DEBILITADO ? '#F5CC80' : '#FFB0B0';
   const eyeOuter   = status === STATUS.SAUDAVEL ? '#7B2FBE' : status === STATUS.DEBILITADO ? '#633806' : '#791F1F';
@@ -132,140 +130,46 @@ function Mascot({ status, ageDays }) {
   const cheek      = status === STATUS.SAUDAVEL ? '#FFB0C8' : status === STATUS.DEBILITADO ? '#F5CC80' : '#FFB0B0';
   const statusColor= status === STATUS.SAUDAVEL ? '#32C878' : status === STATUS.DEBILITADO ? '#EF9F27' : '#E24B4A';
   const emoji      = status === STATUS.SAUDAVEL ? '😊 Saudável' : status === STATUS.DEBILITADO ? '😰 Debilitado' : '😵 Crítico';
-
   const mouth = status === STATUS.SAUDAVEL
     ? <path d="M188 184 Q200 196 212 184" stroke="#666" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
     : status === STATUS.DEBILITADO
     ? <path d="M188 188 Q200 188 212 188" stroke="#888" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
     : <path d="M188 192 Q200 182 212 192" stroke="#AA4444" strokeWidth="2.5" fill="none" strokeLinecap="round"/>;
-
   const eyeL = status === STATUS.CRITICO
-    ? <><ellipse cx="168" cy="152" rx="22" ry="22" fill="white"/>
-        <line x1="158" y1="142" x2="178" y2="162" stroke={eyeOuter} strokeWidth="4" strokeLinecap="round"/>
-        <line x1="178" y1="142" x2="158" y2="162" stroke={eyeOuter} strokeWidth="4" strokeLinecap="round"/></>
+    ? <><ellipse cx="168" cy="152" rx="22" ry="22" fill="white"/><line x1="158" y1="142" x2="178" y2="162" stroke={eyeOuter} strokeWidth="4" strokeLinecap="round"/><line x1="178" y1="142" x2="158" y2="162" stroke={eyeOuter} strokeWidth="4" strokeLinecap="round"/></>
     : status === STATUS.DEBILITADO
-    ? <><ellipse cx="168" cy="152" rx="22" ry="22" fill="white"/>
-        <ellipse cx="168" cy="156" rx="16" ry="10" fill={eyeOuter}/>
-        <ellipse cx="168" cy="156" rx="8"  ry="5"  fill={eyeInner}/>
-        <path d="M148 148 Q168 138 188 148" stroke="#999" strokeWidth="2" fill="none"/>
-        <ellipse cx="176" cy="150" rx="5" ry="3" fill="white" opacity=".8"/></>
-    : <><ellipse cx="168" cy="152" rx="22" ry="26" fill="white"/>
-        <ellipse cx="168" cy="155" rx="16" ry="20" fill={eyeOuter}/>
-        <ellipse cx="168" cy="155" rx="8"  ry="10" fill={eyeInner}/>
-        <ellipse cx="176" cy="144" rx="6"  ry="7"  fill="white" opacity=".9"/>
-        <ellipse cx="162" cy="160" rx="3"  ry="3.5" fill="white" opacity=".5"/></>;
-
+    ? <><ellipse cx="168" cy="152" rx="22" ry="22" fill="white"/><ellipse cx="168" cy="156" rx="16" ry="10" fill={eyeOuter}/><ellipse cx="168" cy="156" rx="8" ry="5" fill={eyeInner}/><path d="M148 148 Q168 138 188 148" stroke="#999" strokeWidth="2" fill="none"/><ellipse cx="176" cy="150" rx="5" ry="3" fill="white" opacity=".8"/></>
+    : <><ellipse cx="168" cy="152" rx="22" ry="26" fill="white"/><ellipse cx="168" cy="155" rx="16" ry="20" fill={eyeOuter}/><ellipse cx="168" cy="155" rx="8" ry="10" fill={eyeInner}/><ellipse cx="176" cy="144" rx="6" ry="7" fill="white" opacity=".9"/><ellipse cx="162" cy="160" rx="3" ry="3.5" fill="white" opacity=".5"/></>;
   const eyeR = status === STATUS.CRITICO
-    ? <><ellipse cx="232" cy="152" rx="22" ry="22" fill="white"/>
-        <line x1="222" y1="142" x2="242" y2="162" stroke={eyeOuter} strokeWidth="4" strokeLinecap="round"/>
-        <line x1="242" y1="142" x2="222" y2="162" stroke={eyeOuter} strokeWidth="4" strokeLinecap="round"/></>
+    ? <><ellipse cx="232" cy="152" rx="22" ry="22" fill="white"/><line x1="222" y1="142" x2="242" y2="162" stroke={eyeOuter} strokeWidth="4" strokeLinecap="round"/><line x1="242" y1="142" x2="222" y2="162" stroke={eyeOuter} strokeWidth="4" strokeLinecap="round"/></>
     : status === STATUS.DEBILITADO
-    ? <><ellipse cx="232" cy="152" rx="22" ry="22" fill="white"/>
-        <ellipse cx="232" cy="156" rx="16" ry="10" fill={eyeOuter}/>
-        <ellipse cx="232" cy="156" rx="8"  ry="5"  fill={eyeInner}/>
-        <path d="M212 148 Q232 138 252 148" stroke="#999" strokeWidth="2" fill="none"/>
-        <ellipse cx="240" cy="150" rx="5" ry="3" fill="white" opacity=".8"/></>
-    : <><ellipse cx="232" cy="152" rx="22" ry="26" fill="white"/>
-        <ellipse cx="232" cy="155" rx="16" ry="20" fill={eyeOuter}/>
-        <ellipse cx="232" cy="155" rx="8"  ry="10" fill={eyeInner}/>
-        <ellipse cx="240" cy="144" rx="6"  ry="7"  fill="white" opacity=".9"/>
-        <ellipse cx="226" cy="160" rx="3"  ry="3.5" fill="white" opacity=".5"/></>;
-
-  // Tamanho e proporções por fase
+    ? <><ellipse cx="232" cy="152" rx="22" ry="22" fill="white"/><ellipse cx="232" cy="156" rx="16" ry="10" fill={eyeOuter}/><ellipse cx="232" cy="156" rx="8" ry="5" fill={eyeInner}/><path d="M212 148 Q232 138 252 148" stroke="#999" strokeWidth="2" fill="none"/><ellipse cx="240" cy="150" rx="5" ry="3" fill="white" opacity=".8"/></>
+    : <><ellipse cx="232" cy="152" rx="22" ry="26" fill="white"/><ellipse cx="232" cy="155" rx="16" ry="20" fill={eyeOuter}/><ellipse cx="232" cy="155" rx="8" ry="10" fill={eyeInner}/><ellipse cx="240" cy="144" rx="6" ry="7" fill="white" opacity=".9"/><ellipse cx="226" cy="160" rx="3" ry="3.5" fill="white" opacity=".5"/></>;
   const isFilhote = stage.id === 'RECEM_NASCIDO';
   const isJuvenil = stage.id === 'JUVENIL';
   const svgSize   = isFilhote ? 110 : isJuvenil ? 150 : 180;
-
   return (
     <div style={styles.animalBg}>
       <div style={styles.animalLabel}>Mantenha o animal em homeostase</div>
       <div style={{ ...styles.animalStatus, color: statusColor }}>{emoji}</div>
-
-      {/* BADGE DE FASE */}
-      <div style={{ ...styles.stageBadge }}>
-        {stage.icon} {stage.label}
-      </div>
-
+      <div style={{ ...styles.stageBadge }}>{stage.icon} {stage.label}</div>
       <svg viewBox="0 0 400 380" style={{ width:`${svgSize}px`, height:`${svgSize}px`, marginTop:20 }}>
-
-        {/* CAUDA — só juvenil e adulto */}
-        {!isFilhote && (
-          <path d="M188 350 Q162 358 148 340 Q136 322 144 308 Q152 295 164 305" stroke="#C8C8C8" strokeWidth="7" fill="none" strokeLinecap="round"/>
-        )}
-
-        {/* PERNAS */}
+        {!isFilhote && (<path d="M188 350 Q162 358 148 340 Q136 322 144 308 Q152 295 164 305" stroke="#C8C8C8" strokeWidth="7" fill="none" strokeLinecap="round"/>)}
         <ellipse cx="166" cy="335" rx="22" ry="13" fill={bodyColor}/>
         <ellipse cx="234" cy="335" rx="22" ry="13" fill={bodyColor}/>
-
-        {/* CORPO */}
         <ellipse cx="200" cy="285" rx="82" ry="78" fill={bodyColor}/>
         <ellipse cx="200" cy="295" rx="48" ry="50" fill="white" opacity=".2"/>
-
-        {/* BRAÇOS — só juvenil e adulto */}
-        {!isFilhote && (<>
-          <ellipse cx="118" cy="268" rx="22" ry="15" fill={bodyColor} transform="rotate(-20,118,268)"/>
-          <ellipse cx="282" cy="268" rx="22" ry="15" fill={bodyColor} transform="rotate(20,282,268)"/>
-        </>)}
-
-        {/* ORELHAS — filhote tem orelhas menores e mais arredondadas */}
-        {isFilhote ? (<>
-          <ellipse cx="130" cy="145" rx="28" ry="34" fill={bodyColor}/>
-          <ellipse cx="130" cy="145" rx="17" ry="23" fill={earIn}/>
-          <ellipse cx="270" cy="145" rx="28" ry="34" fill={bodyColor}/>
-          <ellipse cx="270" cy="145" rx="17" ry="23" fill={earIn}/>
-        </>) : (<>
-          <ellipse cx="110" cy="135" rx="38" ry="48" fill={bodyColor}/>
-          <ellipse cx="110" cy="135" rx="24" ry="34" fill={earIn}/>
-          <ellipse cx="290" cy="135" rx="38" ry="48" fill={bodyColor}/>
-          <ellipse cx="290" cy="135" rx="24" ry="34" fill={earIn}/>
-        </>)}
-
-        {/* CABEÇA — filhote tem cabeça proporcionalmente maior */}
+        {!isFilhote && (<><ellipse cx="118" cy="268" rx="22" ry="15" fill={bodyColor} transform="rotate(-20,118,268)"/><ellipse cx="282" cy="268" rx="22" ry="15" fill={bodyColor} transform="rotate(20,282,268)"/></>)}
+        {isFilhote ? (<><ellipse cx="130" cy="145" rx="28" ry="34" fill={bodyColor}/><ellipse cx="130" cy="145" rx="17" ry="23" fill={earIn}/><ellipse cx="270" cy="145" rx="28" ry="34" fill={bodyColor}/><ellipse cx="270" cy="145" rx="17" ry="23" fill={earIn}/></>) : (<><ellipse cx="110" cy="135" rx="38" ry="48" fill={bodyColor}/><ellipse cx="110" cy="135" rx="24" ry="34" fill={earIn}/><ellipse cx="290" cy="135" rx="38" ry="48" fill={bodyColor}/><ellipse cx="290" cy="135" rx="24" ry="34" fill={earIn}/></>)}
         <ellipse cx="200" cy="158" rx={isFilhote ? 90 : 82} ry={isFilhote ? 86 : 78} fill={bodyColor}/>
-
-        {/* BOCHECHAS */}
         <ellipse cx="136" cy="170" rx="20" ry="14" fill={cheek} opacity=".6"/>
         <ellipse cx="264" cy="170" rx="20" ry="14" fill={cheek} opacity=".6"/>
-
-        {/* OLHOS — filhote tem olhos ainda maiores */}
-        {isFilhote ? (<>
-          <ellipse cx="168" cy="150" rx="26" ry="30" fill="white"/>
-          <ellipse cx="168" cy="153" rx="19" ry="23" fill={eyeOuter}/>
-          <ellipse cx="168" cy="153" rx="9"  ry="11" fill={eyeInner}/>
-          <ellipse cx="178" cy="141" rx="7"  ry="8"  fill="white" opacity=".9"/>
-          <ellipse cx="232" cy="150" rx="26" ry="30" fill="white"/>
-          <ellipse cx="232" cy="153" rx="19" ry="23" fill={eyeOuter}/>
-          <ellipse cx="232" cy="153" rx="9"  ry="11" fill={eyeInner}/>
-          <ellipse cx="242" cy="141" rx="7"  ry="8"  fill="white" opacity=".9"/>
-        </>) : (<>
-          {eyeL}
-          {eyeR}
-        </>)}
-
-        {/* NARIZ */}
+        {isFilhote ? (<><ellipse cx="168" cy="150" rx="26" ry="30" fill="white"/><ellipse cx="168" cy="153" rx="19" ry="23" fill={eyeOuter}/><ellipse cx="168" cy="153" rx="9" ry="11" fill={eyeInner}/><ellipse cx="178" cy="141" rx="7" ry="8" fill="white" opacity=".9"/><ellipse cx="232" cy="150" rx="26" ry="30" fill="white"/><ellipse cx="232" cy="153" rx="19" ry="23" fill={eyeOuter}/><ellipse cx="232" cy="153" rx="9" ry="11" fill={eyeInner}/><ellipse cx="242" cy="141" rx="7" ry="8" fill="white" opacity=".9"/></>) : (<>{eyeL}{eyeR}</>)}
         <ellipse cx="200" cy="175" rx="8" ry="6" fill="#FF8FAA"/>
-
-        {/* BOCA */}
         {mouth}
-
-        {/* BIGODES — só adulto */}
-        {!isFilhote && !isJuvenil && (<>
-          <line x1="170" y1="178" x2="120" y2="168" stroke="rgba(255,255,255,.4)" strokeWidth="1.5" strokeLinecap="round"/>
-          <line x1="170" y1="183" x2="118" y2="183" stroke="rgba(255,255,255,.4)" strokeWidth="1.5" strokeLinecap="round"/>
-          <line x1="230" y1="178" x2="280" y2="168" stroke="rgba(255,255,255,.4)" strokeWidth="1.5" strokeLinecap="round"/>
-          <line x1="230" y1="183" x2="282" y2="183" stroke="rgba(255,255,255,.4)" strokeWidth="1.5" strokeLinecap="round"/>
-        </>)}
-
-        {/* SUOR */}
-        {status !== STATUS.SAUDAVEL && (
-          <ellipse cx="290" cy="120" rx="7" ry="11" fill="#85B7EB" opacity=".8"/>
-        )}
-
-        {/* ESTRELINHAS */}
-        {status === STATUS.SAUDAVEL && (<>
-          <text x="316" y="100" fontSize="18" fill="white" opacity=".9">✦</text>
-          <text x="72"  y="112" fontSize="12" fill="white" opacity=".8">✦</text>
-        </>)}
+        {!isFilhote && !isJuvenil && (<><line x1="170" y1="178" x2="120" y2="168" stroke="rgba(255,255,255,.4)" strokeWidth="1.5" strokeLinecap="round"/><line x1="170" y1="183" x2="118" y2="183" stroke="rgba(255,255,255,.4)" strokeWidth="1.5" strokeLinecap="round"/><line x1="230" y1="178" x2="280" y2="168" stroke="rgba(255,255,255,.4)" strokeWidth="1.5" strokeLinecap="round"/><line x1="230" y1="183" x2="282" y2="183" stroke="rgba(255,255,255,.4)" strokeWidth="1.5" strokeLinecap="round"/></>)}
+        {status !== STATUS.SAUDAVEL && (<ellipse cx="290" cy="120" rx="7" ry="11" fill="#85B7EB" opacity=".8"/>)}
+        {status === STATUS.SAUDAVEL && (<><text x="316" y="100" fontSize="18" fill="white" opacity=".9">✦</text><text x="72" y="112" fontSize="12" fill="white" opacity=".8">✦</text></>)}
       </svg>
     </div>
   );
@@ -286,26 +190,27 @@ function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, on
   const idadeParam = { id:'idade', name:`Idade · ${stage.label}`, unit:'', min:0, max:730, normal:[0,730], default:currentAge, step:1, icon:stage.icon };
 
   async function handleCare(id) {
-  if (caresDone[id]) return;
-  const newValues = aplicarCuidado(values, id);
-  setValues(newValues);
-  setCaresDone(prev => ({ ...prev, [id]: true }));
-  try { await animalApi.cuidado(id); } catch(e) {}
-  try {
-    await animalApi.update({
-      energia: newValues.energia, hidratacao: newValues.hidratacao,
-      pas: newValues.pas, pad: newValues.pad, fc: newValues.fc, peso: newValues.peso,
-    });
-  } catch(e) { console.log('Erro:', e.message); }
-}
+    if (caresDone[id]) return;
+    const newValues = aplicarCuidado(values, id);
+    setValues(newValues);
+    setCaresDone(prev => ({ ...prev, [id]: true }));
+    try { await animalApi.cuidado(id); } catch(e) {}
+    try {
+      await animalApi.update({
+        energia: newValues.energia, hidratacao: newValues.hidratacao,
+        pas: newValues.pas, pad: newValues.pad, fc: newValues.fc, peso: newValues.peso,
+      });
+    } catch(e) { console.log('Erro:', e.message); }
+    try {
+      const newScore = (score || 100) + 5;
+      await rankingApi.update({ xp_total: newScore, media_saude: calcularSaude(newValues) });
+      if (onCare) onCare(id, newValues, newScore);
+    } catch(e) {}
+  }
 
   return (
     <div style={styles.screen}>
-
-      {activeParam && (
-        <ParamModal paramId={activeParam} onClose={() => setActiveParam(null)}/>
-      )}
-
+      {activeParam && (<ParamModal paramId={activeParam} onClose={() => setActiveParam(null)}/>)}
       {showModes && (
         <div style={styles.modalOverlay}>
           <div style={styles.modalCard}>
@@ -324,7 +229,6 @@ function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, on
           </div>
         </div>
       )}
-
       <div style={styles.topbar}>
         <div>
           <div style={styles.userName}>{user.name.split(' ')[0]} 👋</div>
@@ -332,36 +236,20 @@ function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, on
         </div>
         <div style={styles.xpBadge}>⚡ {Math.round(score)} XP</div>
       </div>
-
       <div style={styles.paramsGrid}>
         {line1.map(p => <ParamCard key={p.id} param={p} value={valsWithSaude[p.id] ?? p.default} onClick={setActiveParam}/>)}
         <PACard pas={valsWithSaude.pas ?? 110} pad={valsWithSaude.pad ?? 70} onClick={setActiveParam}/>
       </div>
-
       <div style={styles.paramsGridBottom}>
         {line2.map(p => <ParamCard key={p.id} param={p} value={valsWithSaude[p.id] ?? p.default} onClick={setActiveParam}/>)}
         <ParamCard param={idadeParam} value={currentAge} onClick={setActiveParam}/>
       </div>
-
-      <div style={styles.animalArea}>
-        <Mascot status={status} ageDays={currentAge}/>
-      </div>
-
+      <div style={styles.animalArea}><Mascot status={status} ageDays={currentAge}/></div>
       <div style={styles.actionBtns}>
-        <div style={styles.actionBtn} onClick={onViewSecondary}>
-          <span style={styles.actionBtnIcon}>📊</span>
-          <span style={styles.actionBtnLabel}>Parâm. Secundários</span>
-        </div>
-        <div style={styles.actionBtn} onClick={() => setShowModes(true)}>
-          <span style={styles.actionBtnIcon}>🎮</span>
-          <span style={styles.actionBtnLabel}>Opções de Jogo</span>
-        </div>
-        <div style={styles.actionBtn} onClick={onViewRanking}>
-          <span style={styles.actionBtnIcon}>🏆</span>
-          <span style={styles.actionBtnLabel}>Ranking</span>
-        </div>
+        <div style={styles.actionBtn} onClick={onViewSecondary}><span style={styles.actionBtnIcon}>📊</span><span style={styles.actionBtnLabel}>Parâm. Secundários</span></div>
+        <div style={styles.actionBtn} onClick={() => setShowModes(true)}><span style={styles.actionBtnIcon}>🎮</span><span style={styles.actionBtnLabel}>Opções de Jogo</span></div>
+        <div style={styles.actionBtn} onClick={onViewRanking}><span style={styles.actionBtnIcon}>🏆</span><span style={styles.actionBtnLabel}>Ranking</span></div>
       </div>
-
       <div style={styles.caresLabel}>cuidados diários</div>
       <div style={styles.cares}>
         {Object.values(DAILY_CARES).map(c => (
@@ -372,11 +260,8 @@ function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, on
           </div>
         ))}
       </div>
-
       <div style={styles.footer}>
-        {user.mode === 'professor' && (
-          <button style={styles.panelBtn} onClick={onViewPanel}>Painel do Professor</button>
-        )}
+        {user.mode === 'professor' && (<button style={styles.panelBtn} onClick={onViewPanel}>Painel do Professor</button>)}
         <button style={styles.logoutBtn} onClick={onLogout}>sair da conta</button>
       </div>
     </div>
