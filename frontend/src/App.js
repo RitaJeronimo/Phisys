@@ -8,7 +8,7 @@ import ProfessorPanel from './screens/ProfessorPanel';
 import SecondaryScreen from './screens/SecondaryScreen';
 import FinalScreen from './screens/FinalScreen';
 import { getDefaultPrimaryValues, calcularSaude } from './engine/mascotEngine';
-import { animal as animalApi } from './api';
+import { animal as animalApi, ranking as rankingApi } from './api';
 
 function App() {
   const [user, setUser]               = useState(null);
@@ -51,6 +51,12 @@ function App() {
     } catch(e) {
       console.log('Usando valores padrao do animal');
     }
+
+    try {
+      const rankData = await rankingApi.get();
+      const myRank = rankData.find(r => r.id === loggedUser.id || r.nome === loggedUser.name);
+      if (myRank && myRank.xp_total > 0) setScore(myRank.xp_total);
+    } catch(e) {}
   }
 
   async function handleCare(careId, newValues) {
@@ -67,6 +73,11 @@ function App() {
     } catch(e) {
       console.log('Erro ao salvar animal:', e.message);
     }
+    try {
+      const newScore = score + 5;
+      setScore(newScore);
+      await rankingApi.update({ xp_total: newScore, media_saude: calcularSaude(newValues) });
+    } catch(e) {}
   }
 
   function handleMotivation()      { setScreen('home'); }
