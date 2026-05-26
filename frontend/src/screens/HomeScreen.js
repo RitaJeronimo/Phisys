@@ -305,7 +305,7 @@ const styles = {
   paramFill:        { height:'100%', borderRadius:'2px' },
   animalArea:       { margin:'0 1rem .25rem' },
   animalBg:         { background:'rgba(255,255,255,.08)', borderRadius:'20px', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', border:'1px solid rgba(255,255,255,.15)', position:'relative', padding:'8px', minHeight:'220px', overflow:'hidden' },
-  animalLabel:      { position:'absolute', top:'8px', left:'10px', fontSize:'10px', color:'rgba(255,255,255,.5)', letterSpacing:'.04em' },
+  animalLabel: { position:'absolute', top:'8px', left:'10px', fontSize:'10px', color:'rgba(255,255,255,.5)', letterSpacing:'.04em', maxWidth:'55%' },
   animalStatus:     { position:'absolute', top:'8px', right:'10px', fontSize:'12px', fontWeight:'600' },
   stageBadge:       { position:'absolute', bottom:'8px', left:'50%', transform:'translateX(-50%)', background:'rgba(255,255,255,.15)', borderRadius:'20px', padding:'3px 10px', fontSize:'10px', color:'rgba(255,255,255,.8)', whiteSpace:'nowrap' },
   actionBtns:       { margin:'0 1rem .5rem', display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'7px' },
