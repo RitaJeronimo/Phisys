@@ -9,7 +9,7 @@ function FinalScreen({ user, score, saude, seconds, solvedChallenges, totalChall
     const m = Math.floor((s % 3600) / 60);
     const sec = s % 60;
     if (h > 0) return `${h}h ${m.toString().padStart(2,'0')}min`;
-    return `${m.toString().padStart(2,'0')}h ${sec.toString().padStart(2,'0')}min`;
+    return `${m.toString().padStart(2,'0')}min ${sec.toString().padStart(2,'0')}s`;
   };
 
   const saudeColor = saude >= 75 ? '#32C878' : saude >= 40 ? '#EF9F27' : '#E24B4A';

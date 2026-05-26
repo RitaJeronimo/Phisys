@@ -18,6 +18,7 @@ function App() {
   const [score, setScore]             = useState(100);
   const [sessionData, setSessionData] = useState(null);
   const [ageDays, setAgeDays]         = useState(90);
+  const [sessionStart, setSessionStart] = useState(null);
 
   async function handleLogin(userData) {
     const loggedUser = { ...userData, name: userData.nome, mode: userData.modo };
@@ -80,14 +81,18 @@ function App() {
     } catch(e) {}
   }
 
-  function handleMotivation()      { setScreen('home'); }
-  function handleLogout()          { setUser(null); setMode(null); setScreen('home'); setValues(getDefaultPrimaryValues()); setScore(100); setSessionData(null); }
-  function handleBack()            { setMode(null); setScreen('home'); }
-  function handleSelectMode(m)     { setMode(m); setScreen('game'); }
-  function handleGameFinish(data)  { setSessionData(data); setScreen('final'); }
-  function handleViewRanking()     { setScreen('ranking'); }
-  function handleViewPanel()       { setScreen('professor'); }
-  function handleViewSecondary()   { setScreen('secondary'); }
+  function handleMotivation()  { setScreen('home'); }
+  function handleLogout()      { setUser(null); setMode(null); setScreen('home'); setValues(getDefaultPrimaryValues()); setScore(100); setSessionData(null); }
+  function handleBack()        { setMode(null); setScreen('home'); }
+  function handleSelectMode(m) { setMode(m); setSessionStart(Date.now()); setScreen('game'); }
+  function handleGameFinish(data) {
+    const seconds = sessionStart ? Math.floor((Date.now() - sessionStart) / 1000) : 0;
+    setSessionData({ ...data, seconds });
+    setScreen('final');
+  }
+  function handleViewRanking()   { setScreen('ranking'); }
+  function handleViewPanel()     { setScreen('professor'); }
+  function handleViewSecondary() { setScreen('secondary'); }
 
   if (!user) return <LoginScreen onLogin={handleLogin}/>;
 
