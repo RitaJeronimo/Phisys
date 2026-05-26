@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { animal as animalApi, ranking as rankingApi } from '../api';
 import { PRIMARY_PARAMS, calcularSaude, getMascotStatus, STATUS, DAILY_CARES, aplicarCuidado } from '../engine/mascotEngine';
-import { ranking as rankingApi } from '../api';
+
 
 const GRADIENT = 'linear-gradient(160deg, #1B4FCC 0%, #7B2FBE 50%, #CC1B1B 100%)';
 
