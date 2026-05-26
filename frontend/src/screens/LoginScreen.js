@@ -33,6 +33,7 @@ function ChibiMascot({ size = 76 }) {
 function LoginScreen({ onLogin }) {
   const [mode, setMode] = useState("aluno");
   const [name, setName] = useState("");
+  const [email, setEmail] = useState('');
   const [credential, setCredential] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -94,9 +95,13 @@ function LoginScreen({ onLogin }) {
           <button style={{...s.modeBtn,...(mode==="professor"?s.modeBtnActive:s.modeBtnInactive)}} onClick={()=>{setMode("professor");setCredential("");setError("");}}>Sou professor</button>
         </div>
         <div style={s.formGroup}>
-          <label style={s.label}>nome completo</label>
-          <input style={s.input} type="text" placeholder="Ex: Ana Paula Silva" value={name} onChange={e=>{setName(e.target.value);setError("");}}/>
-        </div>
+  <label style={s.label}>nome completo</label>
+  <input style={s.input} type="text" placeholder="Ex: Ana Paula Silva" value={name} onChange={e=>{setName(e.target.value);setError('');}}/>
+</div>
+<div style={s.formGroup}>
+  <label style={s.label}>e-mail</label>
+  <input style={s.input} type="email" placeholder="Ex: ana@email.com" value={email} onChange={e=>{setEmail(e.target.value);setError('');}}/>
+</div>
         <div style={s.formGroup}>
           <label style={s.label}>{mode==="aluno"?"matricula":"codigo de acesso"}</label>
           <input style={s.input} type={mode==="professor"?"password":"text"} placeholder={mode==="aluno"?"Ex: 2024001234":"Codigo fornecido pela instituicao"} value={credential} onChange={e=>{setCredential(e.target.value);setError("");}}/>
