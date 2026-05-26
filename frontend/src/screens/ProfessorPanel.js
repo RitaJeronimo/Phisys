@@ -1,7 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { DEFAULT_MOTIVATION_MESSAGES } from './MotivationScreen';
 import { DEFAULT_WEIGHTS, INTERVENTIONS, PRIMARY_PARAMS } from '../engine/mascotEngine';
-import { ranking as rankingApi } from '../api';
+import { ranking as rankingApi, authHeaders } from '../api';
+const BASE = process.env.REACT_APP_API_URL || 'https://phisys-production.up.railway.app';
+async function req(path, options = {}) {
+  const { headers: optHeaders, ...restOptions } = options;
+  const res = await fetch(`${BASE}${path}`, {
+    headers: { 'Content-Type': 'application/json', ...optHeaders },
+    ...restOptions,
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.erro || 'Erro na requisicao');
+  return data;
+}
 
 const GRADIENT = 'linear-gradient(160deg, #1B4FCC 0%, #7B2FBE 50%, #CC1B1B 100%)';
 
@@ -109,16 +120,50 @@ const avgTime = students.length > 0 ? students.reduce((a,s)=>a+(s.sessoes||0),0)
   function handleEditChallenge(ch) { setEditingType('challenge'); setEditing(ch.id); setForm({ ...ch, options:[...ch.options] }); }
   function handleDeleteChallenge(id) { setChallenges(prev => prev.filter(c => c.id !== id)); }
   function handleToggleChallenge(id) { setChallenges(prev => prev.map(c => c.id === id ? {...c, active:!c.active} : c)); }
-  function handleSaveChallenge() {
-    if (!form.title || !form.question || form.options.some(o=>!o)) return;
+  async function handleSaveChallenge() {
+  if (!form.title || !form.question || form.options.some(o=>!o)) return;
+  try {
     if (editing === 'new') {
-      const newId = Math.max(0, ...challenges.map(c=>c.id)) + 1;
+      await req('/api/desafios', {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({
+          titulo: form.title,
+          pergunta: form.question,
+          opcoes: form.options,
+          correta: form.correct,
+          foco: form.focus,
+          dificuldade: form.difficulty,
+          intervencao: form.intervencao,
+        }),
+      });
+    } else {
+      await req(`/api/desafios/${editing}`, {
+        method: 'PUT',
+        headers: authHeaders(),
+        body: JSON.stringify({
+          titulo: form.title,
+          pergunta: form.question,
+          opcoes: form.options,
+          correta: form.correct,
+          foco: form.focus,
+          dificuldade: form.difficulty,
+          intervencao: form.intervencao,
+          ativo: form.active,
+        }),
+      });
+    }
+    const newId = Math.max(0, ...challenges.map(c=>c.id)) + 1;
+    if (editing === 'new') {
       setChallenges(prev => [...prev, { ...form, id:newId }]);
     } else {
       setChallenges(prev => prev.map(c => c.id === editing ? { ...form, id:c.id } : c));
     }
-    setEditing(null); setForm(null); setEditingType(null);
+  } catch(e) {
+    alert('Erro ao salvar desafio: ' + e.message);
   }
+  setEditing(null); setForm(null); setEditingType(null);
+}
   function handleFormOption(i, val) {
     const opts = [...form.options]; opts[i] = val;
     setForm(f => ({ ...f, options:opts }));
