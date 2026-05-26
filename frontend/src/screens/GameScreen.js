@@ -126,7 +126,8 @@ function GameScreen({ user, mode, onBack, onFinish }) {
   const [questionStart, setQuestionStart] = useState(Date.now());
   const [finished, setFinished] = useState(false);
   const [myRank, setMyRank] = useState('-');
-  const [challenges, setChallenges] = useState(MOCK_CHALLENGES);
+  const [challenges, setChallenges] = useState([]);
+const [loadingChallenges, setLoadingChallenges] = useState(true);
 
 useEffect(() => {
   desafiosApi.get().then(data => {
@@ -145,8 +146,12 @@ useEffect(() => {
         explanation: d.explicacao || 'Revise os conceitos fisiológicos relacionados a este cenário clínico.',
       }));
       setChallenges([...MOCK_CHALLENGES, ...formatted]);
+    } else {
+      setChallenges(MOCK_CHALLENGES);
     }
-  }).catch(() => {});
+  }).catch(() => {
+    setChallenges(MOCK_CHALLENGES);
+  }).finally(() => setLoadingChallenges(false));
 }, []);
   const [attempts, setAttempts] = useState(0);
 
@@ -244,6 +249,14 @@ async function handleAnswer(option) {
   const statusEmoji = { [STATUS.SAUDAVEL]: '😊', [STATUS.DEBILITADO]: '😰', [STATUS.CRITICO]: '😵' };
   const statusLabel = { [STATUS.SAUDAVEL]: 'Saudavel', [STATUS.DEBILITADO]: 'Debilitado', [STATUS.CRITICO]: 'Critico' };
 
+  if (loadingChallenges) {
+  return (
+    <div style={{ ...styles.screen, justifyContent:'center', alignItems:'center' }}>
+      <div style={{ color:'white', fontSize:'16px', fontWeight:'600' }}>Carregando desafios...</div>
+    </div>
+  );
+}
+  
   if (finished) {
     const avgResponseTime = responseTimes.length > 0
       ? responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length : 30;
@@ -291,7 +304,7 @@ async function handleAnswer(option) {
       <div style={styles.statusBar}>
         {[
           { val: statusEmoji[status], lbl: statusLabel[status] },
-          { val: `${currentIdx + 1}/${MOCK_CHALLENGES.length}`, lbl: 'Desafios' },
+          { val: `${currentIdx + 1}/${challenges.length}`, lbl: 'Desafios' },
           { val: errorCount, lbl: 'Erros' },
           { val: myRank, lbl: 'Ranking' },
         ].map(item => (
@@ -342,7 +355,7 @@ async function handleAnswer(option) {
             <div style={{ fontSize:'12px', color:'rgba(255,255,255,.9)', lineHeight:'1.6' }}>{challenge.explanation}</div>
           </div>
           <button style={styles.nextBtn} onClick={handleNext}>
-            {currentIdx + 1 >= MOCK_CHALLENGES.length ? 'Ver resultado' : 'Proximo desafio →'}
+            {currentIdx + 1 >= challenges.length ? 'Ver resultado' : 'Proximo desafio →'}
           </button>
         </div>
       )}
