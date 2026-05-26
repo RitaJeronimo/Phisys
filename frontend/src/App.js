@@ -8,7 +8,7 @@ import ProfessorPanel from './screens/ProfessorPanel';
 import SecondaryScreen from './screens/SecondaryScreen';
 import FinalScreen from './screens/FinalScreen';
 import { getDefaultPrimaryValues, calcularSaude } from './engine/mascotEngine';
-import { animal as animalApi, ranking as rankingApi } from './api';
+import { animal as animalApi, ranking as rankingApi, sessoes as sessoesApi } from './api';
 
 function App() {
   const [user, setUser]               = useState(null);
@@ -81,7 +81,10 @@ function App() {
     } catch(e) {}
   }
 
-  function handleMotivation()  { setScreen('home'); }
+  async function handleMotivation(nivel) {
+  try { await sessoesApi.iniciar({ nivel_motivacao: nivel, modo: 'livre' }); } catch(e) {}
+  setScreen('home');
+}
   function handleLogout()      { setUser(null); setMode(null); setScreen('home'); setValues(getDefaultPrimaryValues()); setScore(100); setSessionData(null); }
   function handleBack()        { setMode(null); setScreen('home'); }
   function handleSelectMode(m) { setMode(m); setSessionStart(Date.now()); setScreen('game'); }
