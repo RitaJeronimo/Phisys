@@ -19,6 +19,7 @@ function App() {
   const [sessionData, setSessionData] = useState(null);
   const [ageDays, setAgeDays]         = useState(90);
   const [sessionStart, setSessionStart] = useState(null);
+  const [sessaoId, setSessaoId] = useState(null);
 
   async function handleLogin(userData) {
     const loggedUser = { ...userData, name: userData.nome, mode: userData.modo };
@@ -82,17 +83,29 @@ function App() {
   }
 
   async function handleMotivation(nivel) {
-  try { await sessoesApi.iniciar({ nivel_motivacao: nivel, modo: 'livre' }); } catch(e) {}
+  try {
+    const s = await sessoesApi.iniciar({ nivel_motivacao: nivel, modo: 'livre' });
+    if (s?.id) setSessaoId(s.id);
+  } catch(e) {}
   setScreen('home');
 }
   function handleLogout()      { setUser(null); setMode(null); setScreen('home'); setValues(getDefaultPrimaryValues()); setScore(100); setSessionData(null); }
   function handleBack()        { setMode(null); setScreen('home'); }
   function handleSelectMode(m) { setMode(m); setSessionStart(Date.now()); setScreen('game'); }
-  function handleGameFinish(data) {
-    const seconds = sessionStart ? Math.floor((Date.now() - sessionStart) / 1000) : 0;
-    setSessionData({ ...data, seconds });
-    setScreen('final');
-  }
+  async function handleGameFinish(data) {
+  const seconds = sessionStart ? Math.floor((Date.now() - sessionStart) / 1000) : 0;
+  setSessionData({ ...data, seconds });
+  setScreen('final');
+  try {
+    if (sessaoId) {
+      await sessoesApi.finalizar(sessaoId, {
+        duracao_segundos: seconds,
+        xp_total: score,
+        saude_final: calcularSaude(values),
+      });
+    }
+  } catch(e) {}
+}
   function handleViewRanking()   { setScreen('ranking'); }
   function handleViewPanel()     { setScreen('professor'); }
   function handleViewSecondary() { setScreen('secondary'); }
