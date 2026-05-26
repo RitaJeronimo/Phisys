@@ -126,6 +126,7 @@ function GameScreen({ user, mode, onBack, onFinish }) {
   const [questionStart, setQuestionStart] = useState(Date.now());
   const [finished, setFinished] = useState(false);
   const [myRank, setMyRank] = useState('-');
+  const [attempts, setAttempts] = useState(0);
 
 useEffect(() => {
   rankingApi.get().then(data => {
@@ -153,11 +154,12 @@ useEffect(() => {
 async function handleAnswer(option) {
   if (answered) return;
   const elapsed = (Date.now() - questionStart) / 1000;
-  setResponseTimes(t => [...t, elapsed]);
-  setSelected(option.letter);
-  setAnswered(true);
 
   if (option.correct) {
+    setResponseTimes(t => [...t, elapsed]);
+    setSelected(option.letter);
+    setAnswered(true);
+    setAttempts(0);
     const newScore = applyBonus(score, 'correct_answer');
     setScore(newScore);
     setSolvedCount(s => s + 1);
@@ -168,13 +170,25 @@ async function handleAnswer(option) {
     }));
     try { await rankingApi.update({ xp_total: newScore, media_saude: calcularSaude(values) }); } catch(e) {}
   } else {
-    setErrorCount(e => e + 1);
-    setValues(prev => ({ ...prev, energia: Math.max(0, (prev.energia || 80) - 10) }));
-    const penaltyScore = Math.max(0, score - 5);
-    setScore(penaltyScore);
-    try { await rankingApi.update({ xp_total: penaltyScore, media_saude: calcularSaude(values) }); } catch(e) {}
+    const newAttempts = attempts + 1;
+    setAttempts(newAttempts);
+    setSelected(option.letter);
+    if (newAttempts < 2) {
+      // Primeira tentativa errada — permite tentar de novo
+      setTimeout(() => setSelected(null), 1000);
+    } else {
+      // Segunda tentativa errada — marca como erro
+      setResponseTimes(t => [...t, elapsed]);
+      setAnswered(true);
+      setAttempts(0);
+      setValues(prev => ({ ...prev, energia: Math.max(0, (prev.energia || 80) - 10) }));
+      const penaltyScore = Math.max(0, score - 5);
+      setScore(penaltyScore);
+      setErrorCount(e => e + 1);
+      try { await rankingApi.update({ xp_total: penaltyScore, media_saude: calcularSaude(values) }); } catch(e) {}
+    }
   }
-  }
+}
 
   function handleNext() {
   const energiaAtual = values.energia || 0;
@@ -291,6 +305,12 @@ async function handleAnswer(option) {
           );
         })}
       </div>
+
+      {!answered && attempts === 1 && (
+  <div style={{ margin:'0 1.5rem .5rem', background:'rgba(239,159,39,.2)', border:'1px solid rgba(239,159,39,.5)', borderRadius:'12px', padding:'.75rem', fontSize:'12px', color:'white', textAlign:'center' }}>
+    ⚠️ Resposta incorreta! Você tem mais uma tentativa.
+  </div>
+)}
 
       {answered && (
         <div style={{ padding:'0 1.5rem' }}>
