@@ -173,25 +173,26 @@ async function handleAnswer(option) {
   }
 
   function handleNext() {
-    if (currentIdx + 1 >= MOCK_CHALLENGES.length) {
-      if (onFinish) {
-        onFinish({
-          seconds,
-          solvedChallenges: solvedCount,
-          totalChallenges: MOCK_CHALLENGES.length,
-          errors: errorCount,
-          paramHistory: null,
-        });
-      } else {
-        setFinished(true);
-      }
-    } else {
-      setCurrentIdx(i => i + 1);
-      setSelected(null);
-      setAnswered(false);
-      setQuestionStart(Date.now());
+  const energiaAtual = values.energia || 0;
+  if (mode === 'livre' && energiaAtual <= 0) {
+    if (onFinish) {
+      onFinish({ seconds, solvedChallenges: solvedCount, totalChallenges: MOCK_CHALLENGES.length, errors: errorCount, paramHistory: null });
     }
+    return;
   }
+  if (currentIdx + 1 >= MOCK_CHALLENGES.length) {
+    if (onFinish) {
+      onFinish({ seconds, solvedChallenges: solvedCount, totalChallenges: MOCK_CHALLENGES.length, errors: errorCount, paramHistory: null });
+    } else {
+      setFinished(true);
+    }
+  } else {
+    setCurrentIdx(i => i + 1);
+    setSelected(null);
+    setAnswered(false);
+    setQuestionStart(Date.now());
+  }
+}
 
   const formatTime = (s) => {
     const m = Math.floor(s / 60).toString().padStart(2, '00');
@@ -233,10 +234,11 @@ async function handleAnswer(option) {
   return (
     <div style={styles.screen}>
       <div style={styles.topbar}>
-        <button style={styles.backBtn} onClick={onBack}>←</button>
-        <div style={styles.scoreBadge}>⭐ {Math.round(score)} pts</div>
-        <div style={styles.timerBadge}>⏱ {formatTime(seconds)}</div>
-      </div>
+  <button style={styles.backBtn} onClick={onBack}>←</button>
+  <div style={styles.modeBadge}>{mode === 'sessao' ? '📋 Sessão' : '🎯 Livre'}</div>
+  <div style={styles.scoreBadge}>⭐ {Math.round(score)} pts</div>
+  <div style={styles.timerBadge}>⏱ {formatTime(seconds)}</div>
+</div>
 
       <div style={styles.mascotSection}>
         <ChibiMascot status={status} size={72}/>
@@ -332,6 +334,7 @@ const styles = {
   optionLetterWrong:  { background:'#DC3C3C' },
   optionText:         { fontSize:'13px', color:'white', lineHeight:'1.4' },
   nextBtn:            { width:'100%', padding:'13px', borderRadius:'10px', border:'none', backgroundColor:'white', color:'#7B2FBE', fontSize:'14px', fontWeight:'700', cursor:'pointer', fontFamily:'inherit' },
+  modeBadge: { background:'rgba(255,255,255,0.15)', border:'1px solid rgba(255,255,255,0.25)', borderRadius:'20px', padding:'4px 10px', fontSize:'11px', color:'white', fontWeight:'600' },
 };
 
 export default GameScreen;
