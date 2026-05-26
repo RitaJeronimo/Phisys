@@ -24,9 +24,12 @@ function MotivationScreen({ user, onContinue, customMessages }) {
   const messages = customMessages || DEFAULT_MOTIVATION_MESSAGES;
 
   function handleContinue() {
-    if (!selected) return;
-    onContinue(selected);
-  }
+  if (!selected) return;
+  const today = new Date().toDateString();
+  const key = 'phisys_motivation_' + user.matricula;
+  localStorage.setItem(key, today);
+  onContinue(selected);
+}
 
   const level = LEVELS.find(l => l.value === selected);
 

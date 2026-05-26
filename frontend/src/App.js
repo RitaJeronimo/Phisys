@@ -28,7 +28,14 @@ function App() {
       return;
     }
 
-    setScreen('motivation');
+    const today = new Date().toDateString();
+    const motivKey = 'phisys_motivation_' + loggedUser.matricula;
+    const lastSeen = localStorage.getItem(motivKey);
+    if (lastSeen === today) {
+      setScreen('home');
+    } else {
+      setScreen('motivation');
+    }
 
     try {
       const a = await animalApi.get();
