@@ -10,7 +10,6 @@ const LEVELS = [
   { value: 5, emoji: '🤩', label: 'Muito motivado',     color: '#FFD700' },
 ];
 
-// Frases padrão por nível — professor pode editar no Painel
 export const DEFAULT_MOTIVATION_MESSAGES = {
   1: 'Tudo bem! Cada dia é uma nova oportunidade. Seu animal conta com você — vamos devagar e com cuidado.',
   2: 'Estamos aqui com você! Pequenos passos também levam longe. Cuide bem do seu animal hoje.',
@@ -24,12 +23,12 @@ function MotivationScreen({ user, onContinue, customMessages }) {
   const messages = customMessages || DEFAULT_MOTIVATION_MESSAGES;
 
   function handleContinue() {
-  if (!selected) return;
-  const today = new Date().toDateString();
-  const key = 'phisys_motivation_' + user.matricula;
-  localStorage.setItem(key, today);
-  onContinue(selected);
-}
+    if (!selected) return;
+    const today = new Date().toDateString();
+    const key = 'phisys_motivation_' + user.matricula;
+    localStorage.setItem(key, today);
+    onContinue(selected);
+  }
 
   const level = LEVELS.find(l => l.value === selected);
 
@@ -86,7 +85,6 @@ function MotivationScreen({ user, onContinue, customMessages }) {
           ))}
         </div>
 
-        {/* FRASE MOTIVACIONAL */}
         {level && (
           <div style={{ ...styles.messageCard, borderColor: level.color }}>
             <div style={{ ...styles.levelLabel, color: level.color }}>
@@ -104,7 +102,7 @@ function MotivationScreen({ user, onContinue, customMessages }) {
         </button>
 
         <div style={styles.note}>
-          Sua resposta é confidencial e usada apenas para pesquisa academica.
+          Sua resposta é confidencial e usada apenas para pesquisa acadêmica.
         </div>
       </div>
     </div>
