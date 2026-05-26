@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { animal as animalApi, ranking as rankingApi } from '../api';
 import { PRIMARY_PARAMS, calcularSaude, getMascotStatus, STATUS, DAILY_CARES, aplicarCuidado } from '../engine/mascotEngine';
+import { ranking as rankingApi } from '../api';
 
 const GRADIENT = 'linear-gradient(160deg, #1B4FCC 0%, #7B2FBE 50%, #CC1B1B 100%)';
 
@@ -179,6 +180,11 @@ function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, on
   const [caresDone, setCaresDone] = useState({});
   const [showModes, setShowModes] = useState(false);
   const [activeParam, setActiveParam] = useState(null);
+  const [miniRanking, setMiniRanking] = useState([]);
+
+useEffect(() => {
+  rankingApi.get().then(data => setMiniRanking(Array.isArray(data) ? data.slice(0, 3) : [])).catch(() => {});
+}, []);
 
   const saude = calcularSaude(values);
   const status = getMascotStatus(values);
@@ -260,6 +266,18 @@ function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, on
           </div>
         ))}
       </div>
+      {miniRanking.length > 0 && (
+  <div style={{ margin:'0 1rem .5rem', background:'rgba(255,255,255,.1)', border:'1px solid rgba(255,255,255,.18)', borderRadius:'14px', padding:'.75rem' }}>
+    <div style={{ fontSize:'10px', color:'rgba(255,255,255,.6)', letterSpacing:'.08em', textTransform:'uppercase', marginBottom:'8px' }}>🏆 ranking</div>
+    {miniRanking.map((r, i) => (
+      <div key={r.id} style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'6px' }}>
+        <div style={{ fontSize:'12px', fontWeight:'700', color: i===0?'#FFD700':i===1?'#C0C0C0':'#CD7F32', width:'16px' }}>{i+1}</div>
+        <div style={{ flex:1, fontSize:'12px', color:'white' }}>{r.nome?.split(' ')[0]}</div>
+        <div style={{ fontSize:'11px', color:'rgba(255,255,255,.7)', fontWeight:'600' }}>⚡{r.xp_total}</div>
+      </div>
+    ))}
+  </div>
+)}
       <div style={styles.footer}>
         {user.mode === 'professor' && (<button style={styles.panelBtn} onClick={onViewPanel}>Painel do Professor</button>)}
         <button style={styles.logoutBtn} onClick={onLogout}>sair da conta</button>
