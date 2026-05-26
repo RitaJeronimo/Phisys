@@ -269,13 +269,16 @@ useEffect(() => {
       {miniRanking.length > 0 && (
   <div style={{ margin:'0 1rem .5rem', background:'rgba(255,255,255,.1)', border:'1px solid rgba(255,255,255,.18)', borderRadius:'14px', padding:'.75rem' }}>
     <div style={{ fontSize:'10px', color:'rgba(255,255,255,.6)', letterSpacing:'.08em', textTransform:'uppercase', marginBottom:'8px' }}>🏆 ranking</div>
-    {miniRanking.map((r, i) => (
-      <div key={r.id} style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'6px' }}>
-        <div style={{ fontSize:'12px', fontWeight:'700', color: i===0?'#FFD700':i===1?'#C0C0C0':'#CD7F32', width:'16px' }}>{i+1}</div>
-        <div style={{ flex:1, fontSize:'12px', color:'white' }}>{r.nome?.split(' ')[0]}</div>
-        <div style={{ fontSize:'11px', color:'rgba(255,255,255,.7)', fontWeight:'600' }}>⚡{r.xp_total}</div>
-      </div>
-    ))}
+    {miniRanking.map((r, i) => {
+      const isMe = r.nome === user.name;
+      return (
+        <div key={r.id} style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'6px', background: isMe ? 'rgba(255,255,255,.15)' : 'transparent', borderRadius:'8px', padding: isMe ? '4px 6px' : '0' }}>
+          <div style={{ fontSize:'12px', fontWeight:'700', color: i===0?'#FFD700':i===1?'#C0C0C0':'#CD7F32', width:'16px' }}>{i+1}</div>
+          <div style={{ flex:1, fontSize:'12px', color:'white', fontWeight: isMe ? '700' : '400' }}>{r.nome?.split(' ')[0]} {isMe ? '👤' : ''}</div>
+          <div style={{ fontSize:'11px', color:'rgba(255,255,255,.7)', fontWeight:'600' }}>⚡{r.xp_total}</div>
+        </div>
+      );
+    })}
   </div>
 )}
       <div style={styles.footer}>
