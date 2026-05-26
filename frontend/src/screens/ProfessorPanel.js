@@ -70,7 +70,7 @@ const EMPTY_SIMULATION = {
 function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
   const [motivationMessages, setMotivationMessages] = useState({...DEFAULT_MOTIVATION_MESSAGES});
   const [tab, setTab] = useState('desafios');
-  const [challenges, setChallenges] = useState(INITIAL_CHALLENGES);
+  const [challenges, setChallenges] = useState([]);
   const [simulations, setSimulations] = useState(INITIAL_SIMULATIONS);
   const [editing, setEditing] = useState(null);
   const [editingType, setEditingType] = useState(null); // 'challenge' | 'simulation'
@@ -92,8 +92,31 @@ useEffect(() => {
     .catch(() => setStudents([]));
 }, []);
 
+useEffect(() => {
+  req('/api/desafios', { headers: authHeaders() })
+    .then(data => {
+      if (Array.isArray(data) && data.length > 0) {
+        const formatted = data.map(d => ({
+          id: d.id,
+          title: d.titulo,
+          intervencao: d.intervencao || 'desidratacao',
+          focus: d.foco || 'renal',
+          difficulty: d.dificuldade || 'medio',
+          question: d.pergunta,
+          options: Array.isArray(d.opcoes) ? d.opcoes : JSON.parse(d.opcoes),
+          correct: d.correta,
+          active: d.ativo,
+        }));
+        setChallenges(formatted);
+      } else {
+        setChallenges(INITIAL_CHALLENGES);
+      }
+    })
+    .catch(() => setChallenges(INITIAL_CHALLENGES));
+}, []);
+
   const avgGrade = students.length > 0 ? (students.reduce((a,s)=>a+Number(s.xp_total||0),0)/students.length).toFixed(0) : '0';
-const avgTime = students.length > 0 ? students.reduce((a,s)=>a+(s.sessoes||0),0) : 0;
+  const avgTime = students.length > 0 ? students.reduce((a,s)=>a+(s.sessoes||0),0) : 0;
   const formatTime = s => `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`;
 
     async function handleExport() {
