@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { PARAMS, getDefaultValues, getMascotStatus, applyPenalty, applyBonus, calculateFinalGrade, STATUS, calcularSaude } from '../engine/mascotEngine';
-import { ranking as rankingApi, getToken } from '../api';
+import { ranking as rankingApi, getToken, desafios as desafiosApi } from '../api';
 
 
 const MOCK_CHALLENGES = [
@@ -126,6 +126,28 @@ function GameScreen({ user, mode, onBack, onFinish }) {
   const [questionStart, setQuestionStart] = useState(Date.now());
   const [finished, setFinished] = useState(false);
   const [myRank, setMyRank] = useState('-');
+  const [challenges, setChallenges] = useState(MOCK_CHALLENGES);
+
+useEffect(() => {
+  desafiosApi.get().then(data => {
+    if (Array.isArray(data) && data.length > 0) {
+      const formatted = data.map(d => ({
+        id: d.id,
+        tag: `Desafio #${d.id}`,
+        focus: d.foco || 'Fisiologia',
+        text: d.pergunta,
+        options: (Array.isArray(d.opcoes) ? d.opcoes : JSON.parse(d.opcoes)).map((opt, i) => ({
+          letter: String.fromCharCode(65 + i),
+          text: opt,
+          correct: i === d.correta,
+        })),
+        intervention: {},
+        explanation: '',
+      }));
+      setChallenges(formatted);
+    }
+  }).catch(() => {});
+}, []);
   const [attempts, setAttempts] = useState(0);
 
 useEffect(() => {
@@ -140,7 +162,7 @@ useEffect(() => {
 }, []);
 
   const status = getMascotStatus(values);
-  const challenge = MOCK_CHALLENGES[currentIdx];
+  const challenge = challenges[currentIdx];
 
   useEffect(() => {
     if (answered || finished) return;
@@ -194,13 +216,13 @@ async function handleAnswer(option) {
   const energiaAtual = values.energia || 0;
   if (mode === 'livre' && energiaAtual <= 0) {
     if (onFinish) {
-      onFinish({ seconds, solvedChallenges: solvedCount, totalChallenges: MOCK_CHALLENGES.length, errors: errorCount, paramHistory: null });
+      onFinish({ seconds, solvedChallenges: solvedCount, totalChallenges: challenges.length, errors: errorCount, paramHistory: null });
     }
     return;
   }
-  if (currentIdx + 1 >= MOCK_CHALLENGES.length) {
+  if (currentIdx + 1 >= challenges.length) {
     if (onFinish) {
-      onFinish({ seconds, solvedChallenges: solvedCount, totalChallenges: MOCK_CHALLENGES.length, errors: errorCount, paramHistory: null });
+      onFinish({ seconds, solvedChallenges: solvedCount, totalChallenges: challenges.length, errors: errorCount, paramHistory: null });
     } else {
       setFinished(true);
     }
@@ -208,6 +230,7 @@ async function handleAnswer(option) {
     setCurrentIdx(i => i + 1);
     setSelected(null);
     setAnswered(false);
+    setAttempts(0);
     setQuestionStart(Date.now());
   }
 }
