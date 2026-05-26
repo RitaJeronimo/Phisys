@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { DEFAULT_MOTIVATION_MESSAGES } from './MotivationScreen';
-import { DEFAULT_WEIGHTS, calculateFinalGrade, STATUS, INTERVENTIONS, PRIMARY_PARAMS } from '../engine/mascotEngine';
+import { DEFAULT_WEIGHTS, STATUS, INTERVENTIONS, PRIMARY_PARAMS } from '../engine/mascotEngine';
 import { ranking as rankingApi } from '../api';
 
 const GRADIENT = 'linear-gradient(160deg, #1B4FCC 0%, #7B2FBE 50%, #CC1B1B 100%)';
@@ -91,11 +91,7 @@ useEffect(() => {
 const avgTime = students.length > 0 ? students.reduce((a,s)=>a+(s.sessoes||0),0) : 0;
   const formatTime = s => `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`;
 
-  function getCalcGrade(student) {
-    return calculateFinalGrade({ finalScore:student.pts, finalStatus:student.finalStatus, totalChallenges:student.totalChallenges, solvedChallenges:student.solvedChallenges, avgResponseTime:student.avgResponseTime });
-  }
-
-  async function handleExport() {
+    async function handleExport() {
     try {
       const data = await rankingApi.get();
       const header = 'Nome,Matricula,XP Total,Sessoes,Media Saude\n';
