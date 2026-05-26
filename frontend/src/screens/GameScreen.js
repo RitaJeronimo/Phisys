@@ -142,9 +142,9 @@ useEffect(() => {
           correct: i === d.correta,
         })),
         intervention: {},
-        explanation: '',
+        explanation: d.explicacao || 'Revise os conceitos fisiológicos relacionados a este cenário clínico.',
       }));
-      setChallenges(formatted);
+      setChallenges([...MOCK_CHALLENGES, ...formatted]);
     }
   }).catch(() => {});
 }, []);
