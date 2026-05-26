@@ -151,7 +151,7 @@ function Mascot({ status, ageDays }) {
   const svgSize   = isFilhote ? 110 : isJuvenil ? 150 : 180;
   return (
     <div style={styles.animalBg}>
-      <div style={styles.animalLabel}>Mantenha o animal em homeostase</div>
+      <div style={styles.animalLabel}>Mantenha seu animal saudável e viva o máximo de tempo possível!</div>
       <div style={{ ...styles.animalStatus, color: statusColor }}>{emoji}</div>
       <div style={{ ...styles.stageBadge }}>{stage.icon} {stage.label}</div>
       <svg viewBox="0 0 400 380" style={{ width:`${svgSize}px`, height:`${svgSize}px`, marginTop:20 }}>
