@@ -12,7 +12,7 @@ const MOCK_CHALLENGES = [
       { letter: 'C', text: 'Ambos os parametros permanecem estaveis', correct: false },
       { letter: 'D', text: 'Volume urinario aumenta e pressao arterial cai', correct: false },
     ],
-    intervention: { energia:60, hidratacao:40, pas:85, pad:55, fc:115, peso:300, saude:50 },
+    intervention: { hidratacao:40, pas:85, pad:55, fc:115, peso:300, saude:50 },
   },
   {
     id: 2, tag: 'Desafio #2', focus: 'Fisiologia Cardiovascular',
@@ -23,7 +23,7 @@ const MOCK_CHALLENGES = [
       { letter: 'C', text: 'Arritmia — pressao arterial permanece estavel', correct: false },
       { letter: 'D', text: 'Bradicardia — pressao arterial sempre sobe', correct: false },
     ],
-    intervention: { energia:70, hidratacao:50, pas:95, pad:60, fc:38, peso:300, saude:60 },
+    intervention: { hidratacao:50, pas:95, pad:60, fc:38, peso:300, saude:60 },
   },
   {
     id: 3, tag: 'Desafio #3', focus: 'Fisiologia Renal',
@@ -34,7 +34,7 @@ const MOCK_CHALLENGES = [
       { letter: 'C', text: 'Ambos permanecem dentro da normalidade', correct: false },
       { letter: 'D', text: 'Volume urinario aumenta e sede aumenta', correct: false },
     ],
-    intervention: { energia:55, hidratacao:35, pas:140, pad:90, fc:88, peso:300, saude:45 },
+    intervention: { hidratacao:35, pas:140, pad:90, fc:88, peso:300, saude:45 },
   },
 ];
 
