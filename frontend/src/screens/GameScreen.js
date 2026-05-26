@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { PARAMS, getDefaultValues, getMascotStatus, applyPenalty, applyBonus, calculateFinalGrade, STATUS } from '../engine/mascotEngine';
+import { PARAMS, getDefaultValues, getMascotStatus, applyPenalty, applyBonus, calculateFinalGrade, STATUS, calcularSaude } from '../engine/mascotEngine';
 import { ranking as rankingApi, getToken } from '../api';
+
 
 const MOCK_CHALLENGES = [
   {
@@ -162,14 +163,14 @@ async function handleAnswer(option) {
       ...challenge.intervention,
       energia: Math.max(0, (prev.energia || 80) - 10),
     }));
-    try { await rankingApi.update({ xp_total: newScore, media_saude: 85 }); } catch(e) {}
+    try { await rankingApi.update({ xp_total: newScore, media_saude: calcularSaude(values) }); } catch(e) {}
   } else {
-  setErrorCount(e => e + 1);
-  setValues(prev => ({ ...prev, energia: Math.max(0, (prev.energia || 80) - 10) }));
-  const penaltyScore = Math.max(0, score - 5);
-  setScore(penaltyScore);
-  try { await rankingApi.update({ xp_total: penaltyScore, media_saude: 85 }); } catch(e) {}
-}
+    setErrorCount(e => e + 1);
+    setValues(prev => ({ ...prev, energia: Math.max(0, (prev.energia || 80) - 10) }));
+    const penaltyScore = Math.max(0, score - 5);
+    setScore(penaltyScore);
+    try { await rankingApi.update({ xp_total: penaltyScore, media_saude: calcularSaude(values) }); } catch(e) {}
+  }
   }
 
   function handleNext() {
