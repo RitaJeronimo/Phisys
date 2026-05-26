@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { PARAMS, getDefaultValues, getMascotStatus, applyPenalty, applyBonus, calculateFinalGrade, STATUS } from '../engine/mascotEngine';
-import { ranking as rankingApi } from '../api';
+import { ranking as rankingApi, getToken } from '../api';
 
 const MOCK_CHALLENGES = [
   {
@@ -121,6 +121,18 @@ function GameScreen({ user, mode, onBack, onFinish }) {
   const [responseTimes, setResponseTimes] = useState([]);
   const [questionStart, setQuestionStart] = useState(Date.now());
   const [finished, setFinished] = useState(false);
+  const [myRank, setMyRank] = useState('-');
+
+useEffect(() => {
+  rankingApi.get().then(data => {
+    if (!Array.isArray(data)) return;
+    const token = getToken();
+    if (!token) return;
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const idx = data.findIndex(r => r.id === payload.id || r.nome === payload.nome);
+    if (idx >= 0) setMyRank('#' + (idx + 1));
+  }).catch(() => {});
+}, []);
 
   const status = getMascotStatus(values);
   const challenge = MOCK_CHALLENGES[currentIdx];
@@ -238,7 +250,7 @@ async function handleAnswer(option) {
           { val: statusEmoji[status], lbl: statusLabel[status] },
           { val: `${currentIdx + 1}/${MOCK_CHALLENGES.length}`, lbl: 'Desafios' },
           { val: errorCount, lbl: 'Erros' },
-          { val: `${values.energia || 0}%`, lbl: 'Energia' },
+          { val: myRank, lbl: 'Ranking' },
         ].map(item => (
           <div key={item.lbl} style={styles.statusPill}>
             <div style={styles.statusPillVal}>{item.val}</div>
