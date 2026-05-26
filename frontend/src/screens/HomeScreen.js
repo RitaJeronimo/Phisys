@@ -282,7 +282,8 @@ function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, on
   const line1 = PRIMARY_PARAMS.filter(p => ['energia','hidratacao','fc'].includes(p.id));
   const line2 = PRIMARY_PARAMS.filter(p => ['peso','saude'].includes(p.id));
   const currentAge = ageDays || 90;
-  const idadeParam = { id:'idade', name:'Idade', unit:'', min:0, max:730, normal:[0,730], default:currentAge, step:1, icon:'🗓️' };
+  const stage = getGrowthStage(currentAge);
+  const idadeParam = { id:'idade', name:`Idade · ${stage.label}`, unit:'', min:0, max:730, normal:[0,730], default:currentAge, step:1, icon:stage.icon };
 
   async function handleCare(id) {
   if (caresDone[id]) return;
