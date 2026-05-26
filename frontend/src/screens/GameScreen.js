@@ -134,25 +134,27 @@ function GameScreen({ user, mode, onBack, onFinish }) {
     return () => clearInterval(interval);
   }, [status, answered, finished]);
 
-  async function handleAnswer(option) {
-    if (answered) return;
-    const elapsed = (Date.now() - questionStart) / 1000;
-    setResponseTimes(t => [...t, elapsed]);
-    setSelected(option.letter);
-    setAnswered(true);
+async function handleAnswer(option) {
+  if (answered) return;
+  const elapsed = (Date.now() - questionStart) / 1000;
+  setResponseTimes(t => [...t, elapsed]);
+  setSelected(option.letter);
+  setAnswered(true);
 
-    // Consome energia a cada resposta
+  if (option.correct) {
+    const newScore = applyBonus(score, 'correct_answer');
+    setScore(newScore);
+    setSolvedCount(s => s + 1);
+    setValues(prev => ({
+      ...prev,
+      ...challenge.intervention,
+      energia: Math.max(0, (prev.energia || 80) - 10),
+    }));
+    try { await rankingApi.update({ xp_total: newScore, media_saude: 85 }); } catch(e) {}
+  } else {
+    setErrorCount(e => e + 1);
     setValues(prev => ({ ...prev, energia: Math.max(0, (prev.energia || 80) - 10) }));
-
-    if (option.correct) {
-      const newScore = applyBonus(score, 'correct_answer');
-      setScore(newScore);
-      setSolvedCount(s => s + 1);
-      setValues(challenge.intervention);
-      try { await rankingApi.update({ xp_total: newScore, media_saude: 85 }); } catch(e) {}
-    } else {
-      setErrorCount(e => e + 1);
-    }
+  }
   }
 
   function handleNext() {
