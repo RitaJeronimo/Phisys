@@ -5,14 +5,6 @@ import { ranking as rankingApi } from '../api';
 
 const GRADIENT = 'linear-gradient(160deg, #1B4FCC 0%, #7B2FBE 50%, #CC1B1B 100%)';
 
-const students = [
-  { name:'Carlos Mendes',  initials:'CM', pts:520, finalStatus:STATUS.SAUDAVEL,   totalChallenges:3, solvedChallenges:3, avgResponseTime:12 },
-  { name:'Juliana Santos', initials:'JS', pts:480, finalStatus:STATUS.SAUDAVEL,   totalChallenges:3, solvedChallenges:3, avgResponseTime:17 },
-  { name:'Ana Paula',      initials:'AP', pts:340, finalStatus:STATUS.DEBILITADO, totalChallenges:3, solvedChallenges:2, avgResponseTime:24 },
-  { name:'Rafael F.',      initials:'RF', pts:290, finalStatus:STATUS.DEBILITADO, totalChallenges:3, solvedChallenges:2, avgResponseTime:30 },
-  { name:'Mariana B.',     initials:'MB', pts:180, finalStatus:STATUS.CRITICO,    totalChallenges:3, solvedChallenges:1, avgResponseTime:45 },
-];
-
 const STATUS_LABEL = {
   [STATUS.SAUDAVEL]:  { emoji:'😊', label:'ok',   color:'#32C878' },
   [STATUS.DEBILITADO]:{ emoji:'😰', label:'deb.', color:'#EF9F27' },
@@ -85,13 +77,8 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
     challenges: DEFAULT_WEIGHTS.challenges * 100,
     response_time: DEFAULT_WEIGHTS.response_time * 100,
   });
-  const [manualGrades, setManualGrades] = useState(() => {
-    const obj = {};
-    students.forEach(s => {
-      obj[s.initials] = calculateFinalGrade({ finalScore:s.pts, finalStatus:s.finalStatus, totalChallenges:s.totalChallenges, solvedChallenges:s.solvedChallenges, avgResponseTime:s.avgResponseTime });
-    });
-    return obj;
-  });
+  const [manualGrades, setManualGrades] = useState({});
+
   const [students, setStudents] = useState([]);
 
 useEffect(() => {
@@ -100,8 +87,8 @@ useEffect(() => {
     .catch(() => setStudents([]));
 }, []);
 
-  const avgGrade = (Object.values(manualGrades).reduce((a,g)=>a+Number(g),0)/students.length).toFixed(1);
-  const avgTime = Math.round(students.reduce((a,s)=>a+s.avgResponseTime,0)/students.length);
+  const avgGrade = students.length > 0 ? (students.reduce((a,s)=>a+Number(s.xp_total||0),0)/students.length).toFixed(0) : '0';
+const avgTime = students.length > 0 ? students.reduce((a,s)=>a+(s.sessoes||0),0) : 0;
   const formatTime = s => `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`;
 
   function getCalcGrade(student) {
@@ -416,26 +403,22 @@ useEffect(() => {
               <span style={{textAlign:'center'}}>calc.</span>
               <span style={{textAlign:'center'}}>final</span>
             </div>
-            {students.map(student=>{
-              const calc = getCalcGrade(student);
-              const statusInfo = STATUS_LABEL[student.finalStatus];
-              return (
-                <div key={student.initials} style={styles.tableRow}>
-                  <div>
-                    <div style={styles.studentName}>{student.name}</div>
-                    <div style={styles.studentMeta}>{student.solvedChallenges}/{student.totalChallenges} acertos</div>
-                  </div>
-                  <div style={styles.cell}>{student.pts}</div>
-                  <div style={{...styles.cell, color:statusInfo.color, fontSize:'11px'}}>{statusInfo.emoji} {statusInfo.label}</div>
-                  <div style={styles.cell}>{calc}</div>
-                  <div style={styles.cell}>
-                    <input style={styles.notaInput} type="number" min="0" max="10" step="0.1"
-                      value={manualGrades[student.initials]}
-                      onChange={e=>setManualGrades(g=>({...g,[student.initials]:Number(e.target.value)}))}/>
-                  </div>
-                </div>
-              );
-            })}
+            {students.map(student=>(
+  <div key={student.id} style={styles.tableRow}>
+    <div>
+      <div style={styles.studentName}>{student.nome}</div>
+      <div style={styles.studentMeta}>{student.sessoes} sessoes</div>
+    </div>
+    <div style={styles.cell}>{student.xp_total}</div>
+    <div style={styles.cell}>-</div>
+    <div style={styles.cell}>-</div>
+    <div style={styles.cell}>
+      <input style={styles.notaInput} type="number" min="0" max="10" step="0.1"
+        value={manualGrades[student.id] || ''}
+        onChange={e=>setManualGrades(g=>({...g,[student.id]:Number(e.target.value)}))}/>
+    </div>
+  </div>
+))}
           </div>
           <div style={{height:'1rem'}}/>
         </>
