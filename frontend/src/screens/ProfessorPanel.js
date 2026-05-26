@@ -118,8 +118,15 @@ const avgTime = students.length > 0 ? students.reduce((a,s)=>a+(s.sessoes||0),0)
   // ── DESAFIOS ──
   function handleNewChallenge() { setEditingType('challenge'); setEditing('new'); setForm({ ...EMPTY_CHALLENGE, options:['','','',''] }); }
   function handleEditChallenge(ch) { setEditingType('challenge'); setEditing(ch.id); setForm({ ...ch, options:[...ch.options] }); }
-  function handleDeleteChallenge(id) { setChallenges(prev => prev.filter(c => c.id !== id)); }
-  function handleToggleChallenge(id) { setChallenges(prev => prev.map(c => c.id === id ? {...c, active:!c.active} : c)); }
+  async function handleDeleteChallenge(id) {
+  try { await req(`/api/desafios/${id}`, { method: 'DELETE', headers: authHeaders() }); } catch(e) {}
+  setChallenges(prev => prev.filter(c => c.id !== id));
+}
+  async function handleToggleChallenge(id) {
+  const ch = challenges.find(c => c.id === id);
+  try { await req(`/api/desafios/${id}`, { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ ativo: !ch.active }) }); } catch(e) {}
+  setChallenges(prev => prev.map(c => c.id === id ? {...c, active:!c.active} : c));
+}
   async function handleSaveChallenge() {
   if (!form.title || !form.question || form.options.some(o=>!o)) return;
   try {
