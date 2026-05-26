@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { DEFAULT_MOTIVATION_MESSAGES } from './MotivationScreen';
 import { DEFAULT_WEIGHTS, calculateFinalGrade, STATUS, INTERVENTIONS, PRIMARY_PARAMS } from '../engine/mascotEngine';
+import { ranking as rankingApi } from '../api';
 
 const GRADIENT = 'linear-gradient(160deg, #1B4FCC 0%, #7B2FBE 50%, #CC1B1B 100%)';
 
@@ -98,6 +99,25 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
 
   function getCalcGrade(student) {
     return calculateFinalGrade({ finalScore:student.pts, finalStatus:student.finalStatus, totalChallenges:student.totalChallenges, solvedChallenges:student.solvedChallenges, avgResponseTime:student.avgResponseTime });
+  }
+
+  async function handleExport() {
+    try {
+      const data = await rankingApi.get();
+      const header = 'Nome,Matricula,XP Total,Sessoes,Media Saude\n';
+      const rows = data.map(r =>
+        `${r.nome},${r.matricula},${r.xp_total},${r.sessoes},${Number(r.media_saude).toFixed(1)}`
+      ).join('\n');
+      const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'phisys_turma.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch(e) {
+      alert('Erro ao exportar dados.');
+    }
   }
 
   // ── DESAFIOS ──
@@ -275,7 +295,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
       <div style={styles.topbar}>
         <button style={styles.backBtn} onClick={onBack}>←</button>
         <div style={styles.title}>Painel do Professor</div>
-        <button style={styles.exportBtn}>↓ Exportar</button>
+        <button style={styles.exportBtn} onClick={handleExport}>↓ Exportar</button>
       </div>
 
       {/* TABS */}
