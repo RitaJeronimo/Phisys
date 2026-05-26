@@ -1,15 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { DEFAULT_MOTIVATION_MESSAGES } from './MotivationScreen';
-import { DEFAULT_WEIGHTS, STATUS, INTERVENTIONS, PRIMARY_PARAMS } from '../engine/mascotEngine';
+import { DEFAULT_WEIGHTS, INTERVENTIONS, PRIMARY_PARAMS } from '../engine/mascotEngine';
 import { ranking as rankingApi } from '../api';
 
 const GRADIENT = 'linear-gradient(160deg, #1B4FCC 0%, #7B2FBE 50%, #CC1B1B 100%)';
-
-const STATUS_LABEL = {
-  [STATUS.SAUDAVEL]:  { emoji:'😊', label:'ok',   color:'#32C878' },
-  [STATUS.DEBILITADO]:{ emoji:'😰', label:'deb.', color:'#EF9F27' },
-  [STATUS.CRITICO]:   { emoji:'😵', label:'crít.',color:'#DC3C3C' },
-};
 
 const INITIAL_CHALLENGES = [
   {
