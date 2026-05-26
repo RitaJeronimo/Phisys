@@ -14,6 +14,7 @@ const MOCK_CHALLENGES = [
       { letter: 'D', text: 'Volume urinario aumenta e pressao arterial cai', correct: false },
     ],
     intervention: { hidratacao:40, pas:85, pad:55, fc:115, peso:300, saude:50 },
+    explanation: 'Na desidratação, a redução do volume circulante diminui a pré-carga cardíaca, reduzindo o débito cardíaco e a pressão arterial. O rim responde retendo água e sódio, diminuindo o volume urinário.',
   },
   {
     id: 2, tag: 'Desafio #2', focus: 'Fisiologia Cardiovascular',
@@ -25,6 +26,7 @@ const MOCK_CHALLENGES = [
       { letter: 'D', text: 'Bradicardia — pressao arterial sempre sobe', correct: false },
     ],
     intervention: { hidratacao:50, pas:95, pad:60, fc:38, peso:300, saude:60 },
+    explanation: 'Bradicardia (FC < 60 bpm) reduz o débito cardíaco (DC = FC × VS), podendo causar queda da pressão arterial por redução da perfusão tecidual.',
   },
   {
     id: 3, tag: 'Desafio #3', focus: 'Fisiologia Renal',
@@ -36,6 +38,7 @@ const MOCK_CHALLENGES = [
       { letter: 'D', text: 'Volume urinario aumenta e sede aumenta', correct: false },
     ],
     intervention: { hidratacao:35, pas:140, pad:90, fc:88, peso:300, saude:45 },
+    explanation: 'Na insuficiência renal, a capacidade de filtração glomerular cai, reduzindo o volume urinário. A retenção de líquidos aumenta a sede como mecanismo compensatório.',
   },
 ];
 
@@ -290,7 +293,11 @@ async function handleAnswer(option) {
       </div>
 
       {answered && (
-        <div style={{ padding:'1rem 1.5rem' }}>
+        <div style={{ padding:'0 1.5rem' }}>
+          <div style={{ background:'rgba(255,255,255,.12)', border:'1px solid rgba(255,255,255,.25)', borderRadius:'12px', padding:'1rem', marginBottom:'10px' }}>
+            <div style={{ fontSize:'10px', color:'#FFD700', fontWeight:'700', marginBottom:'4px', letterSpacing:'.06em', textTransform:'uppercase' }}>💡 Explicação Fisiológica</div>
+            <div style={{ fontSize:'12px', color:'rgba(255,255,255,.9)', lineHeight:'1.6' }}>{challenge.explanation}</div>
+          </div>
           <button style={styles.nextBtn} onClick={handleNext}>
             {currentIdx + 1 >= MOCK_CHALLENGES.length ? 'Ver resultado' : 'Proximo desafio →'}
           </button>
