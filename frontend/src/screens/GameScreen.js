@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { PARAMS, getDefaultValues, getMascotStatus, applyPenalty, applyBonus, calculateFinalGrade, STATUS } from '../engine/mascotEngine';
+import { ranking as rankingApi } from '../api';
 
 const MOCK_CHALLENGES = [
   {
@@ -38,11 +39,11 @@ const MOCK_CHALLENGES = [
 ];
 
 function ChibiMascot({ status, size = 72 }) {
-  const bodyColor  = status === STATUS.SAUDAVEL ? '#D4D4D4' : status === STATUS.DEBILITADO ? '#FAC775' : '#F09595';
-  const earIn      = status === STATUS.SAUDAVEL ? '#FFD0DC' : status === STATUS.DEBILITADO ? '#F5CC80' : '#FFB0B0';
-  const eyeOuter   = status === STATUS.SAUDAVEL ? '#7B2FBE' : status === STATUS.DEBILITADO ? '#633806' : '#791F1F';
-  const eyeInner   = status === STATUS.SAUDAVEL ? '#3A1A6A' : status === STATUS.DEBILITADO ? '#3A1A00' : '#3A0000';
-  const cheek      = status === STATUS.SAUDAVEL ? '#FFB0C8' : status === STATUS.DEBILITADO ? '#F5CC80' : '#FFB0B0';
+  const bodyColor = status === STATUS.SAUDAVEL ? '#D4D4D4' : status === STATUS.DEBILITADO ? '#FAC775' : '#F09595';
+  const earIn     = status === STATUS.SAUDAVEL ? '#FFD0DC' : status === STATUS.DEBILITADO ? '#F5CC80' : '#FFB0B0';
+  const eyeOuter  = status === STATUS.SAUDAVEL ? '#7B2FBE' : status === STATUS.DEBILITADO ? '#633806' : '#791F1F';
+  const eyeInner  = status === STATUS.SAUDAVEL ? '#3A1A6A' : status === STATUS.DEBILITADO ? '#3A1A00' : '#3A0000';
+  const cheek     = status === STATUS.SAUDAVEL ? '#FFB0C8' : status === STATUS.DEBILITADO ? '#F5CC80' : '#FFB0B0';
 
   const mouth = status === STATUS.SAUDAVEL
     ? <path d="M188 184 Q200 196 212 184" stroke="#666" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
@@ -51,34 +52,16 @@ function ChibiMascot({ status, size = 72 }) {
     : <path d="M188 192 Q200 182 212 192" stroke="#AA4444" strokeWidth="2.5" fill="none" strokeLinecap="round"/>;
 
   const eyeL = status === STATUS.CRITICO
-    ? <><ellipse cx="168" cy="152" rx="22" ry="22" fill="white"/>
-        <line x1="158" y1="142" x2="178" y2="162" stroke={eyeOuter} strokeWidth="4" strokeLinecap="round"/>
-        <line x1="178" y1="142" x2="158" y2="162" stroke={eyeOuter} strokeWidth="4" strokeLinecap="round"/></>
+    ? <><ellipse cx="168" cy="152" rx="22" ry="22" fill="white"/><line x1="158" y1="142" x2="178" y2="162" stroke={eyeOuter} strokeWidth="4" strokeLinecap="round"/><line x1="178" y1="142" x2="158" y2="162" stroke={eyeOuter} strokeWidth="4" strokeLinecap="round"/></>
     : status === STATUS.DEBILITADO
-    ? <><ellipse cx="168" cy="152" rx="22" ry="22" fill="white"/>
-        <ellipse cx="168" cy="156" rx="16" ry="10" fill={eyeOuter}/>
-        <ellipse cx="168" cy="156" rx="8" ry="5" fill={eyeInner}/>
-        <path d="M148 148 Q168 138 188 148" stroke="#999" strokeWidth="2" fill="none"/>
-        <ellipse cx="176" cy="150" rx="5" ry="3" fill="white" opacity=".8"/></>
-    : <><ellipse cx="168" cy="152" rx="22" ry="26" fill="white"/>
-        <ellipse cx="168" cy="155" rx="16" ry="20" fill={eyeOuter}/>
-        <ellipse cx="168" cy="155" rx="8" ry="10" fill={eyeInner}/>
-        <ellipse cx="176" cy="144" rx="6" ry="7" fill="white" opacity=".9"/></>;
+    ? <><ellipse cx="168" cy="152" rx="22" ry="22" fill="white"/><ellipse cx="168" cy="156" rx="16" ry="10" fill={eyeOuter}/><ellipse cx="168" cy="156" rx="8" ry="5" fill={eyeInner}/><path d="M148 148 Q168 138 188 148" stroke="#999" strokeWidth="2" fill="none"/><ellipse cx="176" cy="150" rx="5" ry="3" fill="white" opacity=".8"/></>
+    : <><ellipse cx="168" cy="152" rx="22" ry="26" fill="white"/><ellipse cx="168" cy="155" rx="16" ry="20" fill={eyeOuter}/><ellipse cx="168" cy="155" rx="8" ry="10" fill={eyeInner}/><ellipse cx="176" cy="144" rx="6" ry="7" fill="white" opacity=".9"/></>;
 
   const eyeR = status === STATUS.CRITICO
-    ? <><ellipse cx="232" cy="152" rx="22" ry="22" fill="white"/>
-        <line x1="222" y1="142" x2="242" y2="162" stroke={eyeOuter} strokeWidth="4" strokeLinecap="round"/>
-        <line x1="242" y1="142" x2="222" y2="162" stroke={eyeOuter} strokeWidth="4" strokeLinecap="round"/></>
+    ? <><ellipse cx="232" cy="152" rx="22" ry="22" fill="white"/><line x1="222" y1="142" x2="242" y2="162" stroke={eyeOuter} strokeWidth="4" strokeLinecap="round"/><line x1="242" y1="142" x2="222" y2="162" stroke={eyeOuter} strokeWidth="4" strokeLinecap="round"/></>
     : status === STATUS.DEBILITADO
-    ? <><ellipse cx="232" cy="152" rx="22" ry="22" fill="white"/>
-        <ellipse cx="232" cy="156" rx="16" ry="10" fill={eyeOuter}/>
-        <ellipse cx="232" cy="156" rx="8" ry="5" fill={eyeInner}/>
-        <path d="M212 148 Q232 138 252 148" stroke="#999" strokeWidth="2" fill="none"/>
-        <ellipse cx="240" cy="150" rx="5" ry="3" fill="white" opacity=".8"/></>
-    : <><ellipse cx="232" cy="152" rx="22" ry="26" fill="white"/>
-        <ellipse cx="232" cy="155" rx="16" ry="20" fill={eyeOuter}/>
-        <ellipse cx="232" cy="155" rx="8" ry="10" fill={eyeInner}/>
-        <ellipse cx="240" cy="144" rx="6" ry="7" fill="white" opacity=".9"/></>;
+    ? <><ellipse cx="232" cy="152" rx="22" ry="22" fill="white"/><ellipse cx="232" cy="156" rx="16" ry="10" fill={eyeOuter}/><ellipse cx="232" cy="156" rx="8" ry="5" fill={eyeInner}/><path d="M212 148 Q232 138 252 148" stroke="#999" strokeWidth="2" fill="none"/><ellipse cx="240" cy="150" rx="5" ry="3" fill="white" opacity=".8"/></>
+    : <><ellipse cx="232" cy="152" rx="22" ry="26" fill="white"/><ellipse cx="232" cy="155" rx="16" ry="20" fill={eyeOuter}/><ellipse cx="232" cy="155" rx="8" ry="10" fill={eyeInner}/><ellipse cx="240" cy="144" rx="6" ry="7" fill="white" opacity=".9"/></>;
 
   return (
     <svg viewBox="0 0 400 380" width={size} height={size}>
@@ -100,13 +83,8 @@ function ChibiMascot({ status, size = 72 }) {
       {eyeR}
       <ellipse cx="200" cy="175" rx="8" ry="6" fill="#FF8FAA"/>
       {mouth}
-      {status !== STATUS.SAUDAVEL && (
-        <ellipse cx="290" cy="120" rx="7" ry="11" fill="#85B7EB" opacity=".8"/>
-      )}
-      {status === STATUS.SAUDAVEL && (<>
-        <text x="316" y="100" fontSize="18" fill="white" opacity=".9">✦</text>
-        <text x="72" y="112" fontSize="12" fill="white" opacity=".8">✦</text>
-      </>)}
+      {status !== STATUS.SAUDAVEL && (<ellipse cx="290" cy="120" rx="7" ry="11" fill="#85B7EB" opacity=".8"/>)}
+      {status === STATUS.SAUDAVEL && (<><text x="316" y="100" fontSize="18" fill="white" opacity=".9">✦</text><text x="72" y="112" fontSize="12" fill="white" opacity=".8">✦</text></>)}
     </svg>
   );
 }
@@ -119,7 +97,6 @@ function ParamBar({ param, value }) {
   const deviation = Math.abs(value - (param.normal[0] + param.normal[1]) / 2) / ((param.normal[1] - param.normal[0]) / 2);
   const fillColor = inRange ? '#32C878' : deviation > 2 ? '#DC3C3C' : '#EF9F27';
   const displayVal = param.step < 1 ? value.toFixed(1) : Math.round(value);
-
   return (
     <div style={styles.paramItem}>
       <div style={styles.paramLabel}>{param.name.split(' ')[0]}</div>
@@ -157,16 +134,22 @@ function GameScreen({ user, mode, onBack, onFinish }) {
     return () => clearInterval(interval);
   }, [status, answered, finished]);
 
-  function handleAnswer(option) {
+  async function handleAnswer(option) {
     if (answered) return;
     const elapsed = (Date.now() - questionStart) / 1000;
     setResponseTimes(t => [...t, elapsed]);
     setSelected(option.letter);
     setAnswered(true);
+
+    // Consome energia a cada resposta
+    setValues(prev => ({ ...prev, energia: Math.max(0, (prev.energia || 80) - 10) }));
+
     if (option.correct) {
-      setScore(s => applyBonus(s, 'correct_answer'));
+      const newScore = applyBonus(score, 'correct_answer');
+      setScore(newScore);
       setSolvedCount(s => s + 1);
       setValues(challenge.intervention);
+      try { await rankingApi.update({ xp_total: newScore, media_saude: 85 }); } catch(e) {}
     } else {
       setErrorCount(e => e + 1);
     }
@@ -194,8 +177,8 @@ function GameScreen({ user, mode, onBack, onFinish }) {
   }
 
   const formatTime = (s) => {
-    const m = Math.floor(s / 60).toString().padStart(2, '0');
-    const sec = (s % 60).toString().padStart(2, '0');
+    const m = Math.floor(s / 60).toString().padStart(2, '00');
+    const sec = (s % 60).toString().padStart(2, '00');
     return `${m}:${sec}`;
   };
 
@@ -204,27 +187,20 @@ function GameScreen({ user, mode, onBack, onFinish }) {
 
   if (finished) {
     const avgResponseTime = responseTimes.length > 0
-      ? responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length
-      : 30;
-
+      ? responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length : 30;
     const grade = calculateFinalGrade({
       finalScore: score, finalStatus: status,
       totalChallenges: MOCK_CHALLENGES.length,
       solvedChallenges: solvedCount,
       avgResponseTime, errors: errorCount,
     });
-
     return (
       <div style={styles.screen}>
         <div style={{ padding:'3rem 1.5rem', display:'flex', flexDirection:'column', alignItems:'center', gap:'1.5rem' }}>
           <ChibiMascot status={STATUS.SAUDAVEL} size={90}/>
           <div style={{ fontSize:'22px', fontWeight:'700', color:'white', textAlign:'center' }}>Sessao concluida!</div>
           <div style={{ display:'flex', gap:'12px', width:'100%' }}>
-            {[
-              { val: Math.round(score), lbl: 'Pontos' },
-              { val: grade, lbl: 'Nota' },
-              { val: `${solvedCount}/${MOCK_CHALLENGES.length}`, lbl: 'Acertos' },
-            ].map(item => (
+            {[{ val: Math.round(score), lbl: 'Pontos' }, { val: grade, lbl: 'Nota' }, { val: `${solvedCount}/${MOCK_CHALLENGES.length}`, lbl: 'Acertos' }].map(item => (
               <div key={item.lbl} style={{ flex:1, background:'rgba(255,255,255,0.15)', borderRadius:'12px', padding:'1rem', textAlign:'center' }}>
                 <div style={{ fontSize:'24px', fontWeight:'700', color:'white' }}>{item.val}</div>
                 <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.6)', textTransform:'uppercase', letterSpacing:'0.05em' }}>{item.lbl}</div>
@@ -248,9 +224,7 @@ function GameScreen({ user, mode, onBack, onFinish }) {
       <div style={styles.mascotSection}>
         <ChibiMascot status={status} size={72}/>
         <div style={styles.paramsPanel}>
-          {PARAMS.map(p => (
-            <ParamBar key={p.id} param={p} value={values[p.id]} />
-          ))}
+          {PARAMS.map(p => (<ParamBar key={p.id} param={p} value={values[p.id]}/>))}
         </div>
       </div>
 
@@ -259,7 +233,7 @@ function GameScreen({ user, mode, onBack, onFinish }) {
           { val: statusEmoji[status], lbl: statusLabel[status] },
           { val: `${currentIdx + 1}/${MOCK_CHALLENGES.length}`, lbl: 'Desafios' },
           { val: errorCount, lbl: 'Erros' },
-          { val: '#3', lbl: 'Ranking' },
+          { val: `${values.energia || 0}%`, lbl: 'Energia' },
         ].map(item => (
           <div key={item.lbl} style={styles.statusPill}>
             <div style={styles.statusPillVal}>{item.val}</div>
@@ -309,38 +283,38 @@ function GameScreen({ user, mode, onBack, onFinish }) {
 const GRADIENT = 'linear-gradient(160deg, #1B4FCC 0%, #7B2FBE 50%, #CC1B1B 100%)';
 
 const styles = {
-  screen:            { width:'100%', maxWidth:'400px', minHeight:'100vh', display:'flex', flexDirection:'column', background:GRADIENT, margin:'0 auto' },
-  topbar:            { padding:'1.25rem 1.5rem 0.75rem', display:'flex', justifyContent:'space-between', alignItems:'center' },
-  backBtn:           { fontSize:'20px', cursor:'pointer', background:'none', border:'none', color:'white' },
-  scoreBadge:        { background:'rgba(255,255,255,0.15)', border:'1px solid rgba(255,255,255,0.25)', borderRadius:'20px', padding:'4px 14px', fontSize:'12px', color:'white', fontWeight:'600' },
-  timerBadge:        { background:'rgba(255,255,255,0.15)', border:'1px solid rgba(255,255,255,0.25)', borderRadius:'20px', padding:'4px 14px', fontSize:'12px', color:'white', fontWeight:'600' },
-  mascotSection:     { padding:'0.5rem 1.5rem 0', display:'flex', alignItems:'center', gap:'1rem' },
-  paramsPanel:       { flex:1, display:'flex', flexDirection:'column', gap:'6px' },
-  paramItem:         { display:'flex', alignItems:'center', gap:'8px' },
-  paramLabel:        { fontSize:'10px', color:'rgba(255,255,255,0.65)', width:'55px' },
-  paramTrack:        { flex:1, height:'6px', background:'rgba(255,255,255,0.15)', borderRadius:'3px', overflow:'hidden', position:'relative' },
-  paramNormal:       { position:'absolute', height:'100%', background:'rgba(255,255,255,0.2)', borderRadius:'3px' },
-  paramFill:         { position:'absolute', height:'100%', borderRadius:'3px', transition:'width 0.3s' },
-  paramVal:          { fontSize:'10px', color:'white', fontWeight:'600', width:'36px', textAlign:'right' },
-  statusBar:         { margin:'0.75rem 1.5rem', display:'flex', gap:'8px' },
-  statusPill:        { flex:1, background:'rgba(255,255,255,0.1)', border:'1px solid rgba(255,255,255,0.15)', borderRadius:'10px', padding:'8px', textAlign:'center' },
-  statusPillVal:     { fontSize:'14px', fontWeight:'700', color:'white' },
-  statusPillLbl:     { fontSize:'9px', color:'rgba(255,255,255,0.55)', textTransform:'uppercase', letterSpacing:'0.05em' },
-  challengeCard:     { margin:'0 1.5rem', background:'rgba(255,255,255,0.12)', border:'1px solid rgba(255,255,255,0.25)', borderRadius:'16px', padding:'1.25rem' },
-  challengeHeader:   { display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'0.75rem' },
-  challengeTag:      { fontSize:'10px', fontWeight:'700', letterSpacing:'0.08em', textTransform:'uppercase', background:'rgba(255,255,255,0.2)', color:'white', padding:'3px 10px', borderRadius:'20px' },
-  challengeFocus:    { fontSize:'10px', color:'rgba(255,255,255,0.55)' },
-  challengeText:     { fontSize:'14px', color:'white', lineHeight:'1.6', fontWeight:'500' },
-  optionsTitle:      { padding:'0.75rem 1.5rem 0.5rem', fontSize:'11px', color:'rgba(255,255,255,0.6)', letterSpacing:'0.08em', textTransform:'uppercase' },
-  options:           { padding:'0 1.5rem', display:'flex', flexDirection:'column', gap:'10px' },
-  option:            { background:'rgba(255,255,255,0.12)', border:'1.5px solid rgba(255,255,255,0.2)', borderRadius:'12px', padding:'1rem 1.25rem', cursor:'pointer', display:'flex', alignItems:'center', gap:'12px' },
-  optionCorrect:     { background:'rgba(50,200,120,0.25)', borderColor:'#32C878' },
-  optionWrong:       { background:'rgba(220,60,60,0.25)', borderColor:'#DC3C3C' },
-  optionLetter:      { width:'26px', height:'26px', borderRadius:'50%', background:'rgba(255,255,255,0.2)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'12px', fontWeight:'700', color:'white', flexShrink:0 },
+  screen:             { width:'100%', maxWidth:'400px', minHeight:'100vh', display:'flex', flexDirection:'column', background:GRADIENT, margin:'0 auto' },
+  topbar:             { padding:'1.25rem 1.5rem 0.75rem', display:'flex', justifyContent:'space-between', alignItems:'center' },
+  backBtn:            { fontSize:'20px', cursor:'pointer', background:'none', border:'none', color:'white' },
+  scoreBadge:         { background:'rgba(255,255,255,0.15)', border:'1px solid rgba(255,255,255,0.25)', borderRadius:'20px', padding:'4px 14px', fontSize:'12px', color:'white', fontWeight:'600' },
+  timerBadge:         { background:'rgba(255,255,255,0.15)', border:'1px solid rgba(255,255,255,0.25)', borderRadius:'20px', padding:'4px 14px', fontSize:'12px', color:'white', fontWeight:'600' },
+  mascotSection:      { padding:'0.5rem 1.5rem 0', display:'flex', alignItems:'center', gap:'1rem' },
+  paramsPanel:        { flex:1, display:'flex', flexDirection:'column', gap:'6px' },
+  paramItem:          { display:'flex', alignItems:'center', gap:'8px' },
+  paramLabel:         { fontSize:'10px', color:'rgba(255,255,255,0.65)', width:'55px' },
+  paramTrack:         { flex:1, height:'6px', background:'rgba(255,255,255,0.15)', borderRadius:'3px', overflow:'hidden', position:'relative' },
+  paramNormal:        { position:'absolute', height:'100%', background:'rgba(255,255,255,0.2)', borderRadius:'3px' },
+  paramFill:          { position:'absolute', height:'100%', borderRadius:'3px', transition:'width 0.3s' },
+  paramVal:           { fontSize:'10px', color:'white', fontWeight:'600', width:'36px', textAlign:'right' },
+  statusBar:          { margin:'0.75rem 1.5rem', display:'flex', gap:'8px' },
+  statusPill:         { flex:1, background:'rgba(255,255,255,0.1)', border:'1px solid rgba(255,255,255,0.15)', borderRadius:'10px', padding:'8px', textAlign:'center' },
+  statusPillVal:      { fontSize:'14px', fontWeight:'700', color:'white' },
+  statusPillLbl:      { fontSize:'9px', color:'rgba(255,255,255,0.55)', textTransform:'uppercase', letterSpacing:'0.05em' },
+  challengeCard:      { margin:'0 1.5rem', background:'rgba(255,255,255,0.12)', border:'1px solid rgba(255,255,255,0.25)', borderRadius:'16px', padding:'1.25rem' },
+  challengeHeader:    { display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'0.75rem' },
+  challengeTag:       { fontSize:'10px', fontWeight:'700', letterSpacing:'0.08em', textTransform:'uppercase', background:'rgba(255,255,255,0.2)', color:'white', padding:'3px 10px', borderRadius:'20px' },
+  challengeFocus:     { fontSize:'10px', color:'rgba(255,255,255,0.55)' },
+  challengeText:      { fontSize:'14px', color:'white', lineHeight:'1.6', fontWeight:'500' },
+  optionsTitle:       { padding:'0.75rem 1.5rem 0.5rem', fontSize:'11px', color:'rgba(255,255,255,0.6)', letterSpacing:'0.08em', textTransform:'uppercase' },
+  options:            { padding:'0 1.5rem', display:'flex', flexDirection:'column', gap:'10px' },
+  option:             { background:'rgba(255,255,255,0.12)', border:'1.5px solid rgba(255,255,255,0.2)', borderRadius:'12px', padding:'1rem 1.25rem', cursor:'pointer', display:'flex', alignItems:'center', gap:'12px' },
+  optionCorrect:      { background:'rgba(50,200,120,0.25)', borderColor:'#32C878' },
+  optionWrong:        { background:'rgba(220,60,60,0.25)', borderColor:'#DC3C3C' },
+  optionLetter:       { width:'26px', height:'26px', borderRadius:'50%', background:'rgba(255,255,255,0.2)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'12px', fontWeight:'700', color:'white', flexShrink:0 },
   optionLetterCorrect:{ background:'#32C878' },
-  optionLetterWrong: { background:'#DC3C3C' },
-  optionText:        { fontSize:'13px', color:'white', lineHeight:'1.4' },
-  nextBtn:           { width:'100%', padding:'13px', borderRadius:'10px', border:'none', backgroundColor:'white', color:'#7B2FBE', fontSize:'14px', fontWeight:'700', cursor:'pointer', fontFamily:'inherit' },
+  optionLetterWrong:  { background:'#DC3C3C' },
+  optionText:         { fontSize:'13px', color:'white', lineHeight:'1.4' },
+  nextBtn:            { width:'100%', padding:'13px', borderRadius:'10px', border:'none', backgroundColor:'white', color:'#7B2FBE', fontSize:'14px', fontWeight:'700', cursor:'pointer', fontFamily:'inherit' },
 };
 
 export default GameScreen;
