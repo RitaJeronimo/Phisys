@@ -108,7 +108,8 @@ function LoginScreen({ onLogin }) {
         </div>
         {error?<div style={s.error}>{error}</div>:null}
         <button style={{...s.submitBtn,opacity:loading?0.7:1}} onClick={handleSubmit} disabled={loading}>{loading?"Entrando...":"Entrar no Phisys"}</button>
-        <div style={s.footerNote}>Seus dados sao usados apenas para registro de desempenho e nao sao compartilhados.</div>
+        <div style={{ fontSize:'11px', color:'rgba(255,255,255,.6)', cursor:'pointer', textDecoration:'underline' }} onClick={() => alert('Entre em contato com seu professor para redefinir o acesso.')}>Esqueceu a senha?</div>
+<div style={s.footerNote}>Seus dados sao usados apenas para registro de desempenho e nao sao compartilhados.</div>
       </div>
     </div>
   );
