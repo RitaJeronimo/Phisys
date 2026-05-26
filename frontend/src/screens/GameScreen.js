@@ -152,9 +152,12 @@ async function handleAnswer(option) {
     }));
     try { await rankingApi.update({ xp_total: newScore, media_saude: 85 }); } catch(e) {}
   } else {
-    setErrorCount(e => e + 1);
-    setValues(prev => ({ ...prev, energia: Math.max(0, (prev.energia || 80) - 10) }));
-  }
+  setErrorCount(e => e + 1);
+  setValues(prev => ({ ...prev, energia: Math.max(0, (prev.energia || 80) - 10) }));
+  const penaltyScore = Math.max(0, score - 5);
+  setScore(penaltyScore);
+  try { await rankingApi.update({ xp_total: penaltyScore, media_saude: 85 }); } catch(e) {}
+}
   }
 
   function handleNext() {
