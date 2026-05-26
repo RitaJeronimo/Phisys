@@ -8,7 +8,7 @@ import ProfessorPanel from './screens/ProfessorPanel';
 import SecondaryScreen from './screens/SecondaryScreen';
 import FinalScreen from './screens/FinalScreen';
 import { getDefaultPrimaryValues, calcularSaude } from './engine/mascotEngine';
-import { animal as animalApi, ranking as rankingApi, sessoes as sessoesApi } from './api';
+import { animal as animalApi, ranking as rankingApi, sessoes as sessoesApi, simulacoes as simulacoesApi } from './api';
 
 function App() {
   const [user, setUser]               = useState(null);
@@ -59,6 +59,14 @@ function App() {
       const myRank = rankData.find(r => r.id === loggedUser.id || r.nome === loggedUser.name);
       if (myRank && myRank.xp_total > 0) setScore(myRank.xp_total);
     } catch(e) {}
+
+    try {
+  const sim = await simulacoesApi.getAtiva();
+  if (sim && sim.params) {
+    const p = typeof sim.params === 'string' ? JSON.parse(sim.params) : sim.params;
+    setValues(prev => ({ ...prev, ...p }));
+  }
+} catch(e) {}
   }
 
   async function handleCare(careId, newValues) {

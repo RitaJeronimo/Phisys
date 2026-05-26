@@ -38,6 +38,10 @@ export const desafios = {
   get: () => req('/api/desafios', { headers: authHeaders() }),
 };
 
+export const simulacoes = {
+  getAtiva: () => req('/api/simulacoes/ativa', { headers: authHeaders() }),
+};
+
 export const sessoes = {
   iniciar:   (data)    => req('/api/sessoes/iniciar', { method: 'POST', headers: authHeaders(), body: JSON.stringify(data) }),
   finalizar: (id, data) => req(`/api/sessoes/${id}/finalizar`, { method: 'PUT', headers: authHeaders(), body: JSON.stringify(data) }),
