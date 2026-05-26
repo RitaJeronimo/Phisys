@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DEFAULT_MOTIVATION_MESSAGES } from './MotivationScreen';
 import { DEFAULT_WEIGHTS, calculateFinalGrade, STATUS, INTERVENTIONS, PRIMARY_PARAMS } from '../engine/mascotEngine';
 import { ranking as rankingApi } from '../api';
 
 const GRADIENT = 'linear-gradient(160deg, #1B4FCC 0%, #7B2FBE 50%, #CC1B1B 100%)';
 
-const MOCK_STUDENTS = [
+const students = [
   { name:'Carlos Mendes',  initials:'CM', pts:520, finalStatus:STATUS.SAUDAVEL,   totalChallenges:3, solvedChallenges:3, avgResponseTime:12 },
   { name:'Juliana Santos', initials:'JS', pts:480, finalStatus:STATUS.SAUDAVEL,   totalChallenges:3, solvedChallenges:3, avgResponseTime:17 },
   { name:'Ana Paula',      initials:'AP', pts:340, finalStatus:STATUS.DEBILITADO, totalChallenges:3, solvedChallenges:2, avgResponseTime:24 },
@@ -87,14 +87,21 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
   });
   const [manualGrades, setManualGrades] = useState(() => {
     const obj = {};
-    MOCK_STUDENTS.forEach(s => {
+    students.forEach(s => {
       obj[s.initials] = calculateFinalGrade({ finalScore:s.pts, finalStatus:s.finalStatus, totalChallenges:s.totalChallenges, solvedChallenges:s.solvedChallenges, avgResponseTime:s.avgResponseTime });
     });
     return obj;
   });
+  const [students, setStudents] = useState([]);
 
-  const avgGrade = (Object.values(manualGrades).reduce((a,g)=>a+Number(g),0)/MOCK_STUDENTS.length).toFixed(1);
-  const avgTime = Math.round(MOCK_STUDENTS.reduce((a,s)=>a+s.avgResponseTime,0)/MOCK_STUDENTS.length);
+useEffect(() => {
+  rankingApi.get()
+    .then(data => setStudents(Array.isArray(data) ? data : []))
+    .catch(() => setStudents([]));
+}, []);
+
+  const avgGrade = (Object.values(manualGrades).reduce((a,g)=>a+Number(g),0)/students.length).toFixed(1);
+  const avgTime = Math.round(students.reduce((a,s)=>a+s.avgResponseTime,0)/students.length);
   const formatTime = s => `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`;
 
   function getCalcGrade(student) {
@@ -389,7 +396,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
         <>
           <div style={styles.summary}>
             {[
-              {val:MOCK_STUDENTS.length, lbl:'Alunos'},
+              {val:students.length, lbl:'Alunos'},
               {val:challenges.filter(c=>c.active).length, lbl:'Desafios'},
               {val:avgGrade, lbl:'Média'},
               {val:formatTime(avgTime), lbl:'Tempo médio'},
@@ -409,7 +416,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
               <span style={{textAlign:'center'}}>calc.</span>
               <span style={{textAlign:'center'}}>final</span>
             </div>
-            {MOCK_STUDENTS.map(student=>{
+            {students.map(student=>{
               const calc = getCalcGrade(student);
               const statusInfo = STATUS_LABEL[student.finalStatus];
               return (
