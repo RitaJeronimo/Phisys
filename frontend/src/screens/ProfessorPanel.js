@@ -204,16 +204,41 @@ useEffect(() => {
   function handleEditSimulation(sim) { setEditingType('simulation'); setEditing(sim.id); setSimForm({ ...sim, params:{...sim.params} }); }
   function handleDeleteSimulation(id) { setSimulations(prev => prev.filter(s => s.id !== id)); }
   function handleToggleSimulation(id) { setSimulations(prev => prev.map(s => s.id === id ? {...s, active:!s.active} : s)); }
-  function handleSaveSimulation() {
-    if (!simForm.title) return;
+  async function handleSaveSimulation() {
+  if (!simForm.title) return;
+  try {
     if (editing === 'new') {
+      await req('/api/simulacoes', {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({
+          titulo: simForm.title,
+          descricao: simForm.description,
+          foco: simForm.focus,
+          params: simForm.params,
+        }),
+      });
       const newId = Math.max(0, ...simulations.map(s=>s.id)) + 1;
       setSimulations(prev => [...prev, { ...simForm, id:newId }]);
     } else {
+      await req(`/api/simulacoes/${editing}`, {
+        method: 'PUT',
+        headers: authHeaders(),
+        body: JSON.stringify({
+          titulo: simForm.title,
+          descricao: simForm.description,
+          foco: simForm.focus,
+          params: simForm.params,
+          ativo: simForm.active,
+        }),
+      });
       setSimulations(prev => prev.map(s => s.id === editing ? { ...simForm, id:s.id } : s));
     }
-    setEditing(null); setSimForm(null); setEditingType(null);
+  } catch(e) {
+    alert('Erro ao salvar simulação: ' + e.message);
   }
+  setEditing(null); setSimForm(null); setEditingType(null);
+}
   function handleSimParam(id, val) {
     setSimForm(f => ({ ...f, params:{ ...f.params, [id]: Number(val) } }));
   }
