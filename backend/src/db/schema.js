@@ -99,4 +99,14 @@ async function criarTabelas() {
 
 criarTabelas();
 
+async function adicionarColunas() {
+  try {
+    await pool.query(`ALTER TABLE ranking ADD COLUMN IF NOT EXISTS nota_final NUMERIC DEFAULT NULL`);
+    console.log('Colunas adicionadas com sucesso!');
+  } catch (err) {
+    console.error('Erro ao adicionar colunas:', err.message);
+  }
+}
+adicionarColunas();
+
 module.exports = { criarTabelas };
