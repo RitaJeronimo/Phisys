@@ -222,14 +222,14 @@ async function handleAnswer(option) {
   if (mode === 'livre' && energiaAtual <= 0) {
   alert('⚡ Energia esgotada! Volte à tela principal e alimente o Phisys para continuar.');
   if (onFinish) {
-    onFinish({ seconds, solvedChallenges: solvedCount, totalChallenges: challenges.length, errors: errorCount, paramHistory: null });
+    onFinish({ seconds, solvedChallenges: solvedCount, totalChallenges: challenges.length, errors: errorCount, paramHistory: null, finalScore: score });
   }
   return;
 }
 
   if (currentIdx + 1 >= challenges.length) {
     if (onFinish) {
-      onFinish({ seconds, solvedChallenges: solvedCount, totalChallenges: challenges.length, errors: errorCount, paramHistory: null });
+      onFinish({ seconds, solvedChallenges: solvedCount, totalChallenges: challenges.length, errors: errorCount, paramHistory: null, finalScore: score });
     } else {
       setFinished(true);
     }

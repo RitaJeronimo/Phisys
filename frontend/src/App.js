@@ -139,6 +139,7 @@ if (!localStorage.getItem(welcomeKey)) {
   async function handleGameFinish(data) {
   const seconds = sessionStart ? Math.floor((Date.now() - sessionStart) / 1000) : 0;
   setSessionData({ ...data, seconds });
+  if (data.finalScore) setScore(data.finalScore);
   setScreen('final');
   try {
     if (sessaoId) {
