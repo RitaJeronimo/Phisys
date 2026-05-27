@@ -220,11 +220,13 @@ async function handleAnswer(option) {
   function handleNext() {
   const energiaAtual = values.energia || 0;
   if (mode === 'livre' && energiaAtual <= 0) {
-    if (onFinish) {
-      onFinish({ seconds, solvedChallenges: solvedCount, totalChallenges: challenges.length, errors: errorCount, paramHistory: null });
-    }
-    return;
+  alert('⚡ Energia esgotada! Volte à tela principal e alimente o Phisys para continuar.');
+  if (onFinish) {
+    onFinish({ seconds, solvedChallenges: solvedCount, totalChallenges: challenges.length, errors: errorCount, paramHistory: null });
   }
+  return;
+}
+
   if (currentIdx + 1 >= challenges.length) {
     if (onFinish) {
       onFinish({ seconds, solvedChallenges: solvedCount, totalChallenges: challenges.length, errors: errorCount, paramHistory: null });
