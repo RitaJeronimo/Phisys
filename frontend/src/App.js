@@ -133,7 +133,7 @@ if (!localStorage.getItem(welcomeKey)) {
   } catch(e) {}
   setScreen('home');
 }
-  function handleLogout()      { setUser(null); setMode(null); setScreen('home'); setValues(getDefaultPrimaryValues()); setScore(100); setSessionData(null); }
+  function handleLogout() { removeToken(); setUser(null); setMode(null); setScreen('home'); setValues(getDefaultPrimaryValues()); setScore(100); setSessionData(null); }
   function handleBack()        { setMode(null); setScreen('home'); }
   function handleSelectMode(m) { setMode(m); setSessionStart(Date.now()); setScreen('game'); }
   async function handleGameFinish(data) {
