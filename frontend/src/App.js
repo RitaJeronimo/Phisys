@@ -125,6 +125,22 @@ if (!localStorage.getItem(welcomeKey)) {
   function handleViewPanel()     { setScreen('professor'); }
   function handleViewSecondary() { setScreen('secondary'); }
 
+  if (showWelcome) return (
+  <div style={{ width:'100%', maxWidth:'400px', minHeight:'100vh', display:'flex', flexDirection:'column', justifyContent:'center', alignItems:'center', background:'linear-gradient(160deg, #1B4FCC 0%, #7B2FBE 50%, #CC1B1B 100%)', margin:'0 auto', padding:'2rem', boxSizing:'border-box' }}>
+    <div style={{ fontSize:'60px', marginBottom:'1rem' }}>🐭</div>
+    <div style={{ fontSize:'24px', fontWeight:'700', color:'white', textAlign:'center', marginBottom:'1rem' }}>Bem-vindo ao Phisys!</div>
+    <div style={{ fontSize:'13px', color:'rgba(255,255,255,.85)', textAlign:'center', lineHeight:'1.8', marginBottom:'2rem', background:'rgba(255,255,255,.12)', borderRadius:'16px', padding:'1.5rem' }}>
+      O Phisys é um ratinho virtual que precisa de cuidado, equilíbrio e boas decisões para manter sua homeostase.<br/><br/>
+      Ao longo da jornada, ele cresce, muda de fase e responde às suas escolhas — ajudando você a compreender como o corpo regula seus sistemas cardiovascular e renal.<br/><br/>
+      Cuide dele, observe seus parâmetros e teste hipóteses fisiológicas em tempo real!
+    </div>
+    <button style={{ width:'100%', padding:'14px', borderRadius:'10px', border:'none', background:'white', color:'#7B2FBE', fontSize:'15px', fontWeight:'700', cursor:'pointer' }}
+      onClick={() => setShowWelcome(false)}>
+      Começar jornada 🐭
+    </button>
+  </div>
+);
+  
   if (!user) return <LoginScreen onLogin={handleLogin}/>;
 
   if (screen === 'motivation')
