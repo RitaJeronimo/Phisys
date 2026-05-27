@@ -20,6 +20,7 @@ function App() {
   const [ageDays, setAgeDays]         = useState(90);
   const [sessionStart, setSessionStart] = useState(null);
   const [sessaoId, setSessaoId] = useState(null);
+  const [showWelcome, setShowWelcome] = useState(false);
 
   async function handleLogin(userData) {
     const loggedUser = { ...userData, name: userData.nome, mode: userData.modo };
@@ -29,6 +30,12 @@ function App() {
       setScreen('professor');
       return;
     }
+
+    const welcomeKey = 'phisys_welcome_' + loggedUser.matricula;
+if (!localStorage.getItem(welcomeKey)) {
+  localStorage.setItem(welcomeKey, 'true');
+  setShowWelcome(true);
+}
 
     const today = new Date().toDateString();
     const motivKey = 'phisys_motivation_' + loggedUser.matricula;
