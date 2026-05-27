@@ -222,8 +222,15 @@ useEffect(() => {
   // ── SIMULAÇÕES ──
   function handleNewSimulation() { setEditingType('simulation'); setEditing('new'); setSimForm({ ...EMPTY_SIMULATION, params:getDefaultSimParams() }); }
   function handleEditSimulation(sim) { setEditingType('simulation'); setEditing(sim.id); setSimForm({ ...sim, params:{...sim.params} }); }
-  function handleDeleteSimulation(id) { setSimulations(prev => prev.filter(s => s.id !== id)); }
-  function handleToggleSimulation(id) { setSimulations(prev => prev.map(s => s.id === id ? {...s, active:!s.active} : s)); }
+  async function handleDeleteSimulation(id) {
+  try { await req(`/api/simulacoes/${id}`, { method: 'DELETE', headers: authHeaders() }); } catch(e) {}
+  setSimulations(prev => prev.filter(s => s.id !== id));
+}
+async function handleToggleSimulation(id) {
+  const sim = simulations.find(s => s.id === id);
+  try { await req(`/api/simulacoes/${id}`, { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ ativo: !sim.active }) }); } catch(e) {}
+  setSimulations(prev => prev.map(s => s.id === id ? {...s, active:!s.active} : s));
+}
   async function handleSaveSimulation() {
   if (!simForm.title) return;
   try {
