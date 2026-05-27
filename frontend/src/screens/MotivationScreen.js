@@ -11,11 +11,11 @@ const LEVELS = [
 ];
 
 export const DEFAULT_MOTIVATION_MESSAGES = {
-  1: 'Tudo bem! Cada dia é uma nova oportunidade. Seu animal conta com você — vamos devagar e com cuidado.',
-  2: 'Estamos aqui com você! Pequenos passos também levam longe. Cuide bem do seu animal hoje.',
-  3: 'Que bom ter você aqui! Explore os parâmetros fisiológicos do seu animal e descubra novas correlações.',
-  4: 'Que ótimo! Sua motivação faz diferença no aprendizado. Mantenha seu animal em homeostase!',
-  5: 'Incrível! Com essa energia você vai longe. Seu animal está com sorte de ter você hoje!',
+  1: 'Tudo bem! O Phisys está aqui com você. Mesmo nos dias difíceis, seu ratinho precisa de cuidado. Vamos devagar — cada pequena ação ajuda a manter a homeostase.',
+  2: 'Pequenos passos também levam longe. Cuide do Phisys hoje e observe como suas escolhas influenciam o equilíbrio dos sistemas cardiovascular e renal.',
+  3: 'Que bom ter você aqui! Explore os parâmetros fisiológicos do Phisys e descubra como hidratação, pressão arterial e frequência cardíaca se relacionam em equilíbrio dinâmico.',
+  4: 'Que ótimo! Sua motivação faz diferença no aprendizado. Vamos manter o Phisys em homeostase? Cada decisão sua impacta diretamente a vida do seu ratinho científico.',
+  5: 'Incrível! Com essa energia você vai longe. O Phisys está com sorte — cuide dele, teste hipóteses e comprove como o corpo regula seus sistemas em tempo real!',
 };
 
 function MotivationScreen({ user, onContinue, customMessages }) {
@@ -67,7 +67,7 @@ function MotivationScreen({ user, onContinue, customMessages }) {
 
         <div style={styles.greeting}>Olá, {user.name.split(' ')[0]}! 👋</div>
         <div style={styles.question}>Como você está se sentindo hoje?</div>
-        <div style={styles.subtext}>Isso nos ajuda a personalizar sua experiência no Phisys.</div>
+        <div style={styles.subtext}>Sua resposta ajudará o Phisys a adaptar sua jornada fisiológica.</div>
 
         <div style={styles.levels}>
           {LEVELS.map(l => (
