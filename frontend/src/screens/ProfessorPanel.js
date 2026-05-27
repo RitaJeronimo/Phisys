@@ -71,7 +71,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
   const [motivationMessages, setMotivationMessages] = useState({...DEFAULT_MOTIVATION_MESSAGES});
   const [tab, setTab] = useState('desafios');
   const [challenges, setChallenges] = useState([]);
-  const [simulations, setSimulations] = useState(INITIAL_SIMULATIONS);
+  const [simulations, setSimulations] = useState([]);
   const [editing, setEditing] = useState(null);
   const [editingType, setEditingType] = useState(null); // 'challenge' | 'simulation'
   const [form, setForm] = useState(null);
@@ -113,6 +113,26 @@ useEffect(() => {
       }
     })
     .catch(() => setChallenges(INITIAL_CHALLENGES));
+}, []);
+
+useEffect(() => {
+  req('/api/simulacoes', { headers: authHeaders() })
+    .then(data => {
+      if (Array.isArray(data) && data.length > 0) {
+        const formatted = data.map(d => ({
+          id: d.id,
+          title: d.titulo,
+          focus: d.foco || 'cardiovascular',
+          active: d.ativo,
+          description: d.descricao || '',
+          params: typeof d.params === 'string' ? JSON.parse(d.params) : d.params,
+        }));
+        setSimulations(formatted);
+      } else {
+        setSimulations(INITIAL_SIMULATIONS);
+      }
+    })
+    .catch(() => setSimulations(INITIAL_SIMULATIONS));
 }, []);
 
   const avgGrade = students.length > 0 ? (students.reduce((a,s)=>a+Number(s.xp_total||0),0)/students.length).toFixed(0) : '0';
