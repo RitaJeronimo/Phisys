@@ -181,6 +181,7 @@ function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, on
   const [showModes, setShowModes] = useState(false);
   const [activeParam, setActiveParam] = useState(null);
   const [miniRanking, setMiniRanking] = useState([]);
+  const [careEffect, setCareEffect] = useState(null);
 
 useEffect(() => {
   rankingApi.get().then(data => setMiniRanking(Array.isArray(data) ? data.slice(0, 3) : [])).catch(() => {});
@@ -200,6 +201,8 @@ useEffect(() => {
     const newValues = aplicarCuidado(values, id);
     setValues(newValues);
     setCaresDone(prev => ({ ...prev, [id]: true }));
+    setCareEffect(id);
+setTimeout(() => setCareEffect(null), 1500);
     try { await animalApi.cuidado(id); } catch(e) {}
     try {
       await animalApi.update({
@@ -259,12 +262,15 @@ useEffect(() => {
       <div style={styles.caresLabel}>cuidados diários</div>
       <div style={styles.cares}>
         {Object.values(DAILY_CARES).map(c => (
-          <div key={c.id} style={{ ...styles.careCard, ...(caresDone[c.id] ? styles.careDone : {}) }} onClick={() => handleCare(c.id)}>
-            <div style={styles.careIcon}>{c.icon}</div>
-            <div style={styles.careName}>{c.label.split(' ')[0]}</div>
-            <div style={styles.careDesc}>{caresDone[c.id] ? '✓ Feito' : c.label}</div>
-          </div>
-        ))}
+  <div key={c.id} style={{ ...styles.careCard, ...(caresDone[c.id] ? styles.careDone : {}), position:'relative' }} onClick={() => handleCare(c.id)}>
+    <div style={styles.careIcon}>{c.icon}</div>
+    <div style={styles.careName}>{c.label.split(' ')[0]}</div>
+    <div style={styles.careDesc}>{caresDone[c.id] ? '✓ Feito' : c.label}</div>
+    {careEffect === c.id && (
+      <div style={{ position:'absolute', top:'-10px', right:'4px', fontSize:'11px', fontWeight:'700', color:'#FFD700', animation:'fadeUp 1.5s ease-out', pointerEvents:'none' }}>+5 XP ⚡</div>
+    )}
+  </div>
+))}
       </div>
       {miniRanking.length > 0 && (
   <div style={{ margin:'0 1rem .5rem', background:'rgba(255,255,255,.1)', border:'1px solid rgba(255,255,255,.18)', borderRadius:'14px', padding:'.75rem' }}>
@@ -341,5 +347,9 @@ const styles = {
   infoDica:         { background:'rgba(50,200,120,.2)', border:'1px solid rgba(50,200,120,.4)', borderRadius:'10px', padding:'.75rem', fontSize:'11px', color:'white', lineHeight:'1.4' },
   infoCloseBtn:     { background:'rgba(255,255,255,.1)', border:'1px solid rgba(255,255,255,.2)', borderRadius:'20px', padding:'8px', color:'rgba(255,255,255,.7)', fontSize:'12px', cursor:'pointer', fontFamily:'inherit' },
 };
+
+const styleTag = document.createElement('style');
+styleTag.innerHTML = `@keyframes fadeUp { 0% { opacity:1; transform:translateY(0); } 100% { opacity:0; transform:translateY(-20px); } }`;
+document.head.appendChild(styleTag);
 
 export default HomeScreen;
