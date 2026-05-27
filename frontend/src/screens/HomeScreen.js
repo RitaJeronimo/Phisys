@@ -213,7 +213,7 @@ setTimeout(() => setCareEffect(null), 1500);
     try {
       const newScore = (score || 100) + 5;
       await rankingApi.update({ xp_total: newScore, media_saude: calcularSaude(newValues) });
-      if (onCare) onCare(id, newValues, newScore);
+      
     } catch(e) {}
   }
 
