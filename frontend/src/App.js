@@ -7,7 +7,7 @@ import ProfessorPanel from './screens/ProfessorPanel';
 import SecondaryScreen from './screens/SecondaryScreen';
 import FinalScreen from './screens/FinalScreen';
 import { getDefaultPrimaryValues, calcularSaude } from './engine/mascotEngine';
-import { animal as animalApi, ranking as rankingApi, sessoes as sessoesApi, simulacoes as simulacoesApi, getToken } from './api';
+import { animal as animalApi, ranking as rankingApi, sessoes as sessoesApi, simulacoes as simulacoesApi, getToken, removeToken } from './api';
 import React, { useState, useEffect } from 'react';
 
 function App() {
@@ -46,7 +46,9 @@ function App() {
         setValues(prev => ({ ...prev, ...p }));
       }
     }).catch(() => {});
-  } catch(e) {}
+  } catch(e) {
+    removeToken();
+  }
 }, []);
 
   async function handleLogin(userData) {
