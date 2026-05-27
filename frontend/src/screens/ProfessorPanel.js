@@ -525,8 +525,17 @@ useEffect(() => {
     <div style={styles.cell}>-</div>
     <div style={styles.cell}>
       <input style={styles.notaInput} type="number" min="0" max="10" step="0.1"
-        value={manualGrades[student.id] || ''}
-        onChange={e=>setManualGrades(g=>({...g,[student.id]:Number(e.target.value)}))}/>
+  value={manualGrades[student.id] || ''}
+  onChange={e=>setManualGrades(g=>({...g,[student.id]:Number(e.target.value)}))}
+  onBlur={async e => {
+    try {
+      await req(`/api/ranking/${student.id}/nota`, {
+        method: 'PUT',
+        headers: authHeaders(),
+        body: JSON.stringify({ nota_final: Number(e.target.value) }),
+      });
+    } catch(err) {}
+  }}/>
     </div>
     <div style={styles.cell}>
       <button style={{ fontSize:'10px', background:'rgba(255,255,255,.15)', border:'1px solid rgba(255,255,255,.25)', color:'white', padding:'3px 6px', borderRadius:'6px', cursor:'pointer', fontFamily:'inherit' }}

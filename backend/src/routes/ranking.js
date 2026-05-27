@@ -8,7 +8,7 @@ router.get('/', auth, async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT u.id, u.nome, u.matricula,
-              r.xp_total, r.sessoes, r.media_saude,
+       r.xp_total, r.sessoes, r.media_saude, r.nota_final,
               RANK() OVER (ORDER BY r.xp_total DESC) AS posicao
        FROM usuarios u
        JOIN ranking r ON r.usuario_id = u.id
@@ -42,6 +42,26 @@ router.put('/', auth, async (req, res) => {
     res.json(result.rows[0]);
   } catch (err) {
     console.error('Erro ao atualizar ranking:', err.message);
+    res.status(500).json({ erro: 'Erro interno do servidor.' });
+  }
+});
+
+// PUT /api/ranking/:id/nota — professor salva nota do aluno
+router.put('/:id/nota', auth, async (req, res) => {
+  if (req.usuario.modo !== 'professor') {
+    return res.status(403).json({ erro: 'Acesso negado.' });
+  }
+  const { id } = req.params;
+  const { nota_final } = req.body;
+  try {
+    const result = await pool.query(
+      `UPDATE ranking SET nota_final = $1, atualizado_em = NOW()
+       WHERE usuario_id = $2 RETURNING *`,
+      [nota_final, id]
+    );
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Erro ao salvar nota:', err.message);
     res.status(500).json({ erro: 'Erro interno do servidor.' });
   }
 });

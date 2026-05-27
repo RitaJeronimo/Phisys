@@ -80,14 +80,15 @@ async function criarTabelas() {
 
       -- RANKING
       CREATE TABLE IF NOT EXISTS ranking (
-        id          SERIAL PRIMARY KEY,
-        usuario_id  INTEGER REFERENCES usuarios(id) ON DELETE CASCADE,
-        xp_total    INTEGER DEFAULT 0,
-        sessoes     INTEGER DEFAULT 0,
-        media_saude NUMERIC DEFAULT 0,
-        atualizado_em TIMESTAMP DEFAULT NOW(),
-        UNIQUE(usuario_id)
-      );
+  id          SERIAL PRIMARY KEY,
+  usuario_id  INTEGER REFERENCES usuarios(id) ON DELETE CASCADE,
+  xp_total    INTEGER DEFAULT 0,
+  sessoes     INTEGER DEFAULT 0,
+  media_saude NUMERIC DEFAULT 0,
+  nota_final  NUMERIC DEFAULT NULL,
+  atualizado_em TIMESTAMP DEFAULT NOW(),
+  UNIQUE(usuario_id)
+);
     `);
 
     console.log('Tabelas criadas com sucesso!');
