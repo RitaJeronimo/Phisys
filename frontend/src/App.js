@@ -1,4 +1,3 @@
-import React, { useState } from 'react';
 import LoginScreen from './screens/LoginScreen';
 import MotivationScreen from './screens/MotivationScreen';
 import HomeScreen from './screens/HomeScreen';
@@ -8,7 +7,8 @@ import ProfessorPanel from './screens/ProfessorPanel';
 import SecondaryScreen from './screens/SecondaryScreen';
 import FinalScreen from './screens/FinalScreen';
 import { getDefaultPrimaryValues, calcularSaude } from './engine/mascotEngine';
-import { animal as animalApi, ranking as rankingApi, sessoes as sessoesApi, simulacoes as simulacoesApi } from './api';
+import { animal as animalApi, ranking as rankingApi, sessoes as sessoesApi, simulacoes as simulacoesApi, getToken } from './api';
+import React, { useState, useEffect } from 'react';
 
 function App() {
   const [user, setUser]               = useState(null);
@@ -21,6 +21,33 @@ function App() {
   const [sessionStart, setSessionStart] = useState(null);
   const [sessaoId, setSessaoId] = useState(null);
   const [showWelcome, setShowWelcome] = useState(false);
+
+  useEffect(() => {
+  const token = getToken();
+  if (!token) return;
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    if (payload.exp * 1000 < Date.now()) return;
+    const loggedUser = { id: payload.id, name: payload.nome, nome: payload.nome, matricula: payload.matricula, mode: payload.modo, modo: payload.modo };
+    setUser(loggedUser);
+    if (payload.modo === 'professor') { setScreen('professor'); return; }
+    setScreen('home');
+    animalApi.get().then(a => {
+      setValues({ energia: Number(a.energia), hidratacao: Number(a.hidratacao), pas: Number(a.pas), pad: Number(a.pad), fc: Number(a.fc), peso: Number(a.peso) });
+      setAgeDays(Number(a.age_days) || 90);
+    }).catch(() => {});
+    rankingApi.get().then(rankData => {
+      const myRank = rankData.find(r => r.id === payload.id || r.nome === payload.nome);
+      if (myRank && myRank.xp_total > 0) setScore(myRank.xp_total);
+    }).catch(() => {});
+    simulacoesApi.getAtiva().then(sim => {
+      if (sim && sim.params) {
+        const p = typeof sim.params === 'string' ? JSON.parse(sim.params) : sim.params;
+        setValues(prev => ({ ...prev, ...p }));
+      }
+    }).catch(() => {});
+  } catch(e) {}
+}, []);
 
   async function handleLogin(userData) {
     const loggedUser = { ...userData, name: userData.nome, mode: userData.modo };
