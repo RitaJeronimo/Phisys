@@ -20,39 +20,39 @@ export function getGrowthStage(days) {
 
 const PARAM_INFO = {
   energia: {
-    pergunta: 'O que compõe a energia do animal e o que a influencia?',
-    resposta: 'A energia representa a quantidade de ações disponíveis. Ela é consumida a cada desafio respondido e recarregada com alimentação diária. Animais bem alimentados têm mais energia para participar de quizzes no Modo Livre.',
-    dica: '💡 Alimente o animal diariamente para manter a energia alta!',
+    pergunta: 'O que é a energia do Phisys e o que a influencia?',
+    resposta: 'A energia indica a disposição do animal para realizar ações, participar de desafios e responder quizzes. É recuperada principalmente com alimentação adequada e pode ser influenciada pela saúde, hidratação e fase de desenvolvimento. Baixa energia limita ações e sinaliza necessidade de cuidado.',
+    dica: '💡 Alimente o Phisys diariamente para manter a energia alta!',
   },
   hidratacao: {
-    pergunta: 'Quais parâmetros são influenciados pela hidratação?',
-    resposta: 'A hidratação influencia diretamente: Volume Urinário (↑ hidratação → ↑ diurese), Resistência Vascular Periférica (↑ hidratação → ↓ RVP) e Pressão Arterial (↑ hidratação → ↑ volemia → PA normaliza). A desidratação reduz a pré-carga e o débito cardíaco, gerando FC compensatória.',
+    pergunta: 'Como a hidratação influencia o organismo do Phisys?',
+    resposta: 'A hidratação representa o equilíbrio hídrico do rato virtual. Influencia o volume urinário, a volemia, a pressão arterial e o débito cardíaco. Regra fisiológica: ↓ hidratação → ↓ volemia → ↓ pré-carga → ↓ volume sistólico → ↓ débito cardíaco → ↑ FC compensatória.',
     dica: '💡 Troque a água diariamente para manter a homeostase cardiovascular e renal!',
   },
   pa: {
-    pergunta: 'O que influencia a Pressão Arterial?',
-    resposta: 'A PA é determinada pelo Débito Cardíaco e pela Resistência Vascular Periférica (PA = DC × RVP). A PAS reflete a ejeção cardíaca e a PAD reflete a resistência vascular em repouso. Desidratação reduz a PA; vasoconstrição e hipervolemia a elevam.',
+    pergunta: 'O que determina a Pressão Arterial do Phisys?',
+    resposta: 'A PA depende principalmente do débito cardíaco e da resistência vascular periférica: PA = DC × RVP. A PAS reflete a ejeção cardíaca e a PAD reflete a resistência vascular em repouso. A desidratação reduz a volemia e pode diminuir a PA. Vasoconstrição, estresse fisiológico ou hipervolemia podem elevá-la. PA basal aproximada: 110/70 mmHg.',
     dica: '💡 Faixa normal: 90–120/60–80 mmHg. Valores fora dessa faixa indicam desequilíbrio cardiovascular!',
   },
   fc: {
     pergunta: 'Como a Frequência Cardíaca se relaciona com o Débito Cardíaco?',
-    resposta: 'O Débito Cardíaco é o produto da FC pelo Volume Sistólico (DC = FC × VS). Quando o débito cardíaco cai (ex: desidratação, insuficiência cardíaca), o organismo aumenta a FC como mecanismo compensatório para manter a perfusão tecidual. Bradicardia reduz o DC mesmo com VS normal.',
-    dica: '💡 Faixa normal: 60–100 bpm. FC elevada pode indicar compensação cardiovascular!',
+    resposta: 'O Débito Cardíaco é o produto da FC pelo Volume Sistólico (DC = FC × VS). Na desidratação, o volume sistólico pode cair e a FC aumenta como mecanismo compensatório para manter a perfusão dos tecidos. FC e DC são diretamente proporcionais apenas quando o VS não muda. FC basal aproximada do rato virtual: 360–380 bpm.',
+    dica: '💡 Faixa normal: 360–380 bpm. FC elevada pode indicar compensação cardiovascular!',
   },
   peso: {
-    pergunta: 'Como o peso corporal influencia os parâmetros cardiovasculares?',
-    resposta: 'O excesso de peso aumenta a Resistência Vascular Periférica, elevando a pós-carga cardíaca e consequentemente a Pressão Arterial. Animais obesos têm maior risco de hipertensão e insuficiência cardíaca. O peso também influencia o Débito Cardíaco necessário para perfundir os tecidos.',
+    pergunta: 'Como o peso corporal influencia os parâmetros cardiovasculares do Phisys?',
+    resposta: 'O peso representa a condição corporal geral do rato virtual. Excesso de peso aumenta a Resistência Vascular Periférica, elevando a pós-carga cardíaca e consequentemente a Pressão Arterial. Animais com sobrepeso têm maior risco de hipertensão. O peso também influencia o Débito Cardíaco necessário para perfundir os tecidos. Peso saudável aproximado: 200–400g.',
     dica: '💡 Peso normal: 200–400g. Obesidade é fator de risco cardiovascular!',
   },
   saude: {
-    pergunta: 'O que determina o índice de Saúde do animal?',
-    resposta: 'A Saúde é calculada automaticamente com base em quantos parâmetros primários estão dentro da faixa normal (Hidratação, PAS, PAD e FC). Cada parâmetro fora da faixa reduz a saúde. Saúde ≥75% = Saudável; 40–74% = Debilitado; <40% = Crítico.',
+    pergunta: 'O que determina o índice de Saúde do Phisys?',
+    resposta: 'A saúde é calculada automaticamente com base em quantos parâmetros primários estão dentro da faixa normal: hidratação, PAS, PAD e FC. Energia e peso atuam como moduladores do estado geral. Quanto mais parâmetros equilibrados, maior o índice de saúde. Saúde ≥75% = Saudável; 40–74% = Debilitado; <40% = Crítico.',
     dica: '💡 Mantenha todos os parâmetros na faixa normal para máxima saúde!',
   },
   idade: {
-    pergunta: 'Como a idade do animal influencia seus parametros fisiologicos?',
-    resposta: 'A medida que o animal envelhece, a Frequencia Cardiaca tende a diminuir, a Resistencia Vascular Periferica aumenta gradualmente e a resposta compensatoria a eventos como desidratacao e hipertensao pode ser menos eficiente. Animais mais velhos exigem cuidados mais frequentes para manter a homeostase.',
-    dica: 'Acompanhe a evolucao do animal — cada fase tem suas proprias faixas normais de FC!',
+    pergunta: 'Como a idade do Phisys influencia seus parâmetros fisiológicos?',
+    resposta: 'A idade representa a fase de desenvolvimento do rato virtual. Animais mais velhos apresentam maior vulnerabilidade fisiológica e menor capacidade compensatória. Situações como desidratação, aumento da PA ou queda do débito cardíaco podem causar impacto mais rápido sobre a saúde. Cada fase tem necessidades e faixas fisiológicas próprias.',
+    dica: '💡 Acompanhe a evolução do Phisys — cada fase tem suas próprias faixas normais!',
   },
 };
 
