@@ -124,7 +124,7 @@ function ParamModal({ paramId, onClose }) {
   );
 }
 
-function Mascot({ status, ageDays }) {
+export function Mascot({ status, ageDays }) {
   const stage = getGrowthStage(ageDays || 90);
   const bodyColor  = status === STATUS.SAUDAVEL ? '#D4D4D4' : status === STATUS.DEBILITADO ? '#FAC775' : '#F09595';
   const earIn      = status === STATUS.SAUDAVEL ? '#FFD0DC' : status === STATUS.DEBILITADO ? '#F5CC80' : '#FFB0B0';

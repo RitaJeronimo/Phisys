@@ -1,4 +1,4 @@
-import { ChibiMascot } from './screens/HomeScreen';
+import { Mascot } from './screens/HomeScreen';
 import LoginScreen from './screens/LoginScreen';
 import MotivationScreen from './screens/MotivationScreen';
 import HomeScreen from './screens/HomeScreen';
@@ -159,7 +159,7 @@ if (!localStorage.getItem(welcomeKey)) {
   if (showWelcome) return (
   <div style={{ width:'100%', maxWidth:'400px', minHeight:'100vh', display:'flex', flexDirection:'column', justifyContent:'center', alignItems:'center', background:'linear-gradient(160deg, #1B4FCC 0%, #7B2FBE 50%, #CC1B1B 100%)', margin:'0 auto', padding:'2rem', boxSizing:'border-box' }}>
     <div style={{ marginBottom:'1rem' }}>
-  <ChibiMascot status="saudavel" stage="JUVENIL" size={120}/>
+  <Mascot status="saudavel" ageDays={90}/>
 </div>
     <div style={{ fontSize:'24px', fontWeight:'700', color:'white', textAlign:'center', marginBottom:'1rem' }}>Bem-vindo ao Phisys!</div>
     <div style={{ fontSize:'13px', color:'rgba(255,255,255,.85)', textAlign:'center', lineHeight:'1.8', marginBottom:'2rem', background:'rgba(255,255,255,.12)', borderRadius:'16px', padding:'1.5rem' }}>
