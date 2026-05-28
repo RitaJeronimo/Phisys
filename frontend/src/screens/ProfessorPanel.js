@@ -53,12 +53,12 @@ const INITIAL_SIMULATIONS = [
   {
     id:1, title:'Insuficiência Cardíaca', focus:'cardiovascular', active:true,
     description:'Débito cardíaco reduzido. FC compensatória elevada. O aluno deve reverter o quadro.',
-    params: { energia:60, hidratacao:55, pas:85, pad:55, fc:115, peso:300, saude:40 },
+    params: { energia:60, hidratacao:55, pas:85, pad:55, fc:200, peso:300, saude:40 },
   },
   {
     id:2, title:'Desidratação Severa', focus:'renal', active:true,
     description:'Perda hídrica intensa. Pressão arterial reduzida. O aluno deve reidratar o animal.',
-    params: { energia:40, hidratacao:20, pas:80, pad:50, fc:120, peso:280, saude:30 },
+    params: { energia:40, hidratacao:20, pas:80, pad:50, fc:420, peso:280, saude:30 },
   },
 ];
 
