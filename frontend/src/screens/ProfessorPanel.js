@@ -643,10 +643,11 @@ async function handleToggleSimulation(id) {
             </div>
             <div style={{ display:'flex', gap:'6px' }}>
               {[
-                { label:'🐣 Recém-nascido', days:10, color:'#FFD700' },
-                { label:'🐭 Juvenil',       days:90, color:'#85B7EB' },
-                { label:'🐀 Adulto',        days:200, color:'#32C878' },
-              ].map(preset => (
+  { label:'🐣 Recém-nascido', days:10,  color:'#FFD700' },
+  { label:'🐭 Juvenil',       days:90,  color:'#85B7EB' },
+  { label:'🐀 Adulto',        days:200, color:'#32C878' },
+  { label:'🦳 Idoso',         days:600, color:'#9B59B6' },
+].map(preset => (
                 <div
                   key={preset.days}
                   style={{ flex:1, background:`${preset.color}22`, border:`1px solid ${preset.color}55`, borderRadius:'8px', padding:'6px 4px', textAlign:'center', cursor:'pointer', fontSize:'10px', color:'white' }}
