@@ -264,6 +264,8 @@ export const STATUS = {
 export function calcularSaude(primarios) {
   let fora = 0;
   let totalVerificados = 0;
+
+  // Parâmetros principais
   const params = ['hidratacao', 'pas', 'pad', 'fc'];
   for (const id of params) {
     const p = PRIMARY_PARAMS.find(x => x.id === id);
@@ -272,8 +274,22 @@ export function calcularSaude(primarios) {
     const v = primarios[id];
     if (v < p.normal[0] || v > p.normal[1]) fora++;
   }
-  const pctNormal = 1 - (fora / totalVerificados);
-  return Math.round(pctNormal * 100);
+
+  let saude = (1 - (fora / totalVerificados)) * 100;
+
+  // Modulador: energia baixa reduz saúde
+  const energia = primarios.energia ?? 80;
+  if (energia < 20) saude = Math.max(0, saude - 20);
+  else if (energia < 40) saude = Math.max(0, saude - 10);
+
+  // Modulador: peso fora da faixa reduz saúde
+  const peso = primarios.peso ?? 300;
+  const pesoParam = PRIMARY_PARAMS.find(x => x.id === 'peso');
+  if (pesoParam && (peso < pesoParam.normal[0] || peso > pesoParam.normal[1])) {
+    saude = Math.max(0, saude - 10);
+  }
+
+  return Math.round(saude);
 }
 
 export function getMascotStatus(primarios) {
