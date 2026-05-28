@@ -665,7 +665,8 @@ async function handleToggleSimulation(id) {
             {[
               { icon:'🐣', label:'Recém-nascido', range:'0–30 dias',   color:'#FFD700', desc:'Cabeça grande, sem cauda, olhos enormes, sem braços visíveis' },
               { icon:'🐭', label:'Juvenil',       range:'31–180 dias', color:'#85B7EB', desc:'Tamanho médio, orelhas maiores, braços aparecem, cauda presente' },
-              { icon:'🐀', label:'Adulto',        range:'181+ dias',   color:'#32C878', desc:'Tamanho completo, bigodes visíveis, cauda longa, proporções adultas' },
+              { icon:'🐀', label:'Adulto',  range:'181–540 dias', color:'#32C878', desc:'Tamanho completo, bigodes visíveis, cauda longa, proporções adultas' },
+{ icon:'🦳', label:'Idoso',   range:'541+ dias',    color:'#9B59B6', desc:'Maior vulnerabilidade fisiológica, menor capacidade compensatória, maior necessidade de cuidado' },
             ].map(fase => (
               <div key={fase.label} style={{ display:'flex', gap:'10px', alignItems:'flex-start', marginBottom:'10px' }}>
                 <div style={{ fontSize:'20px' }}>{fase.icon}</div>

@@ -7,15 +7,17 @@ const GRADIENT = 'linear-gradient(160deg, #1B4FCC 0%, #7B2FBE 50%, #CC1B1B 100%)
 
 // ─── FASES DE CRESCIMENTO ─────────────────────────────────────────────────────
 export const GROWTH_STAGES = {
-  RECEM_NASCIDO: { id:'RECEM_NASCIDO', label:'Recém-nascido', icon:'🐣', minDays:0,  maxDays:30  },
-  JUVENIL:       { id:'JUVENIL',       label:'Juvenil',       icon:'🐭', minDays:31, maxDays:180 },
-  ADULTO:        { id:'ADULTO',        label:'Adulto',        icon:'🐀', minDays:181,maxDays:9999 },
+  RECEM_NASCIDO: { id:'RECEM_NASCIDO', label:'Recém-nascido', icon:'🐣', minDays:0,   maxDays:30  },
+  JUVENIL:       { id:'JUVENIL',       label:'Juvenil',       icon:'🐭', minDays:31,  maxDays:180 },
+  ADULTO:        { id:'ADULTO',        label:'Adulto',        icon:'🐀', minDays:181, maxDays:540 },
+  IDOSO:         { id:'IDOSO',         label:'Idoso',         icon:'🦳', minDays:541, maxDays:9999 },
 };
 
 export function getGrowthStage(days) {
   if (days <= 30)  return GROWTH_STAGES.RECEM_NASCIDO;
   if (days <= 180) return GROWTH_STAGES.JUVENIL;
-  return GROWTH_STAGES.ADULTO;
+  if (days <= 540) return GROWTH_STAGES.ADULTO;
+  return GROWTH_STAGES.IDOSO;
 }
 
 const PARAM_INFO = {
