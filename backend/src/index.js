@@ -17,6 +17,7 @@ app.use('/api/desafios', require('./routes/desafios'));
 app.use('/api/ranking',  require('./routes/ranking'));
 app.use('/api/sessoes',  require('./routes/sessoes'));
 app.use('/api/simulacoes', require('./routes/simulacoes'));
+app.use('/api/mensagens', require('./routes/mensagens'));
 
 app.get('/', (req, res) => {
   res.json({ status: 'Phisys API rodando!', version: '1.0.0' });

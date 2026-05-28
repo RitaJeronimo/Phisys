@@ -102,7 +102,15 @@ criarTabelas();
 async function adicionarColunas() {
   try {
     await pool.query(`ALTER TABLE ranking ADD COLUMN IF NOT EXISTS nota_final NUMERIC DEFAULT NULL`);
-    console.log('Colunas adicionadas com sucesso!');
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS mensagens (
+        id          SERIAL PRIMARY KEY,
+        nivel       INTEGER NOT NULL UNIQUE,
+        texto       TEXT NOT NULL,
+        atualizado_em TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    console.log('Colunas e tabelas adicionadas com sucesso!');
   } catch (err) {
     console.error('Erro ao adicionar colunas:', err.message);
   }
