@@ -55,12 +55,12 @@ export const PRIMARY_PARAMS = [
   },
   {
     id: 'fc',
-    name: 'Frequência Cardíaca',
-    unit: 'bpm',
-    min: 20,
-    max: 220,
-    normal: [60, 100],
-    default: 75,
+name: 'Frequência Cardíaca',
+unit: 'bpm',
+min: 100,
+max: 600,
+normal: [360, 380],
+default: 370,
     step: 1,
     icon: '💓',
     description: 'Influencia o débito cardíaco, pressão arterial e volume urinário.',
@@ -96,36 +96,36 @@ export const PRIMARY_PARAMS = [
 export const SECONDARY_PARAMS = [
   {
     id: 'vol_urinario',
-    name: 'Volume Urinário',
-    unit: 'mL/dia',
-    min: 0,
-    max: 3000,
-    normal: [500, 2000],
-    default: 1200,
-    step: 10,
+name: 'Volume Urinário',
+unit: '',
+min: 0,
+max: 2,
+normal: [1, 1],
+default: 1,
+step: 1,
     icon: '🫗',
     description: 'Definido pela ingestão hídrica e funcionamento renal.',
   },
   {
     id: 'rvp',
-    name: 'Resistência Vascular Periférica',
-    unit: 'dyn·s/cm⁵',
-    min: 200,
-    max: 4000,
-    normal: [800, 1200],
-    default: 1000,
-    step: 10,
+name: 'Resistência Vascular Periférica',
+unit: '',
+min: 0,
+max: 2,
+normal: [1, 1],
+default: 1,
+step: 1,
     icon: '🩸',
     description: 'Definida pela hidratação e constrição dos vasos. Influenciada por medicações, obesidade e idade.',
   },
   {
     id: 'debito_cardiaco',
-    name: 'Débito Cardíaco',
-    unit: 'mL/min',
-    min: 1000,
-    max: 15000,
-    normal: [4000, 8000],
-    default: 5500,
+name: 'Débito Cardíaco',
+unit: 'mL/min',
+min: 20,
+max: 300,
+normal: [80, 120],
+default: 100,
     step: 50,
     icon: '🔄',
     description: 'Definido pela frequência cardíaca e volume sistólico.',
@@ -135,10 +135,9 @@ export const SECONDARY_PARAMS = [
 // ─── IDADE DO ANIMAL (afeta faixas normais da FC) ────────────────────────────
 
 export const AGE_STAGES = {
-  RECEM_NASCIDO: { label: 'Recém-nascido', days: [0, 28],    fcNormal: [100, 205] },
-  JUVENIL:       { label: 'Juvenil',        days: [29, 365],  fcNormal: [100, 180] },
-  JOVEM:         { label: 'Jovem adulto',   days: [366, 730], fcNormal: [80, 120]  },
-  ADULTO:        { label: 'Adulto',         days: [731, 1825],fcNormal: [60, 100]  },
+  RECEM_NASCIDO: { label: 'Recém-nascido', days: [0, 30],    fcNormal: [380, 500] },
+  JUVENIL:       { label: 'Juvenil',        days: [31, 180],  fcNormal: [360, 440] },
+  ADULTO:        { label: 'Adulto',         days: [181, 9999],fcNormal: [340, 380] },
 };
 
 export function getAgeStage(days) {
@@ -169,24 +168,22 @@ export function getDefaultSecondaryValues() {
 export function calcularSecundarios(primarios) {
   const { hidratacao, fc, peso } = primarios;
 
-  // Volume Urinário: aumenta com hidratação, diminui com desidratação
-  const vol_urinario = Math.round(
-    1200 * (hidratacao / 70) * (1 + (fc < 60 ? 0.1 : fc > 100 ? -0.15 : 0))
-  );
+  // Volume Urinário: 0=baixo, 1=normal, 2=alto
+  const vol_urinario = hidratacao < 50 ? 0 : hidratacao > 80 ? 2 : 1;
 
-  // Resistência Vascular Periférica: diminui com boa hidratação, aumenta com peso elevado
-  const fatorHidratacao = hidratacao < 50 ? 1.4 : hidratacao > 80 ? 0.85 : 1.0;
-  const fatorPeso = peso > 400 ? 1.2 : peso < 200 ? 0.9 : 1.0;
-  const rvp = Math.round(1000 * fatorHidratacao * fatorPeso);
+  // RVP: 0=baixa, 1=normal, 2=alta
+  const fatorHidratacao = hidratacao < 50 ? 2 : hidratacao > 80 ? 0 : 1;
+  const fatorPeso = peso > 400 ? 2 : peso < 200 ? 0 : 1;
+  const rvp = Math.round((fatorHidratacao + fatorPeso) / 2);
 
-  // Débito Cardíaco: FC × volume sistólico estimado (70mL em repouso)
-  const volSistolico = 70 * (hidratacao / 70); // hidratação afeta pré-carga
+  // Débito Cardíaco em mL/min (80–120 normal para rato)
+  const volSistolico = 0.27 * (hidratacao / 70);
   const debito_cardiaco = Math.round(fc * volSistolico);
 
   return {
-    vol_urinario: Math.max(0, Math.min(3000, vol_urinario)),
-    rvp:          Math.max(200, Math.min(4000, rvp)),
-    debito_cardiaco: Math.max(1000, Math.min(15000, debito_cardiaco)),
+    vol_urinario: Math.max(0, Math.min(2, vol_urinario)),
+    rvp:          Math.max(0, Math.min(2, rvp)),
+    debito_cardiaco: Math.max(20, Math.min(300, debito_cardiaco)),
   };
 }
 
@@ -197,25 +194,22 @@ export function calcularSecundarios(primarios) {
 export function calcularImpactoNoPrimario(secundarios) {
   const { vol_urinario, rvp, debito_cardiaco } = secundarios;
 
-  // PAS estimada: depende do débito cardíaco e RVP
-  // PA = DC × RVP (simplificado, normalizado)
-  const pasEstimada = Math.round((debito_cardiaco / 5500) * (rvp / 1000) * 110);
+  // PAS: depende do DC e RVP (categorias 0=baixo,1=normal,2=alto)
+  const pasEstimada = Math.round((debito_cardiaco / 100) * (rvp === 2 ? 1.3 : rvp === 0 ? 0.8 : 1.0) * 110);
 
-  // PAD estimada: mais sensível à RVP
-  const padEstimada = Math.round((rvp / 1000) * 70);
+  // PAD: mais sensível à RVP
+  const padEstimada = rvp === 2 ? 85 : rvp === 0 ? 55 : 70;
 
-  // FC compensatória: sobe quando débito cai
-  const fcEstimada = debito_cardiaco < 4000
-    ? Math.round(75 * (5500 / debito_cardiaco))
-    : 75;
+  // FC compensatória: sobe quando DC cai
+  const fcEstimada = debito_cardiaco < 80 ? Math.round(370 * (100 / debito_cardiaco)) : 370;
 
   // Hidratação estimada a partir do volume urinário
-  const hidratacaoEstimada = Math.round((vol_urinario / 1200) * 70);
+  const hidratacaoEstimada = vol_urinario === 0 ? 35 : vol_urinario === 2 ? 85 : 70;
 
   return {
     pas:       Math.max(60,  Math.min(200, pasEstimada)),
     pad:       Math.max(40,  Math.min(130, padEstimada)),
-    fc:        Math.max(20,  Math.min(220, fcEstimada)),
+    fc:        Math.max(100, Math.min(600, fcEstimada)),
     hidratacao:Math.max(0,   Math.min(100, hidratacaoEstimada)),
   };
 }
