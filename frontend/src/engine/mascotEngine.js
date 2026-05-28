@@ -329,25 +329,25 @@ export const INTERVENTIONS = {
     label: 'Desidratação',
     focus: 'renal',
     description: 'O animal apresenta baixa ingestão hídrica.',
-    effect: { hidratacao: -30, pas: -15, fc: +20 },
+    effect: { hidratacao: -30, pas: -15, fc: +80 },
   },
   hipertensao: {
     label: 'Hipertensão',
     focus: 'cardiovascular',
     description: 'Pressão arterial elevada detectada.',
-    effect: { pas: +40, pad: +20, fc: +15 },
+    effect: { pas: +40, pad: +20, fc: +60 },
   },
   bradicardia: {
     label: 'Bradicardia',
     focus: 'cardiovascular',
-    description: 'Frequência cardíaca abaixo do normal.',
-    effect: { fc: -35, pas: -10 },
+    description: 'Frequência cardíaca abaixo do normal para o rato virtual.',
+    effect: { fc: -180, pas: -10 },
   },
   insuf_cardiaca: {
     label: 'Insuficiência Cardíaca',
     focus: 'cardiovascular',
     description: 'Débito cardíaco reduzido. FC compensatória elevada.',
-    effect: { fc: +40, pas: -20, pad: -10, saude: -20 },
+    effect: { fc: +100, pas: -20, pad: -10, saude: -20 },
   },
   insuf_renal: {
     label: 'Insuficiência Renal',
@@ -359,13 +359,13 @@ export const INTERVENTIONS = {
     label: 'Acidose',
     focus: 'renal',
     description: 'Desequilíbrio ácido-básico. Impacta FC e PA.',
-    effect: { fc: +25, pas: -10, saude: -15 },
+    effect: { fc: +60, pas: -10, saude: -15 },
   },
   obesidade: {
     label: 'Obesidade',
     focus: 'cardiovascular',
     description: 'Excesso de peso eleva RVP e PA.',
-    effect: { peso: +150, pas: +20, pad: +15, fc: +10 },
+    effect: { peso: +150, pas: +20, pad: +15, fc: +40 },
   },
 };
 
