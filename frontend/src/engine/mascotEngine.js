@@ -15,7 +15,7 @@ export const PRIMARY_PARAMS = [
     default: 80,
     step: 1,
     icon: '⚡',
-    description: 'Quantidade de ações disponíveis. Recarrega com alimentação diária.',
+    description: 'A energia indica a disposição do animal para realizar ações, participar de desafios e responder quizzes. É recuperada com alimentação adequada e pode ser influenciada pela saúde, hidratação e fase de desenvolvimento.',
   },
   {
     id: 'hidratacao',
@@ -27,7 +27,7 @@ export const PRIMARY_PARAMS = [
     default: 70,
     step: 1,
     icon: '💧',
-    description: 'Influencia diretamente o volume urinário e a resistência vascular periférica.',
+    description: 'Representa o equilíbrio hídrico do rato virtual. Influencia o volume urinário, a volemia, a pressão arterial e o débito cardíaco. A desidratação reduz a pré-carga e pode gerar aumento compensatório da FC.',
   },
   {
     id: 'pas',
@@ -39,7 +39,7 @@ export const PRIMARY_PARAMS = [
     default: 110,
     step: 1,
     icon: '❤️',
-    description: 'Pressão durante a ejeção do sangue pelo coração. Determinada pelo débito cardíaco e RVP.',
+    description: 'Pressão durante a ejeção do sangue. PA = DC × RVP. Desidratação reduz a PA; vasoconstrição e hipervolemia podem elevá-la. PA basal aproximada: 110/70 mmHg.',
   },
   {
     id: 'pad',
@@ -51,7 +51,7 @@ export const PRIMARY_PARAMS = [
     default: 70,
     step: 1,
     icon: '🫀',
-    description: 'Pressão quando o coração relaxa. Elevada em casos de RVP aumentada.',
+    description: 'Pressão quando o coração relaxa. Elevada em casos de RVP aumentada. Reflete a resistência vascular em repouso.',
   },
   {
     id: 'fc',
@@ -63,7 +63,7 @@ normal: [360, 380],
 default: 370,
     step: 1,
     icon: '💓',
-    description: 'Influencia o débito cardíaco, pressão arterial e volume urinário.',
+    description: 'Indica quantas vezes o coração bate por minuto. DC = FC × VS. Na desidratação, o VS pode cair e a FC aumenta como compensação. FC basal aproximada: 360–380 bpm.',
   },
   {
     id: 'peso',
@@ -75,7 +75,7 @@ default: 370,
     default: 300,
     step: 1,
     icon: '⚖️',
-    description: 'Influencia o débito cardíaco, pressão arterial e resistência vascular periférica.',
+    description: 'Representa a condição corporal geral. Excesso de peso aumenta a RVP e a pós-carga cardíaca, elevando a PA. Peso saudável aproximado: 200–400g.',
   },
   {
     id: 'saude',
@@ -87,7 +87,7 @@ default: 370,
     default: 85,
     step: 1,
     icon: '➕',
-    description: 'Capacidade de manter a homeostase. Calculada automaticamente.',
+    description: 'Indicador-síntese do estado geral. Calculado a partir de hidratação, PAS, PAD e FC. Energia e peso atuam como moduladores. ≥75% saudável; 40–74% debilitado; <40% crítico.',
   },
 ];
 
