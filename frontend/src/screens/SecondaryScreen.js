@@ -143,12 +143,6 @@ function SecondaryScreen({ values, onBack }) {
     debito_cardiaco: '↑ DC → ↑ Perfusão Renal → ↑ Filtração Renal → ↑ Volume Urinário',
   };
 
-  const getCatLabel = (paramId, val) => {
-    const p = SECONDARY_PARAMS.find(x => x.id === paramId);
-    if (!p || p.max !== 2) return Math.round(val);
-    return CATEGORIA_LABELS[val]?.label || 'Normal';
-  };
-
   return (
     <div style={styles.screen}>
       <div style={styles.topbar}>
