@@ -146,6 +146,14 @@ useEffect(() => {
     .catch(() => setSimulations(INITIAL_SIMULATIONS));
 }, []);
 
+  useEffect(() => {
+  req('/api/mensagens', { headers: authHeaders() })
+    .then(data => {
+      if (data && typeof data === 'object') setMotivationMessages(data);
+    })
+    .catch(() => {});
+}, []);
+
   const avgGrade = students.length > 0 ? (students.reduce((a,s)=>a+Number(s.xp_total||0),0)/students.length).toFixed(0) : '0';
   const avgTime = students.length > 0 ? students.reduce((a,s)=>a+(s.sessoes||0),0) : 0;
   const formatTime = s => `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`;
@@ -619,12 +627,27 @@ async function handleToggleSimulation(id) {
               </div>
             );
           })}
-          <div style={{ margin:'0 1rem .5rem' }}>
-            <button style={{ ...styles.newBtn, width:'100%', padding:'10px', borderRadius:'10px' }}
-              onClick={() => setMotivationMessages({...DEFAULT_MOTIVATION_MESSAGES})}>
-              🔄 Restaurar mensagens padrão
-            </button>
-          </div>
+          <div style={{ margin:'0 1rem .5rem', display:'flex', flexDirection:'column', gap:'8px' }}>
+  <button style={{ ...styles.newBtn, width:'100%', padding:'10px', borderRadius:'10px', background:'#32C878', color:'white' }}
+    onClick={async () => {
+      try {
+        await req('/api/mensagens', {
+          method: 'PUT',
+          headers: authHeaders(),
+          body: JSON.stringify({ mensagens: motivationMessages }),
+        });
+        alert('Mensagens salvas com sucesso!');
+      } catch(e) {
+        alert('Erro ao salvar mensagens.');
+      }
+    }}>
+    💾 Salvar mensagens
+  </button>
+  <button style={{ ...styles.newBtn, width:'100%', padding:'10px', borderRadius:'10px' }}
+    onClick={() => setMotivationMessages({...DEFAULT_MOTIVATION_MESSAGES})}>
+    🔄 Restaurar mensagens padrão
+  </button>
+</div>
           <div style={{height:'1rem'}}/>
         </>
       )}
