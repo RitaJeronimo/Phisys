@@ -224,7 +224,27 @@ function SecondaryScreen({ values, onBack }) {
   </div>
         ))}
       </div>
-
+<div style={styles.sectionLabel}>tabela de referência didática</div>
+<div style={{ margin:'0 1rem .75rem', background:'rgba(255,255,255,.08)', border:'1px solid rgba(255,255,255,.15)', borderRadius:'14px', overflow:'hidden' }}>
+  {[
+    { param:'⚡ Energia',           func:'Disposição para ações e desafios',        obs:'Baixa energia limita ações e sinaliza necessidade de cuidado' },
+    { param:'💧 Hidratação',        func:'Equilíbrio hídrico',                       obs:'Desidratação reduz volemia e gera ↑ FC compensatória' },
+    { param:'❤️ FC',                func:'Batimentos cardíacos por minuto',          obs:'FC basal: 360–380 bpm. ↑ FC pode indicar compensação' },
+    { param:'❤️ Pressão Arterial',  func:'Equilíbrio cardiovascular',               obs:'PA basal: 110/70 mmHg. PA = DC × RVP' },
+    { param:'⚖️ Peso',              func:'Condição corporal geral',                  obs:'Peso saudável: 200–400g. Excesso ↑ RVP e PA' },
+    { param:'➕ Saúde',             func:'Indicador-síntese do estado geral',        obs:'≥75% saudável; 40–74% debilitado; <40% crítico' },
+    { param:'🐭 Idade/Fase',        func:'Etapa de desenvolvimento',                obs:'↑ idade → ↑ vulnerabilidade e ↓ capacidade compensatória' },
+    { param:'🫗 Vol. Urinário',     func:'Eliminação renal',                         obs:'Categorias: baixo/normal/alto' },
+    { param:'🩸 RVP',               func:'Resistência dos vasos',                    obs:'Categorias: baixa/normal/alta. Influencia PA' },
+    { param:'🔄 Débito Cardíaco',   func:'Volume bombeado por minuto',               obs:'DC = FC × VS. Normal: 80–120 mL/min' },
+  ].map((row, i) => (
+    <div key={i} style={{ display:'grid', gridTemplateColumns:'1.2fr 1.5fr 2fr', padding:'8px 12px', borderTop: i > 0 ? '1px solid rgba(255,255,255,.08)' : 'none', background: i % 2 === 0 ? 'rgba(255,255,255,.04)' : 'transparent' }}>
+      <div style={{ fontSize:'10px', fontWeight:'700', color:'white' }}>{row.param}</div>
+      <div style={{ fontSize:'9px', color:'rgba(255,255,255,.7)', paddingLeft:'6px' }}>{row.func}</div>
+      <div style={{ fontSize:'9px', color:'rgba(255,255,255,.55)', paddingLeft:'6px', fontStyle:'italic' }}>{row.obs}</div>
+    </div>
+  ))}
+</div>
       <div style={{ height: '2rem' }}/>
     </div>
   );
