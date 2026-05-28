@@ -88,7 +88,18 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
 
 useEffect(() => {
   rankingApi.get()
-    .then(data => setStudents(Array.isArray(data) ? data : []))
+    .then(data => {
+      if (Array.isArray(data)) {
+        setStudents(data);
+        const grades = {};
+        data.forEach(s => {
+          if (s.nota_final !== null && s.nota_final !== undefined) {
+            grades[s.id] = s.nota_final;
+          }
+        });
+        setManualGrades(grades);
+      }
+    })
     .catch(() => setStudents([]));
 }, []);
 
