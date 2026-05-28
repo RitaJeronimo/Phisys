@@ -1,3 +1,4 @@
+import { ChibiMascot } from './screens/HomeScreen';
 import LoginScreen from './screens/LoginScreen';
 import MotivationScreen from './screens/MotivationScreen';
 import HomeScreen from './screens/HomeScreen';
@@ -157,29 +158,8 @@ if (!localStorage.getItem(welcomeKey)) {
 
   if (showWelcome) return (
   <div style={{ width:'100%', maxWidth:'400px', minHeight:'100vh', display:'flex', flexDirection:'column', justifyContent:'center', alignItems:'center', background:'linear-gradient(160deg, #1B4FCC 0%, #7B2FBE 50%, #CC1B1B 100%)', margin:'0 auto', padding:'2rem', boxSizing:'border-box' }}>
-    <div style={{ fontSize:'80px', marginBottom:'1rem', lineHeight:'1' }}>
-  <svg viewBox="0 0 120 120" width="100" height="100" xmlns="http://www.w3.org/2000/svg">
-    <ellipse cx="35" cy="32" rx="18" ry="22" fill="#f4c2c2" opacity="0.9"/>
-    <ellipse cx="85" cy="32" rx="18" ry="22" fill="#f4c2c2" opacity="0.9"/>
-    <ellipse cx="35" cy="35" rx="10" ry="13" fill="#e8a0a0" opacity="0.7"/>
-    <ellipse cx="85" cy="35" rx="10" ry="13" fill="#e8a0a0" opacity="0.7"/>
-    <ellipse cx="60" cy="72" rx="38" ry="34" fill="#f4c2c2"/>
-    <ellipse cx="60" cy="58" rx="28" ry="26" fill="#f4c2c2"/>
-    <ellipse cx="48" cy="54" rx="7" ry="8" fill="white"/>
-    <ellipse cx="72" cy="54" rx="7" ry="8" fill="white"/>
-    <circle cx="48" cy="55" r="4" fill="#2d1b69"/>
-    <circle cx="72" cy="55" r="4" fill="#2d1b69"/>
-    <circle cx="49.5" cy="53.5" r="1.5" fill="white"/>
-    <circle cx="73.5" cy="53.5" r="1.5" fill="white"/>
-    <ellipse cx="60" cy="65" rx="6" ry="4" fill="#e8a0a0"/>
-    <line x1="42" y1="63" x2="25" y2="60" stroke="#c47" strokeWidth="1" opacity="0.6"/>
-    <line x1="42" y1="65" x2="24" y2="65" stroke="#c47" strokeWidth="1" opacity="0.6"/>
-    <line x1="78" y1="63" x2="95" y2="60" stroke="#c47" strokeWidth="1" opacity="0.6"/>
-    <line x1="78" y1="65" x2="96" y2="65" stroke="#c47" strokeWidth="1" opacity="0.6"/>
-    <path d="M 30 85 Q 20 100 25 108" stroke="#f4c2c2" strokeWidth="5" fill="none" strokeLinecap="round"/>
-    <path d="M 90 85 Q 100 100 95 108" stroke="#f4c2c2" strokeWidth="5" fill="none" strokeLinecap="round"/>
-    <path d="M 60 106 Q 80 100 95 108" stroke="#e8a0a0" strokeWidth="4" fill="none" strokeLinecap="round"/>
-  </svg>
+    <div style={{ marginBottom:'1rem' }}>
+  <ChibiMascot status="saudavel" stage="JUVENIL" size={120}/>
 </div>
     <div style={{ fontSize:'24px', fontWeight:'700', color:'white', textAlign:'center', marginBottom:'1rem' }}>Bem-vindo ao Phisys!</div>
     <div style={{ fontSize:'13px', color:'rgba(255,255,255,.85)', textAlign:'center', lineHeight:'1.8', marginBottom:'2rem', background:'rgba(255,255,255,.12)', borderRadius:'16px', padding:'1.5rem' }}>
