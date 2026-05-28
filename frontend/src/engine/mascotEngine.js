@@ -147,6 +147,14 @@ export function getAgeStage(days) {
   return { key: 'ADULTO', ...AGE_STAGES.ADULTO };
 }
 
+// Modulador de saúde por fase — animais mais velhos são mais vulneráveis
+export function getAgeSaudeModifier(days) {
+  if (days <= 30)  return 0;    // Recém-nascido: sem penalidade
+  if (days <= 180) return 0;    // Juvenil: sem penalidade
+  if (days <= 540) return -5;   // Adulto: leve vulnerabilidade
+  return -15;                   // Idoso: maior vulnerabilidade
+}
+
 // ─── VALORES PADRÃO ───────────────────────────────────────────────────────────
 
 export function getDefaultPrimaryValues() {
@@ -288,6 +296,10 @@ export function calcularSaude(primarios) {
   if (pesoParam && (peso < pesoParam.normal[0] || peso > pesoParam.normal[1])) {
     saude = Math.max(0, saude - 10);
   }
+
+  // Modulador: idade/fase aumenta vulnerabilidade fisiológica
+  const ageDays = primarios.ageDays ?? primarios.age_days ?? 90;
+  saude = Math.max(0, saude + getAgeSaudeModifier(ageDays));
 
   return Math.round(saude);
 }
