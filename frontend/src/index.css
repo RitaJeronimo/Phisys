@@ -1,13 +1,65 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  height: 100%;
+  overflow-x: hidden;
+}
+
 body {
   margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow-x: hidden;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background: #1B4FCC;
+  touch-action: manipulation;
+}
+
+#root {
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* Evita scroll horizontal em todos os elementos */
+* {
+  max-width: 100vw;
+}
+
+/* Melhora área de toque nos botões */
+button {
+  min-height: 36px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Inputs no mobile */
+input, select, textarea {
+  font-size: 16px !important;
+  touch-action: manipulation;
+}
+
+/* Remove outline azul no mobile */
+*:focus {
+  outline: none;
+}
+
+/* Scroll suave */
+* {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
 }
