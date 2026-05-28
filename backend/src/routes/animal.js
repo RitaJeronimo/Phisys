@@ -102,4 +102,21 @@ router.post('/cuidado', auth, async (req, res) => {
   }
 });
 
+// PUT /api/animal/age — professor atualiza idade de todos os alunos
+router.put('/age', auth, async (req, res) => {
+  if (req.usuario.modo !== 'professor') {
+    return res.status(403).json({ erro: 'Acesso negado.' });
+  }
+  const { age_days } = req.body;
+  try {
+    await pool.query(
+      `UPDATE animal SET age_days = $1, atualizado_em = NOW()`,
+      [age_days]
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ erro: 'Erro interno do servidor.' });
+  }
+});
+
 module.exports = router;

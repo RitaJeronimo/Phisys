@@ -668,7 +668,17 @@ async function handleToggleSimulation(id) {
               <input
                 type="range" min="0" max="365" step="1"
                 value={ageDays || 90}
-                onChange={e => setAgeDays && setAgeDays(Number(e.target.value))}
+                onChange={async e => {
+  const newAge = Number(e.target.value);
+  if (setAgeDays) setAgeDays(newAge);
+  try {
+    await req('/api/animal/age', {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: JSON.stringify({ age_days: newAge }),
+    });
+  } catch(e) {}
+}}
                 style={{ flex:1, accentColor:'white' }}
               />
               <div style={{ fontSize:'16px', fontWeight:'700', color:'white', width:'60px', textAlign:'right' }}>
@@ -685,7 +695,16 @@ async function handleToggleSimulation(id) {
                 <div
                   key={preset.days}
                   style={{ flex:1, background:`${preset.color}22`, border:`1px solid ${preset.color}55`, borderRadius:'8px', padding:'6px 4px', textAlign:'center', cursor:'pointer', fontSize:'10px', color:'white' }}
-                  onClick={() => setAgeDays && setAgeDays(preset.days)}
+                  onClick={async () => {
+  if (setAgeDays) setAgeDays(preset.days);
+  try {
+    await req('/api/animal/age', {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: JSON.stringify({ age_days: preset.days }),
+    });
+  } catch(e) {}
+}}
                 >
                   {preset.label}
                 </div>
