@@ -42,6 +42,11 @@ export const simulacoes = {
   getAtiva: () => req('/api/simulacoes/ativa', { headers: authHeaders() }),
 };
 
+export const mensagens = {
+  get:  ()     => req('/api/mensagens', { headers: authHeaders() }),
+  save: (data) => req('/api/mensagens', { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ mensagens: data }) }),
+};
+
 export const sessoes = {
   iniciar:   (data)    => req('/api/sessoes/iniciar', { method: 'POST', headers: authHeaders(), body: JSON.stringify(data) }),
   finalizar: (id, data) => req(`/api/sessoes/${id}/finalizar`, { method: 'PUT', headers: authHeaders(), body: JSON.stringify(data) }),

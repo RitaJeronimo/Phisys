@@ -7,7 +7,7 @@ import ProfessorPanel from './screens/ProfessorPanel';
 import SecondaryScreen from './screens/SecondaryScreen';
 import FinalScreen from './screens/FinalScreen';
 import { getDefaultPrimaryValues, calcularSaude } from './engine/mascotEngine';
-import { animal as animalApi, ranking as rankingApi, sessoes as sessoesApi, simulacoes as simulacoesApi, getToken, removeToken } from './api';
+import { animal as animalApi, ranking as rankingApi, sessoes as sessoesApi, simulacoes as simulacoesApi, mensagens as mensagensApi, getToken, removeToken } from './api';
 import React, { useState, useEffect } from 'react';
 
 function App() {
@@ -21,6 +21,11 @@ function App() {
   const [sessionStart, setSessionStart] = useState(null);
   const [sessaoId, setSessaoId] = useState(null);
   const [showWelcome, setShowWelcome] = useState(false);
+  const [motivationMessages, setMotivationMessages] = useState(null);
+
+useEffect(() => {
+  mensagensApi.get().then(data => setMotivationMessages(data)).catch(() => {});
+}, []);
 
   useEffect(() => {
   const token = getToken();
@@ -197,7 +202,7 @@ if (!localStorage.getItem(welcomeKey)) {
   if (!user) return <LoginScreen onLogin={handleLogin}/>;
 
   if (screen === 'motivation')
-    return <MotivationScreen user={user} onContinue={handleMotivation}/>;
+    return <MotivationScreen user={user} onContinue={handleMotivation} customMessages={motivationMessages}/>;
 
   if (screen === 'game')
     return <GameScreen user={user} mode={mode} values={values} setValues={setValues}
