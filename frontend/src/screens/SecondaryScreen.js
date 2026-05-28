@@ -210,15 +210,18 @@ function SecondaryScreen({ values, onBack }) {
       <div style={styles.sectionLabel}>mapa de correlações fisiológicas</div>
       <div style={styles.correlCard}>
         {[
-          '↓ Hidratação → ↓ Volemia → ↓ Pré-carga → ↓ VS → ↓ DC → ↓ PA',
-          '↓ PA / ↓ perfusão → ↑ FC + ↑ RVP + ↓ Vol. Urinário',
-          '↑ Vol. Urinário → ↓ Volemia → ↓ Pré-carga → ↓ DC',
-          '↑ RVP → ↑ Pós-carga → possível ↓ DC → possível ↑ FC',
-          '↑ DC → ↑ Perfusão Renal → possível ↑ Vol. Urinário',
-        ].map((text, i) => (
+  { titulo: 'Desidratação', texto: '↓ Hidratação → ↓ Volemia → ↓ Pré-carga → ↓ VS → ↓ DC → ↓ PA' },
+  { titulo: 'Compensação da desidratação', texto: '↓ PA / ↓ perfusão → ↑ FC + ↑ RVP + ↓ Volume Urinário' },
+  { titulo: 'Hipervolemia', texto: '↑ Volemia → ↑ Pré-carga → ↑ VS/DC → ↑ PA' },
+  { titulo: 'Diurese sem reposição', texto: '↑ Volume Urinário → ↓ Volemia → ↓ Pré-carga → ↓ DC' },
+  { titulo: 'Aumento da RVP', texto: '↑ RVP → ↑ Pós-carga → possível ↓ DC → possível ↑ FC compensatória' },
+  { titulo: 'Aumento do DC', texto: '↑ DC → ↑ Perfusão Renal → possível ↑ filtração/Volume Urinário' },
+  { titulo: 'Insuficiência Renal', texto: '↓ Função renal → ↓ eliminação urinária + alteração do equilíbrio hídrico/osmótico' },
+].map((item, i) => (
           <div key={i} style={styles.correlRow}>
-            <span style={styles.correlText}>{text}</span>
-          </div>
+    <div style={{ fontSize:'9px', color:'rgba(255,255,255,.5)', textTransform:'uppercase', letterSpacing:'.05em', marginBottom:'2px' }}>{item.titulo}</div>
+    <span style={styles.correlText}>{item.texto}</span>
+  </div>
         ))}
       </div>
 
