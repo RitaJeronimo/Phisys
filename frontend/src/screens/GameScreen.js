@@ -131,28 +131,44 @@ const [loadingChallenges, setLoadingChallenges] = useState(true);
 
 useEffect(() => {
   desafiosApi.get().then(data => {
-    if (Array.isArray(data) && data.length > 0) {
-      const formatted = data.map(d => ({
-        id: d.id,
-        tag: `Desafio #${d.id}`,
-        focus: d.foco || 'Fisiologia',
-        text: d.pergunta,
-        options: (Array.isArray(d.opcoes) ? d.opcoes : JSON.parse(d.opcoes)).map((opt, i) => ({
-          letter: String.fromCharCode(65 + i),
-          text: opt,
-          correct: i === d.correta,
-        })),
-        intervention: {},
-        explanation: d.explicacao || 'Revise os conceitos fisiológicos relacionados a este cenário clínico.',
-      }));
-      setChallenges([...MOCK_CHALLENGES, ...formatted]);
+    const fromDB = Array.isArray(data) && data.length > 0
+      ? data.map(d => ({
+          id: d.id,
+          tag: `Desafio #${d.id}`,
+          focus: d.foco || 'renal',
+          text: d.pergunta,
+          options: (Array.isArray(d.opcoes) ? d.opcoes : JSON.parse(d.opcoes)).map((opt, i) => ({
+            letter: String.fromCharCode(65 + i),
+            text: opt,
+            correct: i === d.correta,
+          })),
+          intervention: {},
+          explanation: d.explicacao || 'Revise os conceitos fisiológicos relacionados a este cenário clínico.',
+          active: d.ativo,
+        }))
+      : [];
+
+    if (mode === 'sessao') {
+      try {
+        const cfg = JSON.parse(localStorage.getItem('phisys_sessao_config') || '{}');
+        const foco = cfg.foco || 'todos';
+        let sessaoChallenges = fromDB.filter(c => c.active !== false);
+        if (foco !== 'todos') {
+          sessaoChallenges = sessaoChallenges.filter(c =>
+            c.focus?.toLowerCase().includes(foco.toLowerCase())
+          );
+        }
+        setChallenges(sessaoChallenges.length > 0 ? sessaoChallenges : MOCK_CHALLENGES);
+      } catch {
+        setChallenges(fromDB.length > 0 ? fromDB : MOCK_CHALLENGES);
+      }
     } else {
-      setChallenges(MOCK_CHALLENGES);
+      setChallenges(fromDB.length > 0 ? [...MOCK_CHALLENGES, ...fromDB] : MOCK_CHALLENGES);
     }
   }).catch(() => {
     setChallenges(MOCK_CHALLENGES);
   }).finally(() => setLoadingChallenges(false));
-}, []);
+}, [mode]);
   const [attempts, setAttempts] = useState(0);
 
 useEffect(() => {

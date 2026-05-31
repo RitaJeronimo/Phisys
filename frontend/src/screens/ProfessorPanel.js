@@ -83,6 +83,12 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
     response_time: DEFAULT_WEIGHTS.response_time * 100,
   });
   const [manualGrades, setManualGrades] = useState({});
+  const [sessaoFoco, setSessaoFoco] = useState(() => {
+  try {
+    const cfg = JSON.parse(localStorage.getItem('phisys_sessao_config') || '{}');
+    return cfg.foco || 'todos';
+  } catch { return 'todos'; }
+});
 
   const [students, setStudents] = useState([]);
 
@@ -437,8 +443,40 @@ async function handleToggleSimulation(id) {
 
       {/* ── TAB DESAFIOS ── */}
       {tab==='desafios' && (
-        <>
-          <div style={styles.challengeHeader}>
+  <>
+    <div style={{ margin:'0 1rem .75rem', background:'rgba(100,149,237,.15)', border:'1px solid rgba(100,149,237,.3)', borderRadius:'14px', padding:'1rem' }}>
+      <div style={{ fontSize:'12px', fontWeight:'700', color:'white', marginBottom:'8px' }}>📋 Foco do Modo Sessão</div>
+      <div style={{ fontSize:'11px', color:'rgba(255,255,255,.65)', marginBottom:'10px', lineHeight:'1.4' }}>
+        No Modo Sessão, os alunos verão apenas os desafios ativos do foco selecionado.
+      </div>
+      <div style={{ display:'flex', gap:'8px' }}>
+        {[
+          { value:'todos',           label:'📚 Todos' },
+          { value:'renal',           label:'🫗 Renal' },
+          { value:'cardiovascular',  label:'❤️ Cardio' },
+        ].map(opt => (
+          <div key={opt.value}
+            style={{
+              flex:1, padding:'8px 4px', borderRadius:'10px', textAlign:'center', cursor:'pointer',
+              fontSize:'11px', fontWeight:'600',
+              background: sessaoFoco === opt.value ? 'rgba(255,255,255,.3)' : 'rgba(255,255,255,.1)',
+              border: `1px solid ${sessaoFoco === opt.value ? 'rgba(255,255,255,.5)' : 'rgba(255,255,255,.2)'}`,
+              color: sessaoFoco === opt.value ? 'white' : 'rgba(255,255,255,.6)',
+            }}
+            onClick={() => {
+              setSessaoFoco(opt.value);
+              localStorage.setItem('phisys_sessao_config', JSON.stringify({ foco: opt.value }));
+            }}
+          >
+            {opt.label}
+          </div>
+        ))}
+      </div>
+      <div style={{ fontSize:'10px', color:'rgba(255,255,255,.45)', marginTop:'8px' }}>
+        {challenges.filter(c => c.active && (sessaoFoco === 'todos' || c.focus === sessaoFoco)).length} desafio(s) ativo(s) neste foco
+      </div>
+    </div>
+    <div style={styles.challengeHeader}>
             <div style={styles.sectionTitle}>desafios cadastrados ({challenges.length})</div>
             <button style={styles.newBtn} onClick={handleNewChallenge}>+ Novo</button>
           </div>
