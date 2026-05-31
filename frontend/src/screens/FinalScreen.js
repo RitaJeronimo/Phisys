@@ -19,16 +19,16 @@ function FinalScreen({ user, score, saude, seconds, solvedChallenges, totalChall
 
   // Gráfico simples de evolução dos parâmetros
   const history = paramHistory || [
-    { label: 'Início',  hidratacao: 70, pas: 110, fc: 75, saude: 85 },
-    { label: 'Meio',    hidratacao: 55, pas: 125, fc: 90, saude: 60 },
-    { label: 'Final',   hidratacao: saude >= 75 ? 72 : 45, pas: saude >= 75 ? 112 : 135, fc: saude >= 75 ? 78 : 105, saude },
+    { label: 'Início', hidratacao: 70, pas: 110, fc: 370, saude: 85 },
+    { label: 'Meio',   hidratacao: 55, pas: 125, fc: 420, saude: 60 },
+    { label: 'Final',  hidratacao: saude >= 75 ? 72 : 45, pas: saude >= 75 ? 112 : 135, fc: saude >= 75 ? 365 : 430, saude },
   ];
 
   const chartParams = [
-    { id:'hidratacao', label:'Hidratação', color:'#85B7EB', normalMin:50, normalMax:90, max:100 },
-    { id:'pas',        label:'PAS',        color:'#E24B4A', normalMin:90, normalMax:120, max:200 },
-    { id:'fc',         label:'FC',         color:'#FFD700', normalMin:60, normalMax:100, max:220 },
-    { id:'saude',      label:'Saúde',      color:'#32C878', normalMin:70, normalMax:100, max:100 },
+    { id:'hidratacao', label:'Hidratação', color:'#85B7EB', normalMin:50,  normalMax:90,  max:100 },
+    { id:'pas',        label:'PAS',        color:'#E24B4A', normalMin:90,  normalMax:120, max:200 },
+    { id:'fc',         label:'FC (bpm)',   color:'#FFD700', normalMin:360, normalMax:380, max:600 },
+    { id:'saude',      label:'Saúde',      color:'#32C878', normalMin:75,  normalMax:100, max:100 },
   ];
 
   const chartW = 320;

@@ -170,6 +170,13 @@ useEffect(() => {
   }).finally(() => setLoadingChallenges(false));
 }, [mode]);
   const [attempts, setAttempts] = useState(0);
+  const [paramHistory, setParamHistory] = useState([{
+  label: 'Início',
+  hidratacao: getDefaultValues().hidratacao,
+  pas: getDefaultValues().pas,
+  fc: getDefaultValues().fc,
+  saude: 85,
+}]);
 
 useEffect(() => {
   rankingApi.get().then(data => {
@@ -254,17 +261,28 @@ async function handleAnswer(option) {
 
   function handleNext() {
   const energiaAtual = values.energia || 0;
+
+  const snapshot = {
+    label: `D${currentIdx + 1}`,
+    hidratacao: values.hidratacao,
+    pas: values.pas,
+    fc: values.fc,
+    saude: calcularSaude(values),
+  };
+  const updatedHistory = [...paramHistory, snapshot];
+  setParamHistory(updatedHistory);
+
   if (mode === 'livre' && energiaAtual <= 0) {
-  alert('⚡ Energia esgotada! Volte à tela principal e alimente o Phisys para continuar.');
-  if (onFinish) {
-    onFinish({ seconds, solvedChallenges: solvedCount, totalChallenges: challenges.length, errors: errorCount, paramHistory: null, finalScore: score });
+    alert('⚡ Energia esgotada! Volte à tela principal e alimente o Phisys para continuar.');
+    if (onFinish) {
+      onFinish({ seconds, solvedChallenges: solvedCount, totalChallenges: challenges.length, errors: errorCount, paramHistory: updatedHistory, finalScore: score });
+    }
+    return;
   }
-  return;
-}
 
   if (currentIdx + 1 >= challenges.length) {
     if (onFinish) {
-      onFinish({ seconds, solvedChallenges: solvedCount, totalChallenges: challenges.length, errors: errorCount, paramHistory: null, finalScore: score });
+      onFinish({ seconds, solvedChallenges: solvedCount, totalChallenges: challenges.length, errors: errorCount, paramHistory: updatedHistory, finalScore: score });
     } else {
       setFinished(true);
     }
@@ -276,6 +294,7 @@ async function handleAnswer(option) {
     setQuestionStart(Date.now());
   }
 }
+
 
   const formatTime = (s) => {
     const m = Math.floor(s / 60).toString().padStart(2, '00');
