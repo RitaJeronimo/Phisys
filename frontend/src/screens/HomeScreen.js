@@ -192,7 +192,7 @@ useEffect(() => {
   const saude = calcularSaude(values);
   const status = getMascotStatus(values);
   const energiaModulada = calcularEnergiaModulada(values, saude);
-  const valsWithSaude = { ...values, saude };
+  const valsWithSaude = { ...values, saude, energia: energiaModulada };
   const line1 = PRIMARY_PARAMS.filter(p => ['energia','hidratacao','fc'].includes(p.id));
   const line2 = PRIMARY_PARAMS.filter(p => ['peso','saude'].includes(p.id));
   const currentAge = ageDays || 90;
