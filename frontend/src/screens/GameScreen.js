@@ -190,25 +190,44 @@ async function handleAnswer(option) {
     const newScore = applyBonus(score, 'correct_answer');
     setScore(newScore);
     setSolvedCount(s => s + 1);
-    setValues(prev => ({
-      ...prev,
-      ...challenge.intervention,
-      energia: Math.max(0, (prev.energia || 80) - 10),
-    }));
+    if (mode === 'sessao') {
+      // Sessão: acerto recupera saúde automaticamente
+      setValues(prev => ({
+        ...prev,
+        hidratacao: Math.min(100, (prev.hidratacao || 70) + 20),
+        pas: 110, pad: 70, fc: 370,
+        energia: Math.min(100, (prev.energia || 80) + 10),
+      }));
+    } else {
+      // Livre: aplica cenário fisiológico e reduz energia
+      setValues(prev => ({
+        ...prev,
+        ...challenge.intervention,
+        energia: Math.max(0, (prev.energia || 80) - 10),
+      }));
+    }
     try { await rankingApi.update({ xp_total: newScore, media_saude: calcularSaude(values) }); } catch(e) {}
   } else {
     const newAttempts = attempts + 1;
     setAttempts(newAttempts);
     setSelected(option.letter);
     if (newAttempts < 2) {
-      // Primeira tentativa errada — permite tentar de novo
       setTimeout(() => setSelected(null), 1000);
     } else {
-      // Segunda tentativa errada — marca como erro
       setResponseTimes(t => [...t, elapsed]);
       setAnswered(true);
       setAttempts(0);
-      setValues(prev => ({ ...prev, energia: Math.max(0, (prev.energia || 80) - 10) }));
+      if (mode === 'sessao') {
+        // Sessão: erro aplica intervenção — parâmetros não se recuperam
+        setValues(prev => ({
+          ...prev,
+          ...challenge.intervention,
+          energia: Math.max(0, (prev.energia || 80) - 15),
+        }));
+      } else {
+        // Livre: apenas reduz energia
+        setValues(prev => ({ ...prev, energia: Math.max(0, (prev.energia || 80) - 10) }));
+      }
       const penaltyScore = Math.max(0, score - 5);
       setScore(penaltyScore);
       setErrorCount(e => e + 1);
