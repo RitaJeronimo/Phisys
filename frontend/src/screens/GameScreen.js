@@ -303,7 +303,7 @@ async function handleAnswer(option) {
   };
 
   const statusEmoji = { [STATUS.SAUDAVEL]: '😊', [STATUS.DEBILITADO]: '😰', [STATUS.CRITICO]: '😵' };
-  const statusLabel = { [STATUS.SAUDAVEL]: 'Saudavel', [STATUS.DEBILITADO]: 'Debilitado', [STATUS.CRITICO]: 'Critico' };
+  const statusLabel = { [STATUS.SAUDAVEL]: 'Saudável', [STATUS.DEBILITADO]: 'Debilitado', [STATUS.CRITICO]: 'Crítico' };
 
   if (loadingChallenges) {
   return (
@@ -326,7 +326,7 @@ async function handleAnswer(option) {
       <div style={styles.screen}>
         <div style={{ padding:'3rem 1.5rem', display:'flex', flexDirection:'column', alignItems:'center', gap:'1.5rem' }}>
           <ChibiMascot status={STATUS.SAUDAVEL} size={90}/>
-          <div style={{ fontSize:'22px', fontWeight:'700', color:'white', textAlign:'center' }}>Sessao concluida!</div>
+          <div style={{ fontSize:'22px', fontWeight:'700', color:'white', textAlign:'center' }}>Sessão concluída!</div>
           <div style={{ display:'flex', gap:'12px', width:'100%' }}>
             {[{ val: Math.round(score), lbl: 'Pontos' }, { val: grade, lbl: 'Nota' }, { val: `${solvedCount}/${MOCK_CHALLENGES.length}`, lbl: 'Acertos' }].map(item => (
               <div key={item.lbl} style={{ flex:1, background:'rgba(255,255,255,0.15)', borderRadius:'12px', padding:'1rem', textAlign:'center' }}>
@@ -411,7 +411,7 @@ async function handleAnswer(option) {
             <div style={{ fontSize:'12px', color:'rgba(255,255,255,.9)', lineHeight:'1.6' }}>{challenge.explanation}</div>
           </div>
           <button style={styles.nextBtn} onClick={handleNext}>
-            {currentIdx + 1 >= challenges.length ? 'Ver resultado' : 'Proximo desafio →'}
+            {currentIdx + 1 >= challenges.length ? 'Ver resultado' : 'Próximo desafio →'}
           </button>
         </div>
       )}

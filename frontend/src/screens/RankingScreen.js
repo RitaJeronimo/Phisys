@@ -88,9 +88,9 @@ function RankingScreen({ user, onBack }) {
                   </div>
                   <div style={{ flex:1 }}>
                     <div style={{ fontSize:'13px', color: isMe ? 'white' : 'rgba(255,255,255,0.8)', fontWeight: isMe ? '600' : '400' }}>
-                      {isMe ? `${item.nome} (voce)` : item.nome}
+                      {isMe ? `${item.nome} (você)` : item.nome}
                     </div>
-                    <div style={{ fontSize:'10px', color:'rgba(255,255,255,0.45)', marginTop:'2px' }}>{item.sessoes} sessoes</div>
+                    <div style={{ fontSize:'10px', color:'rgba(255,255,255,0.45)', marginTop:'2px' }}>{item.sessões} sessoes</div>
                   </div>
                   <div style={{ textAlign:'right' }}>
                     <div style={{ fontSize:'14px', fontWeight:'700', color:'white' }}>{item.xp_total}</div>
