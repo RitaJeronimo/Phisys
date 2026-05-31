@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { animal as animalApi, ranking as rankingApi } from '../api';
-import { PRIMARY_PARAMS, calcularSaude, getMascotStatus, STATUS, DAILY_CARES, aplicarCuidado } from '../engine/mascotEngine';
+import { PRIMARY_PARAMS, calcularSaude, calcularEnergiaModulada, getAgePANormal, getMascotStatus, STATUS, DAILY_CARES, aplicarCuidado } from '../engine/mascotEngine';
 
 
 const GRADIENT = 'linear-gradient(160deg, #1B4FCC 0%, #7B2FBE 50%, #CC1B1B 100%)';
@@ -43,7 +43,7 @@ const PARAM_INFO = {
   },
   peso: {
     pergunta: 'Como o peso corporal influencia os parâmetros cardiovasculares do Phisys?',
-    resposta: 'O peso representa a condição corporal geral do rato virtual. Excesso de peso aumenta a Resistência Vascular Periférica, elevando a pós-carga cardíaca e consequentemente a Pressão Arterial. Animais com sobrepeso têm maior risco de hipertensão. O peso também influencia o Débito Cardíaco necessário para perfundir os tecidos. Peso saudável aproximado: 200–400g.',
+    resposta: 'O peso representa a condição corporal geral do rato virtual. Excesso de peso aumenta a demanda metabólica e o esforço cardiovascular. Também eleva a Resistência Vascular Periférica, aumentando a pós-carga cardíaca e consequentemente a Pressão Arterial. Regras fisiológicas: ↑ peso excessivo → ↑ demanda metabólica → ↑ esforço cardiovascular; ↑ peso/adiposidade → ↑ RVP → ↑ PA. Peso saudável aproximado: 200–400g.',  
     dica: '💡 Peso normal: 200–400g. Obesidade é fator de risco cardiovascular!',
   },
   saude: {
@@ -58,9 +58,9 @@ const PARAM_INFO = {
   },
 };
 
-function PACard({ pas, pad, onClick }) {
-  const pasOk = pas >= 90 && pas <= 120;
-  const padOk = pad >= 60 && pad <= 80;
+function PACard({ pas, pad, paNormal, onClick }) {
+  const pasOk = pas >= paNormal.pas[0] && pas <= paNormal.pas[1];
+  const padOk = pad >= paNormal.pad[0] && pad <= paNormal.pad[1];
   const inRange = pasOk && padOk;
   const color = inRange ? '#32C878' : '#E24B4A';
   return (
@@ -191,6 +191,7 @@ useEffect(() => {
 
   const saude = calcularSaude(values);
   const status = getMascotStatus(values);
+  const energiaModulada = calcularEnergiaModulada(values, saude);
   const valsWithSaude = { ...values, saude };
   const line1 = PRIMARY_PARAMS.filter(p => ['energia','hidratacao','fc'].includes(p.id));
   const line2 = PRIMARY_PARAMS.filter(p => ['peso','saude'].includes(p.id));
@@ -249,7 +250,7 @@ setTimeout(() => setCareEffect(null), 1500);
       </div>
       <div style={styles.paramsGrid}>
         {line1.map(p => <ParamCard key={p.id} param={p} value={valsWithSaude[p.id] ?? p.default} onClick={setActiveParam}/>)}
-        <PACard pas={valsWithSaude.pas ?? 110} pad={valsWithSaude.pad ?? 70} onClick={setActiveParam}/>
+       <PACard pas={valsWithSaude.pas ?? 110} pad={valsWithSaude.pad ?? 70} paNormal={getAgePANormal(currentAge)} onClick={setActiveParam}/>
       </div>
       <div style={styles.paramsGridBottom}>
         {line2.map(p => <ParamCard key={p.id} param={p} value={valsWithSaude[p.id] ?? p.default} onClick={setActiveParam}/>)}

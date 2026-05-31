@@ -83,7 +83,7 @@ default: 370,
     unit: '%',
     min: 0,
     max: 100,
-    normal: [70, 100],
+    normal: [75, 100],
     default: 85,
     step: 1,
     icon: '➕',
@@ -135,9 +135,10 @@ default: 100,
 // ─── IDADE DO ANIMAL (afeta faixas normais da FC) ────────────────────────────
 
 export const AGE_STAGES = {
-  RECEM_NASCIDO: { label: 'Recém-nascido', days: [0, 30],    fcNormal: [380, 500] },
-  JUVENIL:       { label: 'Juvenil',        days: [31, 180],  fcNormal: [360, 440] },
-  ADULTO:        { label: 'Adulto',         days: [181, 9999],fcNormal: [340, 380] },
+  RECEM_NASCIDO: { label: 'Recém-nascido', days: [0, 30],    fcNormal: [380, 500], paNormal: { pas: [80, 110],  pad: [50, 70]  }, pesoNormal: [5,   50]  },
+  JUVENIL:       { label: 'Juvenil',        days: [31, 180],  fcNormal: [360, 440], paNormal: { pas: [90, 120],  pad: [60, 80]  }, pesoNormal: [50,  200] },
+  ADULTO:        { label: 'Adulto',         days: [181, 540], fcNormal: [340, 380], paNormal: { pas: [90, 120],  pad: [60, 80]  }, pesoNormal: [200, 400] },
+  IDOSO:         { label: 'Idoso',          days: [541, 9999],fcNormal: [320, 360], paNormal: { pas: [100, 140], pad: [65, 90]  }, pesoNormal: [150, 350] },
 };
 
 export function getAgeStage(days) {
@@ -145,6 +146,11 @@ export function getAgeStage(days) {
     if (days >= stage.days[0] && days <= stage.days[1]) return { key, ...stage };
   }
   return { key: 'ADULTO', ...AGE_STAGES.ADULTO };
+}
+
+export function getAgePANormal(days) {
+  const stage = getAgeStage(days);
+  return stage.paNormal ?? { pas: [90, 120], pad: [60, 80] };
 }
 
 // Modulador de saúde por fase — animais mais velhos são mais vulneráveis
@@ -175,22 +181,22 @@ export function getDefaultSecondaryValues() {
 
 export function calcularSecundarios(primarios) {
   const { hidratacao, fc, peso } = primarios;
+  const ageDays = primarios.ageDays ?? primarios.age_days ?? 90;
 
-  // Volume Urinário: 0=baixo, 1=normal, 2=alto
   const vol_urinario = hidratacao < 50 ? 0 : hidratacao > 80 ? 2 : 1;
 
-  // RVP: 0=baixa, 1=normal, 2=alta
+  // RVP: influenciada por hidratação, peso e idade/fase
   const fatorHidratacao = hidratacao < 50 ? 2 : hidratacao > 80 ? 0 : 1;
-  const fatorPeso = peso > 400 ? 2 : peso < 200 ? 0 : 1;
-  const rvp = Math.round((fatorHidratacao + fatorPeso) / 2);
+  const fatorPeso      = peso > 400 ? 2 : peso < 200 ? 0 : 1;
+  const fatorIdade     = ageDays > 540 ? 2 : ageDays <= 30 ? 0 : 1;
+  const rvp = Math.round((fatorHidratacao + fatorPeso + fatorIdade) / 3);
 
-  // Débito Cardíaco em mL/min (80–120 normal para rato)
   const volSistolico = 0.27 * (hidratacao / 70);
   const debito_cardiaco = Math.round(fc * volSistolico);
 
   return {
-    vol_urinario: Math.max(0, Math.min(2, vol_urinario)),
-    rvp:          Math.max(0, Math.min(2, rvp)),
+    vol_urinario:    Math.max(0, Math.min(2, vol_urinario)),
+    rvp:             Math.max(0, Math.min(2, rvp)),
     debito_cardiaco: Math.max(20, Math.min(300, debito_cardiaco)),
   };
 }
@@ -270,38 +276,54 @@ export const STATUS = {
 };
 
 export function calcularSaude(primarios) {
-  let fora = 0;
-  let totalVerificados = 0;
+  const ageDays = primarios.ageDays ?? primarios.age_days ?? 90;
+  const stage = getAgeStage(ageDays);
+  const paNormal = getAgePANormal(ageDays);
 
-  // Parâmetros principais
-  const params = ['hidratacao', 'pas', 'pad', 'fc'];
-  for (const id of params) {
-    const p = PRIMARY_PARAMS.find(x => x.id === id);
-    if (!p) continue;
-    totalVerificados++;
-    const v = primarios[id];
-    if (v < p.normal[0] || v > p.normal[1]) fora++;
-  }
+  let fora = 0;
+  const totalVerificados = 4;
+
+  const hidParam = PRIMARY_PARAMS.find(x => x.id === 'hidratacao');
+  if (primarios.hidratacao < hidParam.normal[0] || primarios.hidratacao > hidParam.normal[1]) fora++;
+  if (primarios.pas  < paNormal.pas[0] || primarios.pas  > paNormal.pas[1]) fora++;
+  if (primarios.pad  < paNormal.pad[0] || primarios.pad  > paNormal.pad[1]) fora++;
+  if (primarios.fc   < stage.fcNormal[0] || primarios.fc > stage.fcNormal[1]) fora++;
 
   let saude = (1 - (fora / totalVerificados)) * 100;
 
-  // Modulador: energia baixa reduz saúde
+  // Modulador: energia
   const energia = primarios.energia ?? 80;
   if (energia < 20) saude = Math.max(0, saude - 20);
   else if (energia < 40) saude = Math.max(0, saude - 10);
 
-  // Modulador: peso fora da faixa reduz saúde
+  // Modulador: peso por fase
   const peso = primarios.peso ?? 300;
-  const pesoParam = PRIMARY_PARAMS.find(x => x.id === 'peso');
-  if (pesoParam && (peso < pesoParam.normal[0] || peso > pesoParam.normal[1])) {
-    saude = Math.max(0, saude - 10);
-  }
+  const pesoNormal = stage.pesoNormal ?? [200, 400];
+  if (peso < pesoNormal[0] || peso > pesoNormal[1]) saude = Math.max(0, saude - 10);
 
-  // Modulador: idade/fase aumenta vulnerabilidade fisiológica
-  const ageDays = primarios.ageDays ?? primarios.age_days ?? 90;
+  // Modulador: idade/fase
   saude = Math.max(0, saude + getAgeSaudeModifier(ageDays));
 
   return Math.round(saude);
+}
+
+export function calcularEnergiaModulada(primarios, saudeCalculada) {
+  const ageDays = primarios.ageDays ?? primarios.age_days ?? 90;
+  let mod = 0;
+
+  // Hidratação baixa reduz energia
+  if (primarios.hidratacao < 30) mod -= 20;
+  else if (primarios.hidratacao < 50) mod -= 10;
+
+  // Saúde baixa reduz energia
+  const saude = saudeCalculada ?? calcularSaude(primarios);
+  if (saude < 40) mod -= 20;
+  else if (saude < 60) mod -= 10;
+
+  // Fase idoso: energia máxima reduzida
+  if (ageDays > 540) mod -= 10;
+
+  return Math.max(0, Math.min(100, (primarios.energia ?? 80) + mod));
 }
 
 export function getMascotStatus(primarios) {
