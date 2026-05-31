@@ -113,9 +113,9 @@ function ParamBar({ param, value }) {
   );
 }
 
-function GameScreen({ user, mode, onBack, onFinish }) {
-  const [values, setValues] = useState(getDefaultValues());
-  const [score, setScore] = useState(100);
+function GameScreen({ user, mode, values: initialValues, score: initialScore, onBack, onFinish }) {
+  const [values, setValues] = useState(initialValues || getDefaultValues());
+  const [score, setScore] = useState(initialScore || 100);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [selected, setSelected] = useState(null);
   const [answered, setAnswered] = useState(false);

@@ -22,6 +22,7 @@ function App() {
   const [sessaoId, setSessaoId] = useState(null);
   const [showWelcome, setShowWelcome] = useState(false);
   const [motivationMessages, setMotivationMessages] = useState(null);
+  const [motivationNivel, setMotivationNivel] = useState(3);
 
 useEffect(() => {
   mensagensApi.get().then(data => setMotivationMessages(data)).catch(() => {});
@@ -132,15 +133,19 @@ if (!localStorage.getItem(welcomeKey)) {
   }
 
   async function handleMotivation(nivel) {
-  try {
-    const s = await sessoesApi.iniciar({ nivel_motivacao: nivel, modo: 'livre' });
-    if (s?.id) setSessaoId(s.id);
-  } catch(e) {}
+  setMotivationNivel(nivel);
   setScreen('home');
 }
   function handleLogout() { removeToken(); setUser(null); setMode(null); setScreen('home'); setValues(getDefaultPrimaryValues()); setScore(100); setSessionData(null); }
   function handleBack()        { setMode(null); setScreen('home'); }
-  function handleSelectMode(m) { setMode(m); setSessionStart(Date.now()); setScreen('game'); }
+  function handleSelectMode(m) {
+  setMode(m);
+  setSessionStart(Date.now());
+  setScreen('game');
+  sessoesApi.iniciar({ nivel_motivacao: motivationNivel, modo: m })
+    .then(s => { if (s?.id) setSessaoId(s.id); })
+    .catch(() => {});
+}
   async function handleGameFinish(data) {
   const seconds = sessionStart ? Math.floor((Date.now() - sessionStart) / 1000) : 0;
   setSessionData({ ...data, seconds });
