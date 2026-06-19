@@ -21,7 +21,7 @@ async function criarTabelas() {
         hidratacao    NUMERIC DEFAULT 70,
         pas           NUMERIC DEFAULT 110,
         pad           NUMERIC DEFAULT 70,
-        fc            NUMERIC DEFAULT 75,
+        fc            NUMERIC DEFAULT 370,
         peso          NUMERIC DEFAULT 300,
         saude         NUMERIC DEFAULT 85,
         age_days      INTEGER DEFAULT 90,
@@ -102,6 +102,8 @@ criarTabelas();
 async function adicionarColunas() {
   try {
     await pool.query(`ALTER TABLE ranking ADD COLUMN IF NOT EXISTS nota_final NUMERIC DEFAULT NULL`);
+    await pool.query(`ALTER TABLE animal ADD COLUMN IF NOT EXISTS age_days INTEGER DEFAULT 90`);
+    await pool.query(`UPDATE animal SET fc = 370 WHERE fc = 75`);
     await pool.query(`
       CREATE TABLE IF NOT EXISTS mensagens (
         id          SERIAL PRIMARY KEY,

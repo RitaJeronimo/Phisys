@@ -28,6 +28,10 @@ useEffect(() => {
   mensagensApi.get().then(data => setMotivationMessages(data)).catch(() => {});
 }, []);
 
+useEffect(() => {
+  setValues(prev => ({ ...prev, age_days: ageDays }));
+}, [ageDays]);
+
   useEffect(() => {
   const token = getToken();
   if (!token) return;
@@ -39,7 +43,7 @@ useEffect(() => {
     if (payload.modo === 'professor') { setScreen('professor'); return; }
     setScreen('home');
     animalApi.get().then(a => {
-      setValues({ energia: Number(a.energia), hidratacao: Number(a.hidratacao), pas: Number(a.pas), pad: Number(a.pad), fc: Number(a.fc), peso: Number(a.peso) });
+      setValues({ energia: Number(a.energia), hidratacao: Number(a.hidratacao), pas: Number(a.pas), pad: Number(a.pad), fc: Number(a.fc), peso: Number(a.peso), age_days: Number(a.age_days) || 90 });
       setAgeDays(Number(a.age_days) || 90);
     }).catch(() => {});
     rankingApi.get().then(rankData => {
@@ -90,6 +94,7 @@ if (!localStorage.getItem(welcomeKey)) {
         pad:        Number(a.pad),
         fc:         Number(a.fc),
         peso:       Number(a.peso),
+        age_days:   Number(a.age_days) || 90,
       });
       setAgeDays(Number(a.age_days) || 90);
     } catch(e) {
@@ -203,7 +208,7 @@ if (!localStorage.getItem(welcomeKey)) {
     </button>
   </div>
 );
-  
+
   if (!user) return <LoginScreen onLogin={handleLogin}/>;
 
   if (screen === 'motivation')
