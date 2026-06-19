@@ -6,9 +6,11 @@ const auth = require('../middleware/auth');
 // GET /api/desafios — lista desafios ativos
 router.get('/', auth, async (req, res) => {
   try {
-    const result = await pool.query(
-      'SELECT * FROM desafios WHERE ativo = TRUE ORDER BY criado_em ASC'
-    );
+    const isProfessor = req.usuario.modo === 'professor';
+const query = isProfessor
+  ? 'SELECT * FROM desafios ORDER BY criado_em ASC'
+  : 'SELECT * FROM desafios WHERE ativo = TRUE ORDER BY criado_em ASC';
+const result = await pool.query(query);
     res.json(result.rows);
   } catch (err) {
     console.error('Erro ao listar desafios:', err.message);

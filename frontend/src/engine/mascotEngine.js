@@ -361,15 +361,32 @@ export function applyPenalty(score, status) {
 
 // ─── CÁLCULO DE NOTA FINAL ────────────────────────────────────────────────────
 
-export function calculateFinalGrade(sessionData) {
-  const { totalChallenges, solvedChallenges, avgResponseTime, errors = 0 } = sessionData;
-  const challengeNorm = totalChallenges > 0 ? solvedChallenges / totalChallenges : 0;
-  const timeBonus = Math.max(0, 1 - (avgResponseTime - 10) / 50);
-  const errorPenalty = errors * 0.5;
-  const grade = Math.max(0, Math.min(10,
-    (challengeNorm * 9.0) + (timeBonus * 1.0) - errorPenalty
-  ));
-  return parseFloat(grade.toFixed(1));
+// DEPOIS:
+export function calculateFinalGrade(sessionData, weights) {
+  const { totalChallenges, solvedChallenges, avgResponseTime, finalScore = 0, finalHealth = 85 } = sessionData;
+
+  const w = weights ? {
+    score:         (weights.score         ?? 40) / 100,
+    survival:      (weights.survival      ?? 30) / 100,
+    challenges:    (weights.challenges    ?? 20) / 100,
+    response_time: (weights.response_time ?? 10) / 100,
+  } : DEFAULT_WEIGHTS;
+
+  const totalW = (w.score + w.survival + w.challenges + w.response_time) || 1;
+
+  const challengeScore = totalChallenges > 0 ? solvedChallenges / totalChallenges : 0;
+  const scoreNorm      = Math.min(1, (finalScore || 0) / 500);
+  const healthNorm     = Math.min(1, (finalHealth || 85) / 100);
+  const timeScore      = Math.max(0, 1 - Math.max(0, ((avgResponseTime || 30) - 10) / 50));
+
+  const raw = (
+    challengeScore * w.challenges +
+    scoreNorm      * w.score +
+    healthNorm     * w.survival +
+    timeScore      * w.response_time
+  ) / totalW;
+
+  return parseFloat(Math.max(0, Math.min(10, raw * 10)).toFixed(1));
 }
 
 // ─── CENÁRIOS DE INTERVENÇÃO (cartas de desafio) ──────────────────────────────

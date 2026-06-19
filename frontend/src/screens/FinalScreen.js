@@ -1,4 +1,5 @@
 import React from 'react';
+import { calculateFinalGrade } from '../engine/mascotEngine';
 
 const GRADIENT = 'linear-gradient(160deg, #1B4FCC 0%, #7B2FBE 50%, #CC1B1B 100%)';
 
@@ -12,7 +13,17 @@ function FinalScreen({ user, score, saude, seconds, solvedChallenges, totalChall
     return `${m.toString().padStart(2,'0')}min ${sec.toString().padStart(2,'0')}s`;
   };
 
-  const saudeColor = saude >= 75 ? '#32C878' : saude >= 40 ? '#EF9F27' : '#E24B4A';
+  const savedWeights = (() => {
+    try { return JSON.parse(localStorage.getItem('phisys_pesos') || '{}'); } catch { return {}; }
+  })();
+  const notaCalculada = calculateFinalGrade({
+    totalChallenges,
+    solvedChallenges,
+    avgResponseTime: solvedChallenges > 0 ? (seconds / solvedChallenges) : 30,
+    errors,
+    finalScore: score,
+    finalHealth: saude,
+  }, savedWeights);const saudeColor = saude >= 75 ? '#32C878' : saude >= 40 ? '#EF9F27' : '#E24B4A';
   const saudeLabel = saude >= 75 ? '😊 Saudável' : saude >= 40 ? '😰 Debilitado' : '😵 Crítico';
 
   const acertos = totalChallenges > 0 ? Math.round((solvedChallenges / totalChallenges) * 100) : 0;
@@ -72,18 +83,23 @@ function FinalScreen({ user, score, saude, seconds, solvedChallenges, totalChall
       </div>
 
       {/* CARDS DE RESUMO */}
-      <div style={styles.summaryGrid}>
-        <div style={styles.summaryCard}>
-          <div style={styles.summaryIcon}>⏱</div>
-          <div style={styles.summaryVal}>{formatTime(seconds)}</div>
-          <div style={styles.summaryLbl}>Tempo de sessao</div>
-        </div>
-        <div style={styles.summaryCard}>
-          <div style={styles.summaryIcon}>⚡</div>
-          <div style={styles.summaryVal}>{Math.round(score)}</div>
-          <div style={styles.summaryLbl}>XP total</div>
-        </div>
-        <div style={{ ...styles.summaryCard, borderColor: saudeColor }}>
+      <div style={{ ...styles.summaryGrid, gridTemplateColumns:'repeat(2,1fr)' }}>
+  <div style={styles.summaryCard}>
+    <div style={styles.summaryIcon}>⏱</div>
+    <div style={styles.summaryVal}>{formatTime(seconds)}</div>
+    <div style={styles.summaryLbl}>Tempo de sessao</div>
+  </div>
+  <div style={styles.summaryCard}>
+    <div style={styles.summaryIcon}>⚡</div>
+    <div style={styles.summaryVal}>{Math.round(score)}</div>
+    <div style={styles.summaryLbl}>XP total</div>
+  </div>
+  <div style={styles.summaryCard}>
+    <div style={styles.summaryIcon}>📊</div>
+    <div style={styles.summaryVal}>{notaCalculada}</div>
+    <div style={styles.summaryLbl}>Nota calculada</div>
+  </div>  
+  <div style={{ ...styles.summaryCard, borderColor: saudeColor }}>
           <div style={styles.summaryIcon}>{saudeLabel.split(' ')[0]}</div>
           <div style={{ ...styles.summaryVal, color: saudeColor }}>{saude}%</div>
           <div style={styles.summaryLbl}>Saude final</div>

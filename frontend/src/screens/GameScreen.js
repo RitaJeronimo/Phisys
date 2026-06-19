@@ -316,12 +316,17 @@ async function handleAnswer(option) {
   if (finished) {
     const avgResponseTime = responseTimes.length > 0
       ? responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length : 30;
+    const savedWeights = (() => {
+      try { return JSON.parse(localStorage.getItem('phisys_pesos') || '{}'); } catch { return {}; }
+    })();
     const grade = calculateFinalGrade({
-      finalScore: score, finalStatus: status,
+      finalScore: score,
       totalChallenges: MOCK_CHALLENGES.length,
       solvedChallenges: solvedCount,
-      avgResponseTime, errors: errorCount,
-    });
+      avgResponseTime,
+      errors: errorCount,
+      finalHealth: calcularSaude(values),
+    }, savedWeights);
     return (
       <div style={styles.screen}>
         <div style={{ padding:'3rem 1.5rem', display:'flex', flexDirection:'column', alignItems:'center', gap:'1.5rem' }}>
