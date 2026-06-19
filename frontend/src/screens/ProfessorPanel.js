@@ -146,9 +146,9 @@ useEffect(() => {
     async function handleExport() {
     try {
       const data = await rankingApi.get();
-      const header = 'Nome,Matricula,XP Total,Sessoes,Media Saude\n';
+      const header = 'Nome,Matricula,XP Total,Sessoes,Media Saude,Nota Final\n';
       const rows = data.map(r =>
-        `${r.nome},${r.matricula},${r.xp_total},${r.sessoes},${Number(r.media_saude).toFixed(1)}`
+        `${r.nome},${r.matricula},${r.xp_total},${r.sessoes},${Number(r.media_saude).toFixed(1)},${manualGrades[r.id] || '-'}`
       ).join('\n');
       const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
@@ -557,7 +557,6 @@ async function handleToggleSimulation(id) {
   <span style={{textAlign:'center'}}>mascote</span>
   <span style={{textAlign:'center'}}>calc.</span>
   <span style={{textAlign:'center'}}>final</span>
-  <span style={{textAlign:'center'}}>rel.</span>
 </div>
             {students.map(student=>(
   <div key={student.id} style={styles.tableRow}>
@@ -583,15 +582,7 @@ async function handleToggleSimulation(id) {
   }}/>
     </div>
     <div style={styles.cell}>
-      <button style={{ fontSize:'10px', background:'rgba(255,255,255,.15)', border:'1px solid rgba(255,255,255,.25)', color:'white', padding:'3px 6px', borderRadius:'6px', cursor:'pointer', fontFamily:'inherit' }}
-        onClick={() => {
-          const csv = `Nome,Matricula,XP Total,Sessoes,Nota\n${student.nome},${student.matricula},${student.xp_total},${student.sessoes},${manualGrades[student.id] || '-'}`;
-          const blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url; a.download = `${student.nome.split(' ')[0]}_phisys.csv`; a.click();
-          URL.revokeObjectURL(url);
-        }}>↓</button>
+      
     </div>
   </div>
 ))}
@@ -813,8 +804,8 @@ const styles = {
   weightSlider:     { flex:1, accentColor:'white' },
   weightVal:        { fontSize:'12px', fontWeight:'700', color:'white', width:'36px', textAlign:'right' },
   tableWrap:        { margin:'0 1rem', background:'rgba(255,255,255,.1)', border:'1px solid rgba(255,255,255,.18)', borderRadius:'14px', overflow:'hidden' },
-  tableHeader:      { display:'grid', gridTemplateColumns:'1fr 50px 60px 50px 60px 40px', padding:'.75rem 1rem', background:'rgba(255,255,255,.1)', fontSize:'9px', color:'rgba(255,255,255,.5)', letterSpacing:'.06em', textTransform:'uppercase', gap:'4px' },
-  tableRow:         { display:'grid', gridTemplateColumns:'1fr 50px 60px 50px 60px 40px', padding:'.875rem 1rem', borderTop:'1px solid rgba(255,255,255,.08)', alignItems:'center', gap:'4px' },
+  tableHeader:      { display:'grid', gridTemplateColumns:'1fr 50px 60px 50px 60px', padding:'.75rem 1rem', background:'rgba(255,255,255,.1)', fontSize:'9px', color:'rgba(255,255,255,.5)', letterSpacing:'.06em', textTransform:'uppercase', gap:'4px' },
+  tableRow:         { display:'grid', gridTemplateColumns:'1fr 50px 60px 50px 60px', padding:'.875rem 1rem', borderTop:'1px solid rgba(255,255,255,.08)', alignItems:'center', gap:'4px' },
   studentName:      { fontSize:'13px', color:'white', fontWeight:'500' },
   studentMeta:      { fontSize:'10px', color:'rgba(255,255,255,.45)', marginTop:'1px' },
   cell:             { fontSize:'13px', color:'rgba(255,255,255,.8)', textAlign:'center' },
