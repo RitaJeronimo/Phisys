@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { PARAMS, getDefaultValues, getMascotStatus, applyPenalty, applyBonus, calculateFinalGrade, STATUS, calcularSaude } from '../engine/mascotEngine';
-import { ranking as rankingApi, getToken, desafios as desafiosApi } from '../api';
-
+import { ranking as rankingApi, animal as animalApi, getToken, desafios as desafiosApi } from '../api';
 
 const MOCK_CHALLENGES = [
   {
@@ -127,67 +126,67 @@ function GameScreen({ user, mode, values: initialValues, score: initialScore, on
   const [finished, setFinished] = useState(false);
   const [myRank, setMyRank] = useState('-');
   const [challenges, setChallenges] = useState([]);
-const [loadingChallenges, setLoadingChallenges] = useState(true);
-
-useEffect(() => {
-  desafiosApi.get().then(data => {
-    const fromDB = Array.isArray(data) && data.length > 0
-      ? data.map(d => ({
-          id: d.id,
-          tag: `Desafio #${d.id}`,
-          focus: d.foco || 'renal',
-          text: d.pergunta,
-          options: (Array.isArray(d.opcoes) ? d.opcoes : JSON.parse(d.opcoes)).map((opt, i) => ({
-            letter: String.fromCharCode(65 + i),
-            text: opt,
-            correct: i === d.correta,
-          })),
-          intervention: {},
-          explanation: d.explicacao || 'Revise os conceitos fisiológicos relacionados a este cenário clínico.',
-          active: d.ativo,
-        }))
-      : [];
-
-    if (mode === 'sessao') {
-      try {
-        const cfg = JSON.parse(localStorage.getItem('phisys_sessao_config') || '{}');
-        const foco = cfg.foco || 'todos';
-        let sessaoChallenges = fromDB.filter(c => c.active !== false);
-        if (foco !== 'todos') {
-          sessaoChallenges = sessaoChallenges.filter(c =>
-            c.focus?.toLowerCase().includes(foco.toLowerCase())
-          );
-        }
-        setChallenges(sessaoChallenges.length > 0 ? sessaoChallenges : MOCK_CHALLENGES);
-      } catch {
-        setChallenges(fromDB.length > 0 ? fromDB : MOCK_CHALLENGES);
-      }
-    } else {
-      setChallenges(fromDB.length > 0 ? [...MOCK_CHALLENGES, ...fromDB] : MOCK_CHALLENGES);
-    }
-  }).catch(() => {
-    setChallenges(MOCK_CHALLENGES);
-  }).finally(() => setLoadingChallenges(false));
-}, [mode]);
+  const [loadingChallenges, setLoadingChallenges] = useState(true);
   const [attempts, setAttempts] = useState(0);
   const [paramHistory, setParamHistory] = useState([{
-  label: 'Início',
-  hidratacao: getDefaultValues().hidratacao,
-  pas: getDefaultValues().pas,
-  fc: getDefaultValues().fc,
-  saude: 85,
-}]);
+    label: 'Início',
+    hidratacao: getDefaultValues().hidratacao,
+    pas: getDefaultValues().pas,
+    fc: getDefaultValues().fc,
+    saude: 85,
+  }]);
 
-useEffect(() => {
-  rankingApi.get().then(data => {
-    if (!Array.isArray(data)) return;
-    const token = getToken();
-    if (!token) return;
-    const payload = JSON.parse(atob(token.split('.')[1]));
-    const idx = data.findIndex(r => r.id === payload.id || r.nome === payload.nome);
-    if (idx >= 0) setMyRank('#' + (idx + 1));
-  }).catch(() => {});
-}, []);
+  useEffect(() => {
+    desafiosApi.get().then(data => {
+      const fromDB = Array.isArray(data) && data.length > 0
+        ? data.map(d => ({
+            id: d.id,
+            tag: `Desafio #${d.id}`,
+            focus: d.foco || 'renal',
+            text: d.pergunta,
+            options: (Array.isArray(d.opcoes) ? d.opcoes : JSON.parse(d.opcoes)).map((opt, i) => ({
+              letter: String.fromCharCode(65 + i),
+              text: opt,
+              correct: i === d.correta,
+            })),
+            intervention: {},
+            explanation: d.explicacao || 'Revise os conceitos fisiológicos relacionados a este cenário clínico.',
+            active: d.ativo,
+          }))
+        : [];
+
+      if (mode === 'sessao') {
+        try {
+          const cfg = JSON.parse(localStorage.getItem('phisys_sessao_config') || '{}');
+          const foco = cfg.foco || 'todos';
+          let sessaoChallenges = fromDB.filter(c => c.active !== false);
+          if (foco !== 'todos') {
+            sessaoChallenges = sessaoChallenges.filter(c =>
+              c.focus?.toLowerCase().includes(foco.toLowerCase())
+            );
+          }
+          setChallenges(sessaoChallenges.length > 0 ? sessaoChallenges : MOCK_CHALLENGES);
+        } catch {
+          setChallenges(fromDB.length > 0 ? fromDB : MOCK_CHALLENGES);
+        }
+      } else {
+        setChallenges(fromDB.length > 0 ? [...MOCK_CHALLENGES, ...fromDB] : MOCK_CHALLENGES);
+      }
+    }).catch(() => {
+      setChallenges(MOCK_CHALLENGES);
+    }).finally(() => setLoadingChallenges(false));
+  }, [mode]);
+
+  useEffect(() => {
+    rankingApi.get().then(data => {
+      if (!Array.isArray(data)) return;
+      const token = getToken();
+      if (!token) return;
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const idx = data.findIndex(r => r.id === payload.id || r.nome === payload.nome);
+      if (idx >= 0) setMyRank('#' + (idx + 1));
+    }).catch(() => {});
+  }, []);
 
   const status = getMascotStatus(values);
   const challenge = challenges[currentIdx];
@@ -201,100 +200,103 @@ useEffect(() => {
     return () => clearInterval(interval);
   }, [status, answered, finished]);
 
-async function handleAnswer(option) {
-  if (answered) return;
-  const elapsed = (Date.now() - questionStart) / 1000;
+  async function handleAnswer(option) {
+    if (answered) return;
+    const elapsed = (Date.now() - questionStart) / 1000;
 
-  if (option.correct) {
-    setResponseTimes(t => [...t, elapsed]);
-    setSelected(option.letter);
-    setAnswered(true);
-    setAttempts(0);
-    const newScore = applyBonus(score, 'correct_answer');
-    setScore(newScore);
-    setSolvedCount(s => s + 1);
-    if (mode === 'sessao') {
-      // Sessão: acerto recupera saúde automaticamente
-      setValues(prev => ({
-        ...prev,
-        hidratacao: Math.min(100, (prev.hidratacao || 70) + 20),
-        pas: 110, pad: 70, fc: 370,
-        energia: Math.min(100, (prev.energia || 80) + 10),
-      }));
-    } else {
-      // Livre: aplica cenário fisiológico e reduz energia
-      setValues(prev => ({
-        ...prev,
-        ...challenge.intervention,
-        energia: Math.max(0, (prev.energia || 80) - 10),
-      }));
-    }
-    try { await rankingApi.update({ xp_total: newScore, media_saude: calcularSaude(values) }); } catch(e) {}
-  } else {
-    const newAttempts = attempts + 1;
-    setAttempts(newAttempts);
-    setSelected(option.letter);
-    if (newAttempts < 2) {
-      setTimeout(() => setSelected(null), 1000);
-    } else {
+    if (option.correct) {
       setResponseTimes(t => [...t, elapsed]);
+      setSelected(option.letter);
       setAnswered(true);
       setAttempts(0);
+      const newScore = applyBonus(score, 'correct_answer');
+      setScore(newScore);
+      setSolvedCount(s => s + 1);
+      let novosValores;
       if (mode === 'sessao') {
-        // Sessão: erro aplica intervenção — parâmetros não se recuperam
-        setValues(prev => ({
-          ...prev,
-          ...challenge.intervention,
-          energia: Math.max(0, (prev.energia || 80) - 15),
-        }));
+        novosValores = {
+          ...values,
+          hidratacao: Math.min(100, (values.hidratacao || 70) + 20),
+          pas: 110, pad: 70, fc: 370,
+          energia: Math.min(100, (values.energia || 80) + 10),
+        };
       } else {
-        // Livre: apenas reduz energia
-        setValues(prev => ({ ...prev, energia: Math.max(0, (prev.energia || 80) - 10) }));
+        novosValores = {
+          ...values,
+          ...challenge.intervention,
+          energia: Math.max(0, (values.energia || 80) - 10),
+        };
       }
-      const penaltyScore = Math.max(0, score - 5);
-      setScore(penaltyScore);
-      setErrorCount(e => e + 1);
-      try { await rankingApi.update({ xp_total: penaltyScore, media_saude: calcularSaude(values) }); } catch(e) {}
+      setValues(novosValores);
+      try { await animalApi.update(novosValores); } catch(e) { console.log('Erro ao salvar animal (acerto):', e.message); }
+      try { await rankingApi.update({ xp_total: newScore, media_saude: calcularSaude(novosValores) }); } catch(e) {}
+    } else {
+      const newAttempts = attempts + 1;
+      setAttempts(newAttempts);
+      setSelected(option.letter);
+      if (newAttempts < 2) {
+        setTimeout(() => setSelected(null), 1000);
+      } else {
+        setResponseTimes(t => [...t, elapsed]);
+        setAnswered(true);
+        setAttempts(0);
+        let novosValoresErro;
+        if (mode === 'sessao') {
+          novosValoresErro = {
+            ...values,
+            ...challenge.intervention,
+            energia: Math.max(0, (values.energia || 80) - 15),
+          };
+        } else {
+          novosValoresErro = {
+            ...values,
+            energia: Math.max(0, (values.energia || 80) - 10),
+          };
+        }
+        setValues(novosValoresErro);
+        try { await animalApi.update(novosValoresErro); } catch(e) { console.log('Erro ao salvar animal (erro):', e.message); }
+        const penaltyScore = Math.max(0, score - 5);
+        setScore(penaltyScore);
+        setErrorCount(e => e + 1);
+        try { await rankingApi.update({ xp_total: penaltyScore, media_saude: calcularSaude(novosValoresErro) }); } catch(e) {}
+      }
     }
   }
-}
 
   function handleNext() {
-  const energiaAtual = values.energia || 0;
+    const energiaAtual = values.energia || 0;
+    const snapshot = {
+      label: `D${currentIdx + 1}`,
+      hidratacao: values.hidratacao,
+      pas: values.pas,
+      fc: values.fc,
+      saude: calcularSaude(values),
+    };
+    const updatedHistory = [...paramHistory, snapshot];
+    setParamHistory(updatedHistory);
 
-  const snapshot = {
-    label: `D${currentIdx + 1}`,
-    hidratacao: values.hidratacao,
-    pas: values.pas,
-    fc: values.fc,
-    saude: calcularSaude(values),
-  };
-  const updatedHistory = [...paramHistory, snapshot];
-  setParamHistory(updatedHistory);
-
-  if (mode === 'livre' && energiaAtual <= 0) {
-    alert('⚡ Energia esgotada! Volte à tela principal e alimente o Phisys para continuar.');
-    if (onFinish) {
-      onFinish({ seconds, solvedChallenges: solvedCount, totalChallenges: challenges.length, errors: errorCount, paramHistory: updatedHistory, finalScore: score });
+    if (mode === 'livre' && energiaAtual <= 0) {
+      alert('⚡ Energia esgotada! Volte à tela principal e alimente o Phisys para continuar.');
+      if (onFinish) {
+        onFinish({ seconds, solvedChallenges: solvedCount, totalChallenges: challenges.length, errors: errorCount, paramHistory: updatedHistory, finalScore: score });
+      }
+      return;
     }
-    return;
-  }
 
-  if (currentIdx + 1 >= challenges.length) {
-    if (onFinish) {
-      onFinish({ seconds, solvedChallenges: solvedCount, totalChallenges: challenges.length, errors: errorCount, paramHistory: updatedHistory, finalScore: score });
+    if (currentIdx + 1 >= challenges.length) {
+      if (onFinish) {
+        onFinish({ seconds, solvedChallenges: solvedCount, totalChallenges: challenges.length, errors: errorCount, paramHistory: updatedHistory, finalScore: score });
+      } else {
+        setFinished(true);
+      }
     } else {
-      setFinished(true);
+      setCurrentIdx(i => i + 1);
+      setSelected(null);
+      setAnswered(false);
+      setAttempts(0);
+      setQuestionStart(Date.now());
     }
-  } else {
-    setCurrentIdx(i => i + 1);
-    setSelected(null);
-    setAnswered(false);
-    setAttempts(0);
-    setQuestionStart(Date.now());
   }
-}
-
 
   const formatTime = (s) => {
     const m = Math.floor(s / 60).toString().padStart(2, '00');
@@ -306,13 +308,13 @@ async function handleAnswer(option) {
   const statusLabel = { [STATUS.SAUDAVEL]: 'Saudável', [STATUS.DEBILITADO]: 'Debilitado', [STATUS.CRITICO]: 'Crítico' };
 
   if (loadingChallenges) {
-  return (
-    <div style={{ ...styles.screen, justifyContent:'center', alignItems:'center' }}>
-      <div style={{ color:'white', fontSize:'16px', fontWeight:'600' }}>Carregando desafios...</div>
-    </div>
-  );
-}
-  
+    return (
+      <div style={{ ...styles.screen, justifyContent:'center', alignItems:'center' }}>
+        <div style={{ color:'white', fontSize:'16px', fontWeight:'600' }}>Carregando desafios...</div>
+      </div>
+    );
+  }
+
   if (finished) {
     const avgResponseTime = responseTimes.length > 0
       ? responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length : 30;
@@ -349,11 +351,11 @@ async function handleAnswer(option) {
   return (
     <div style={styles.screen}>
       <div style={styles.topbar}>
-  <button style={styles.backBtn} onClick={onBack}>←</button>
-  <div style={styles.modeBadge}>{mode === 'sessao' ? '📋 Sessão' : '🎯 Livre'}</div>
-  <div style={styles.scoreBadge}>⭐ {Math.round(score)} pts</div>
-  <div style={styles.timerBadge}>⏱ {formatTime(seconds)}</div>
-</div>
+        <button style={styles.backBtn} onClick={onBack}>←</button>
+        <div style={styles.modeBadge}>{mode === 'sessao' ? '📋 Sessão' : '🎯 Livre'}</div>
+        <div style={styles.scoreBadge}>⭐ {Math.round(score)} pts</div>
+        <div style={styles.timerBadge}>⏱ {formatTime(seconds)}</div>
+      </div>
 
       <div style={styles.mascotSection}>
         <ChibiMascot status={status} size={72}/>
@@ -404,10 +406,10 @@ async function handleAnswer(option) {
       </div>
 
       {!answered && attempts === 1 && (
-  <div style={{ margin:'0 1.5rem .5rem', background:'rgba(239,159,39,.2)', border:'1px solid rgba(239,159,39,.5)', borderRadius:'12px', padding:'.75rem', fontSize:'12px', color:'white', textAlign:'center' }}>
-    ⚠️ Resposta incorreta! Você tem mais uma tentativa.
-  </div>
-)}
+        <div style={{ margin:'0 1.5rem .5rem', background:'rgba(239,159,39,.2)', border:'1px solid rgba(239,159,39,.5)', borderRadius:'12px', padding:'.75rem', fontSize:'12px', color:'white', textAlign:'center' }}>
+          ⚠️ Resposta incorreta! Você tem mais uma tentativa.
+        </div>
+      )}
 
       {answered && (
         <div style={{ padding:'0 1.5rem' }}>
@@ -459,7 +461,7 @@ const styles = {
   optionLetterWrong:  { background:'#DC3C3C' },
   optionText:         { fontSize:'13px', color:'white', lineHeight:'1.4' },
   nextBtn:            { width:'100%', padding:'13px', borderRadius:'10px', border:'none', backgroundColor:'white', color:'#7B2FBE', fontSize:'14px', fontWeight:'700', cursor:'pointer', fontFamily:'inherit' },
-  modeBadge: { background:'rgba(255,255,255,0.15)', border:'1px solid rgba(255,255,255,0.25)', borderRadius:'20px', padding:'4px 10px', fontSize:'11px', color:'white', fontWeight:'600' },
+  modeBadge:          { background:'rgba(255,255,255,0.15)', border:'1px solid rgba(255,255,255,0.25)', borderRadius:'20px', padding:'4px 10px', fontSize:'11px', color:'white', fontWeight:'600' },
 };
 
 export default GameScreen;

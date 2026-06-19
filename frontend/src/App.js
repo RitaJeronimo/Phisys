@@ -50,12 +50,6 @@ useEffect(() => {
       const myRank = rankData.find(r => r.id === payload.id || r.nome === payload.nome);
       if (myRank && myRank.xp_total > 0) setScore(myRank.xp_total);
     }).catch(() => {});
-    simulacoesApi.getAtiva().then(sim => {
-      if (sim && sim.params) {
-        const p = typeof sim.params === 'string' ? JSON.parse(sim.params) : sim.params;
-        setValues(prev => ({ ...prev, ...p }));
-      }
-    }).catch(() => {});
   } catch(e) {
     removeToken();
   }
@@ -107,13 +101,7 @@ if (!localStorage.getItem(welcomeKey)) {
       if (myRank && myRank.xp_total > 0) setScore(myRank.xp_total);
     } catch(e) {}
 
-    try {
-  const sim = await simulacoesApi.getAtiva();
-  if (sim && sim.params) {
-    const p = typeof sim.params === 'string' ? JSON.parse(sim.params) : sim.params;
-    setValues(prev => ({ ...prev, ...p }));
-  }
-} catch(e) {}
+    
   }
 
   async function handleCare(careId, newValues) {
