@@ -80,15 +80,15 @@ async function criarTabelas() {
 
       -- RANKING
       CREATE TABLE IF NOT EXISTS ranking (
-  id          SERIAL PRIMARY KEY,
-  usuario_id  INTEGER REFERENCES usuarios(id) ON DELETE CASCADE,
-  xp_total    INTEGER DEFAULT 0,
-  sessoes     INTEGER DEFAULT 0,
-  media_saude NUMERIC DEFAULT 0,
-  nota_final  NUMERIC DEFAULT NULL,
-  atualizado_em TIMESTAMP DEFAULT NOW(),
-  UNIQUE(usuario_id)
-);
+        id          SERIAL PRIMARY KEY,
+        usuario_id  INTEGER REFERENCES usuarios(id) ON DELETE CASCADE,
+        xp_total    INTEGER DEFAULT 0,
+        sessoes     INTEGER DEFAULT 0,
+        media_saude NUMERIC DEFAULT 0,
+        nota_final  NUMERIC DEFAULT NULL,
+        atualizado_em TIMESTAMP DEFAULT NOW(),
+        UNIQUE(usuario_id)
+      );
     `);
 
     console.log('Tabelas criadas com sucesso!');
@@ -104,6 +104,8 @@ async function adicionarColunas() {
     await pool.query(`ALTER TABLE ranking ADD COLUMN IF NOT EXISTS nota_final NUMERIC DEFAULT NULL`);
     await pool.query(`ALTER TABLE animal ADD COLUMN IF NOT EXISTS age_days INTEGER DEFAULT 90`);
     await pool.query(`UPDATE animal SET fc = 370 WHERE fc = 75`);
+    await pool.query(`ALTER TABLE desafios ADD COLUMN IF NOT EXISTS delta_acerto JSONB DEFAULT '{}'`);
+    await pool.query(`ALTER TABLE desafios ADD COLUMN IF NOT EXISTS delta_erro JSONB DEFAULT '{}'`);
     await pool.query(`
       CREATE TABLE IF NOT EXISTS mensagens (
         id          SERIAL PRIMARY KEY,
