@@ -480,7 +480,7 @@ async function handleToggleSimulation(id) {
             <div style={styles.sectionTitle}>desafios cadastrados ({challenges.length})</div>
             <button style={styles.newBtn} onClick={handleNewChallenge}>+ Novo</button>
           </div>
-          {challenges.map(ch=>(
+          {challenges.filter(ch => sessaoFoco === 'todos' || ch.focus === sessaoFoco).map(ch=>(
             <div key={ch.id} style={{...styles.challengeCard,...(!ch.active?{opacity:.5}:{})}}>
               <div style={styles.challengeTop}>
                 <div style={styles.challengeTitle}>{ch.title}</div>
