@@ -16,27 +16,6 @@ async function req(path, options = {}) {
 
 const GRADIENT = 'linear-gradient(160deg, #1B4FCC 0%, #7B2FBE 50%, #CC1B1B 100%)';
 
-const INITIAL_CHALLENGES = [
-  {
-    id:1, title:'Desidratação Aguda', intervencao:'desidratacao', focus:'renal', difficulty:'medio',
-    question:'Um rato apresenta redução do volume urinário e aumento da frequência cardíaca. Qual é o mecanismo compensatório principal?',
-    options:['Aumento da RVP para manter a PA','Redução do débito cardíaco','Aumento da diurese renal','Vasodilatação periférica'],
-    correct:0, active:true,
-  },
-  {
-    id:2, title:'Hipertensão Arterial', intervencao:'hipertensao', focus:'cardiovascular', difficulty:'dificil',
-    question:'O aumento da resistência vascular periférica leva ao aumento da pressão arterial. Qual parâmetro cardíaco é diretamente afetado?',
-    options:['Volume sistólico','Pós-carga','Pré-carga','Débito cardíaco'],
-    correct:1, active:true,
-  },
-  {
-    id:3, title:'Insuficiência Renal', intervencao:'insuf_renal', focus:'renal', difficulty:'dificil',
-    question:'Na insuficiência renal, a retenção de sódio e água provoca aumento do volume circulante. Qual o efeito esperado na PA?',
-    options:['Redução da PA sistólica','Aumento da PA sistólica e diastólica','Aumento apenas da PA diastólica','Sem alteração na PA'],
-    correct:1, active:true,
-  },
-];
-
 const EMPTY_CHALLENGE = {
   title:'', intervencao:'desidratacao', focus:'renal', difficulty:'facil',
   question:'', options:['','','',''], correct:0, active:true,
@@ -126,10 +105,10 @@ useEffect(() => {
         }));
         setChallenges(formatted);
       } else {
-        setChallenges(INITIAL_CHALLENGES);
+        setChallenges([]);
       }
     })
-    .catch(() => setChallenges(INITIAL_CHALLENGES));
+    .catch(() => setChallenges([]));
 }, []);
 
 useEffect(() => {
@@ -192,14 +171,18 @@ useEffect(() => {
 }
   async function handleToggleChallenge(id) {
   const ch = challenges.find(c => c.id === id);
-  try { await req(`/api/desafios/${id}`, { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ ativo: !ch.active }) }); } catch(e) {}
-  setChallenges(prev => prev.map(c => c.id === id ? {...c, active:!c.active} : c));
+  try {
+    await req(`/api/desafios/${id}`, { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ ativo: !ch.active }) });
+    setChallenges(prev => prev.map(c => c.id === id ? {...c, active:!c.active} : c));
+  } catch(e) {
+    alert('Erro: ' + e.message);
+  }
 }
   async function handleSaveChallenge() {
   if (!form.title || !form.question || form.options.some(o=>!o)) return;
   try {
     if (editing === 'new') {
-      await req('/api/desafios', {
+      const created = await req('/api/desafios', {
         method: 'POST',
         headers: authHeaders(),
         body: JSON.stringify({
@@ -212,6 +195,7 @@ useEffect(() => {
           intervencao: form.intervencao,
         }),
       });
+      setChallenges(prev => [...prev, { ...form, id: created.id }]);
     } else {
       await req(`/api/desafios/${editing}`, {
         method: 'PUT',
@@ -228,10 +212,7 @@ useEffect(() => {
         }),
       });
     }
-    const newId = Math.max(0, ...challenges.map(c=>c.id)) + 1;
-    if (editing === 'new') {
-      setChallenges(prev => [...prev, { ...form, id:newId }]);
-    } else {
+    if (editing !== 'new') {
       setChallenges(prev => prev.map(c => c.id === editing ? { ...form, id:c.id } : c));
     }
   } catch(e) {
