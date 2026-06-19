@@ -3,14 +3,14 @@ const router = express.Router();
 const pool = require('../db/connection');
 const auth = require('../middleware/auth');
 
-// GET /api/desafios — lista desafios ativos
+// GET /api/desafios – lista desafios
 router.get('/', auth, async (req, res) => {
   try {
     const isProfessor = req.usuario.modo === 'professor';
-const query = isProfessor
-  ? 'SELECT * FROM desafios ORDER BY criado_em ASC'
-  : 'SELECT * FROM desafios WHERE ativo = TRUE ORDER BY criado_em ASC';
-const result = await pool.query(query);
+    const query = isProfessor
+      ? 'SELECT * FROM desafios ORDER BY criado_em ASC'
+      : 'SELECT * FROM desafios WHERE ativo = TRUE ORDER BY criado_em ASC';
+    const result = await pool.query(query);
     res.json(result.rows);
   } catch (err) {
     console.error('Erro ao listar desafios:', err.message);
@@ -18,23 +18,24 @@ const result = await pool.query(query);
   }
 });
 
-// POST /api/desafios — cria novo desafio (professor only)
+// POST /api/desafios – cria novo desafio (professor only)
 router.post('/', auth, async (req, res) => {
   if (req.usuario.modo !== 'professor') {
     return res.status(403).json({ erro: 'Acesso negado.' });
   }
-
-  const { titulo, pergunta, opcoes, correta, foco, dificuldade, intervencao } = req.body;
-
+  const { titulo, pergunta, opcoes, correta, foco, dificuldade, intervencao, delta_acerto, delta_erro } = req.body;
   if (!titulo || !pergunta || !opcoes || correta === undefined) {
     return res.status(400).json({ erro: 'Campos obrigatorios ausentes.' });
   }
-
   try {
     const result = await pool.query(
-      `INSERT INTO desafios (titulo, pergunta, opcoes, correta, foco, dificuldade, intervencao)
-       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-      [titulo, pergunta, JSON.stringify(opcoes), correta, foco, dificuldade, intervencao]
+      `INSERT INTO desafios (titulo, pergunta, opcoes, correta, foco, dificuldade, intervencao, delta_acerto, delta_erro)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+      [
+        titulo, pergunta, JSON.stringify(opcoes), correta, foco, dificuldade, intervencao,
+        JSON.stringify(delta_acerto || {}),
+        JSON.stringify(delta_erro || {}),
+      ]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -43,34 +44,39 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
-// PUT /api/desafios/:id — edita desafio (professor only)
+// PUT /api/desafios/:id – edita desafio (professor only)
 router.put('/:id', auth, async (req, res) => {
   if (req.usuario.modo !== 'professor') {
     return res.status(403).json({ erro: 'Acesso negado.' });
   }
-
   const { id } = req.params;
-  const { titulo, pergunta, opcoes, correta, foco, dificuldade, intervencao, ativo } = req.body;
-
+  const { titulo, pergunta, opcoes, correta, foco, dificuldade, intervencao, ativo, delta_acerto, delta_erro } = req.body;
   try {
     const result = await pool.query(
       `UPDATE desafios SET
-        titulo      = COALESCE($1, titulo),
-        pergunta    = COALESCE($2, pergunta),
-        opcoes      = COALESCE($3, opcoes),
-        correta     = COALESCE($4, correta),
-        foco        = COALESCE($5, foco),
-        dificuldade = COALESCE($6, dificuldade),
-        intervencao = COALESCE($7, intervencao),
-        ativo       = COALESCE($8, ativo)
-       WHERE id = $9 RETURNING *`,
-      [titulo, pergunta, opcoes ? JSON.stringify(opcoes) : null, correta, foco, dificuldade, intervencao, ativo, id]
+        titulo       = COALESCE($1, titulo),
+        pergunta     = COALESCE($2, pergunta),
+        opcoes       = COALESCE($3, opcoes),
+        correta      = COALESCE($4, correta),
+        foco         = COALESCE($5, foco),
+        dificuldade  = COALESCE($6, dificuldade),
+        intervencao  = COALESCE($7, intervencao),
+        ativo        = COALESCE($8, ativo),
+        delta_acerto = COALESCE($9, delta_acerto),
+        delta_erro   = COALESCE($10, delta_erro)
+       WHERE id = $11 RETURNING *`,
+      [
+        titulo, pergunta,
+        opcoes ? JSON.stringify(opcoes) : null,
+        correta, foco, dificuldade, intervencao, ativo,
+        delta_acerto ? JSON.stringify(delta_acerto) : null,
+        delta_erro   ? JSON.stringify(delta_erro)   : null,
+        id,
+      ]
     );
-
     if (result.rows.length === 0) {
       return res.status(404).json({ erro: 'Desafio nao encontrado.' });
     }
-
     res.json(result.rows[0]);
   } catch (err) {
     console.error('Erro ao editar desafio:', err.message);
@@ -78,14 +84,12 @@ router.put('/:id', auth, async (req, res) => {
   }
 });
 
-// DELETE /api/desafios/:id — exclui desafio (professor only)
+// DELETE /api/desafios/:id – exclui desafio (professor only)
 router.delete('/:id', auth, async (req, res) => {
   if (req.usuario.modo !== 'professor') {
     return res.status(403).json({ erro: 'Acesso negado.' });
   }
-
   const { id } = req.params;
-
   try {
     await pool.query('DELETE FROM desafios WHERE id = $1', [id]);
     res.json({ mensagem: 'Desafio excluido com sucesso.' });
