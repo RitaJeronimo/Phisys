@@ -150,6 +150,8 @@ function GameScreen({ user, mode, values: initialValues, score: initialScore, on
               correct: i === d.correta,
             })),
             intervention: {},
+          delta_acerto: typeof d.delta_acerto === 'string' ? JSON.parse(d.delta_acerto) : (d.delta_acerto || {}),
+          delta_erro:   typeof d.delta_erro   === 'string' ? JSON.parse(d.delta_erro)   : (d.delta_erro   || {}),
             explanation: d.explicacao || 'Revise os conceitos fisiológicos relacionados a este cenário clínico.',
             active: d.ativo,
           }))
@@ -213,18 +215,22 @@ function GameScreen({ user, mode, values: initialValues, score: initialScore, on
       setScore(newScore);
       setSolvedCount(s => s + 1);
       let novosValores;
+      const da = challenge.delta_acerto || {};
       if (mode === 'sessao') {
         novosValores = {
           ...values,
-          hidratacao: Math.min(100, (values.hidratacao || 70) + 20),
-          pas: 110, pad: 70, fc: 370,
-          energia: Math.min(100, (values.energia || 80) + 10),
+          hidratacao: Math.min(100, (values.hidratacao || 70) + (da.hidratacao ?? 20)),
+          energia:    Math.min(100, (values.energia    || 80) + (da.energia    ?? 10)),
+          pas: da.pas !== undefined ? Math.max(60,  Math.min(200, (values.pas || 110) + da.pas)) : 110,
+          pad: da.pad !== undefined ? Math.max(40,  Math.min(120, (values.pad || 70)  + da.pad)) : 70,
+          fc:  da.fc  !== undefined ? Math.max(100, Math.min(600, (values.fc  || 370) + da.fc))  : 370,
         };
       } else {
         novosValores = {
           ...values,
           ...challenge.intervention,
-          energia: Math.max(0, (values.energia || 80) - 10),
+          hidratacao: da.hidratacao !== undefined ? Math.min(100, (values.hidratacao || 70) + da.hidratacao) : values.hidratacao,
+          energia:    Math.max(0, (values.energia || 80) - 10),
         };
       }
       setValues(novosValores);
@@ -241,11 +247,16 @@ function GameScreen({ user, mode, values: initialValues, score: initialScore, on
         setAnswered(true);
         setAttempts(0);
         let novosValoresErro;
+        let novosValoresErro;
+        const de = challenge.delta_erro || {};
         if (mode === 'sessao') {
           novosValoresErro = {
             ...values,
-            ...challenge.intervention,
-            energia: Math.max(0, (values.energia || 80) - 15),
+            hidratacao: Math.max(0,   Math.min(100, (values.hidratacao || 70) + (de.hidratacao ?? -20))),
+            energia:    Math.max(0,   Math.min(100, (values.energia    || 80) + (de.energia    ?? -15))),
+            pas: de.pas !== undefined ? Math.max(60,  Math.min(200, (values.pas || 110) + de.pas)) : values.pas,
+            pad: de.pad !== undefined ? Math.max(40,  Math.min(120, (values.pad || 70)  + de.pad)) : values.pad,
+            fc:  de.fc  !== undefined ? Math.max(100, Math.min(600, (values.fc  || 370) + de.fc))  : values.fc,
           };
         } else {
           novosValoresErro = {

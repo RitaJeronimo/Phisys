@@ -19,6 +19,8 @@ const GRADIENT = 'linear-gradient(160deg, #1B4FCC 0%, #7B2FBE 50%, #CC1B1B 100%)
 const EMPTY_CHALLENGE = {
   title:'', intervencao:'desidratacao', focus:'renal', difficulty:'facil',
   question:'', options:['','','',''], correct:0, active:true,
+  delta_acerto: { hidratacao:0, energia:0, pas:0, pad:0, fc:0 },
+  delta_erro:   { hidratacao:0, energia:0, pas:0, pad:0, fc:0 },
 };
 
 function getDefaultSimParams() {
@@ -175,7 +177,16 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
 
   // ── DESAFIOS ──
   function handleNewChallenge() { setEditingType('challenge'); setEditing('new'); setForm({ ...EMPTY_CHALLENGE, options:['','','',''] }); }
-  function handleEditChallenge(ch) { setEditingType('challenge'); setEditing(ch.id); setForm({ ...ch, options:[...ch.options] }); }
+  function handleEditChallenge(ch) {
+    setEditingType('challenge');
+    setEditing(ch.id);
+    setForm({
+      ...ch,
+      options: [...ch.options],
+      delta_acerto: ch.delta_acerto || { hidratacao:0, energia:0, pas:0, pad:0, fc:0 },
+      delta_erro:   ch.delta_erro   || { hidratacao:0, energia:0, pas:0, pad:0, fc:0 },
+    });
+  }
   async function handleDeleteChallenge(id) {
     try { await req(`/api/desafios/${id}`, { method: 'DELETE', headers: authHeaders() }); } catch(e) {}
     setChallenges(prev => prev.filter(c => c.id !== id));
@@ -197,14 +208,16 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
           method: 'POST',
           headers: authHeaders(),
           body: JSON.stringify({
-            titulo: form.title,
-            pergunta: form.question,
-            opcoes: form.options,
-            correta: form.correct,
-            foco: form.focus,
-            dificuldade: form.difficulty,
-            intervencao: form.intervencao,
-          }),
+          titulo: form.title,
+          pergunta: form.question,
+          opcoes: form.options,
+          correta: form.correct,
+          foco: form.focus,
+          dificuldade: form.difficulty,
+          intervencao: form.intervencao,
+          delta_acerto: form.delta_acerto || {},
+          delta_erro:   form.delta_erro   || {},
+        }),
         });
         setChallenges(prev => [...prev, { ...form, id: created.id }]);
       } else {
@@ -212,15 +225,17 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
           method: 'PUT',
           headers: authHeaders(),
           body: JSON.stringify({
-            titulo: form.title,
-            pergunta: form.question,
-            opcoes: form.options,
-            correta: form.correct,
-            foco: form.focus,
-            dificuldade: form.difficulty,
-            intervencao: form.intervencao,
-            ativo: form.active,
-          }),
+          titulo: form.title,
+          pergunta: form.question,
+          opcoes: form.options,
+          correta: form.correct,
+          foco: form.focus,
+          dificuldade: form.difficulty,
+          intervencao: form.intervencao,
+          ativo: form.active,
+          delta_acerto: form.delta_acerto || {},
+          delta_erro:   form.delta_erro   || {},
+        }),
         });
       }
       if (editing !== 'new') {
@@ -349,6 +364,55 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
             </div>
           ))}
           <div style={styles.fieldHint}>Clique na letra para marcar como correta</div>
+
+          <div style={styles.fieldLabel}>Impacto no ACERTO (deltas)</div>
+          <div style={styles.simNotice}>✅ Defina quanto cada parâmetro melhora quando o aluno acerta. Use valores positivos para melhora.</div>
+          {[
+            { id:'hidratacao', label:'💧 Hidratação', unit:'%', min:0, max:50, step:5 },
+            { id:'energia',    label:'⚡ Energia',    unit:'%', min:0, max:50, step:5 },
+            { id:'pas',        label:'🩸 PAS',        unit:'mmHg', min:-30, max:0, step:5 },
+            { id:'pad',        label:'🩸 PAD',        unit:'mmHg', min:-20, max:0, step:5 },
+            { id:'fc',         label:'❤️ FC',         unit:'bpm', min:-80, max:0, step:10 },
+          ].map(p => {
+            const val = (form.delta_acerto || {})[p.id] || 0;
+            return (
+              <div key={p.id} style={{ ...styles.simParamRow, marginBottom:'6px' }}>
+                <div style={styles.simParamHeader}>
+                  <span style={styles.simParamName}>{p.label}</span>
+                  <span style={{ ...styles.simParamVal, color:'#32C878' }}>{val > 0 ? '+' : ''}{val} {p.unit}</span>
+                </div>
+                <input type="range" min={p.min} max={p.max} step={p.step} value={val}
+                  onChange={e => setForm(f => ({ ...f, delta_acerto: { ...(f.delta_acerto||{}), [p.id]: Number(e.target.value) } }))}
+                  style={{ width:'100%', accentColor:'#32C878', margin:'4px 0' }}
+                />
+              </div>
+            );
+          })}
+
+          <div style={styles.fieldLabel}>Impacto no ERRO (deltas)</div>
+          <div style={styles.simNotice}>❌ Defina quanto cada parâmetro piora quando o aluno erra. Use valores negativos para piora.</div>
+          {[
+            { id:'hidratacao', label:'💧 Hidratação', unit:'%', min:-50, max:0, step:5 },
+            { id:'energia',    label:'⚡ Energia',    unit:'%', min:-50, max:0, step:5 },
+            { id:'pas',        label:'🩸 PAS',        unit:'mmHg', min:0, max:30, step:5 },
+            { id:'pad',        label:'🩸 PAD',        unit:'mmHg', min:0, max:20, step:5 },
+            { id:'fc',         label:'❤️ FC',         unit:'bpm', min:0, max:80, step:10 },
+          ].map(p => {
+            const val = (form.delta_erro || {})[p.id] || 0;
+            return (
+              <div key={p.id} style={{ ...styles.simParamRow, marginBottom:'6px' }}>
+                <div style={styles.simParamHeader}>
+                  <span style={styles.simParamName}>{p.label}</span>
+                  <span style={{ ...styles.simParamVal, color:'#E24B4A' }}>{val > 0 ? '+' : ''}{val} {p.unit}</span>
+                </div>
+                <input type="range" min={p.min} max={p.max} step={p.step} value={val}
+                  onChange={e => setForm(f => ({ ...f, delta_erro: { ...(f.delta_erro||{}), [p.id]: Number(e.target.value) } }))}
+                  style={{ width:'100%', accentColor:'#E24B4A', margin:'4px 0' }}
+                />
+              </div>
+            );
+          })}
+
           <div style={styles.activeRow}>
             <div style={styles.fieldLabel}>Desafio ativo</div>
             <div style={{ ...styles.toggle, background: form.active ? '#32C878' : 'rgba(255,255,255,.2)' }} onClick={()=>setForm(f=>({...f,active:!f.active}))}>
