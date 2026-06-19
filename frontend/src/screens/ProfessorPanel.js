@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { DEFAULT_MOTIVATION_MESSAGES } from './MotivationScreen';
 import { DEFAULT_WEIGHTS, INTERVENTIONS, PRIMARY_PARAMS } from '../engine/mascotEngine';
-import { ranking as rankingApi, authHeaders } from '../api';
+import { ranking as rankingApi, authHeaders, simulacoes as simulacoesApi } from '../api';
 const BASE = process.env.REACT_APP_API_URL || 'https://phisys-production.up.railway.app';
 async function req(path, options = {}) {
   const { headers: optHeaders, ...restOptions } = options;
@@ -21,7 +21,6 @@ const EMPTY_CHALLENGE = {
   question:'', options:['','','',''], correct:0, active:true,
 };
 
-// Valores padrão para nova simulação
 function getDefaultSimParams() {
   const v = {};
   PRIMARY_PARAMS.forEach(p => v[p.id] = p.default);
@@ -52,9 +51,10 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
   const [challenges, setChallenges] = useState([]);
   const [simulations, setSimulations] = useState([]);
   const [editing, setEditing] = useState(null);
-  const [editingType, setEditingType] = useState(null); // 'challenge' | 'simulation'
+  const [editingType, setEditingType] = useState(null);
   const [form, setForm] = useState(null);
   const [simForm, setSimForm] = useState(null);
+  const [ativandoId, setAtivandoId] = useState(null);
   const [weights, setWeights] = useState(() => {
     try {
       const saved = JSON.parse(localStorage.getItem('phisys_pesos') || '{}');
@@ -75,87 +75,86 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
   });
   const [manualGrades, setManualGrades] = useState({});
   const [sessaoFoco, setSessaoFoco] = useState(() => {
-  try {
-    const cfg = JSON.parse(localStorage.getItem('phisys_sessao_config') || '{}');
-    return cfg.foco || 'todos';
-  } catch { return 'todos'; }
-});
-
+    try {
+      const cfg = JSON.parse(localStorage.getItem('phisys_sessao_config') || '{}');
+      return cfg.foco || 'todos';
+    } catch { return 'todos'; }
+  });
   const [students, setStudents] = useState([]);
 
-useEffect(() => {
-  rankingApi.get()
-    .then(data => {
-      if (Array.isArray(data)) {
-        setStudents(data);
-        const grades = {};
-        data.forEach(s => {
-          if (s.nota_final !== null && s.nota_final !== undefined) {
-            grades[s.id] = s.nota_final;
-          }
-        });
-        setManualGrades(grades);
-      }
-    })
-    .catch(() => setStudents([]));
-}, []);
-
-useEffect(() => {
-  req('/api/desafios', { headers: authHeaders() })
-    .then(data => {
-      if (Array.isArray(data) && data.length > 0) {
-        const formatted = data.map(d => ({
-          id: d.id,
-          title: d.titulo,
-          intervencao: d.intervencao || 'desidratacao',
-          focus: d.foco || 'renal',
-          difficulty: d.dificuldade || 'medio',
-          question: d.pergunta,
-          options: Array.isArray(d.opcoes) ? d.opcoes : JSON.parse(d.opcoes),
-          correct: d.correta,
-          active: d.ativo,
-        }));
-        setChallenges(formatted);
-      } else {
-        setChallenges([]);
-      }
-    })
-    .catch(() => setChallenges([]));
-}, []);
-
-useEffect(() => {
-  req('/api/simulacoes', { headers: authHeaders() })
-    .then(data => {
-      if (Array.isArray(data) && data.length > 0) {
-        const formatted = data.map(d => ({
-          id: d.id,
-          title: d.titulo,
-          focus: d.foco || 'cardiovascular',
-          active: d.ativo,
-          description: d.descricao || '',
-          params: typeof d.params === 'string' ? JSON.parse(d.params) : d.params,
-        }));
-        setSimulations(formatted);
-      } else {
-        setSimulations(INITIAL_SIMULATIONS);
-      }
-    })
-    .catch(() => setSimulations(INITIAL_SIMULATIONS));
-}, []);
+  useEffect(() => {
+    rankingApi.get()
+      .then(data => {
+        if (Array.isArray(data)) {
+          setStudents(data);
+          const grades = {};
+          data.forEach(s => {
+            if (s.nota_final !== null && s.nota_final !== undefined) {
+              grades[s.id] = s.nota_final;
+            }
+          });
+          setManualGrades(grades);
+        }
+      })
+      .catch(() => setStudents([]));
+  }, []);
 
   useEffect(() => {
-  req('/api/mensagens', { headers: authHeaders() })
-    .then(data => {
-      if (data && typeof data === 'object') setMotivationMessages(data);
-    })
-    .catch(() => {});
-}, []);
+    req('/api/desafios', { headers: authHeaders() })
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          const formatted = data.map(d => ({
+            id: d.id,
+            title: d.titulo,
+            intervencao: d.intervencao || 'desidratacao',
+            focus: d.foco || 'renal',
+            difficulty: d.dificuldade || 'medio',
+            question: d.pergunta,
+            options: Array.isArray(d.opcoes) ? d.opcoes : JSON.parse(d.opcoes),
+            correct: d.correta,
+            active: d.ativo,
+          }));
+          setChallenges(formatted);
+        } else {
+          setChallenges([]);
+        }
+      })
+      .catch(() => setChallenges([]));
+  }, []);
+
+  useEffect(() => {
+    req('/api/simulacoes', { headers: authHeaders() })
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          const formatted = data.map(d => ({
+            id: d.id,
+            title: d.titulo,
+            focus: d.foco || 'cardiovascular',
+            active: d.ativo,
+            description: d.descricao || '',
+            params: typeof d.params === 'string' ? JSON.parse(d.params) : d.params,
+          }));
+          setSimulations(formatted);
+        } else {
+          setSimulations(INITIAL_SIMULATIONS);
+        }
+      })
+      .catch(() => setSimulations(INITIAL_SIMULATIONS));
+  }, []);
+
+  useEffect(() => {
+    req('/api/mensagens', { headers: authHeaders() })
+      .then(data => {
+        if (data && typeof data === 'object') setMotivationMessages(data);
+      })
+      .catch(() => {});
+  }, []);
 
   const avgGrade = students.length > 0 ? (students.reduce((a,s)=>a+Number(s.xp_total||0),0)/students.length).toFixed(0) : '0';
   const avgTime = students.length > 0 ? students.reduce((a,s)=>a+(s.sessoes||0),0) : 0;
-  const formatTime = s => `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`;
+  const formatTime = s => `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'00')}`;
 
-    async function handleExport() {
+  async function handleExport() {
     try {
       const data = await rankingApi.get();
       const header = 'Nome,Matricula,XP Total,Sessoes,Media Saude,Nota Final\n';
@@ -178,60 +177,60 @@ useEffect(() => {
   function handleNewChallenge() { setEditingType('challenge'); setEditing('new'); setForm({ ...EMPTY_CHALLENGE, options:['','','',''] }); }
   function handleEditChallenge(ch) { setEditingType('challenge'); setEditing(ch.id); setForm({ ...ch, options:[...ch.options] }); }
   async function handleDeleteChallenge(id) {
-  try { await req(`/api/desafios/${id}`, { method: 'DELETE', headers: authHeaders() }); } catch(e) {}
-  setChallenges(prev => prev.filter(c => c.id !== id));
-}
+    try { await req(`/api/desafios/${id}`, { method: 'DELETE', headers: authHeaders() }); } catch(e) {}
+    setChallenges(prev => prev.filter(c => c.id !== id));
+  }
   async function handleToggleChallenge(id) {
-  const ch = challenges.find(c => c.id === id);
-  try {
-    await req(`/api/desafios/${id}`, { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ ativo: !ch.active }) });
-    setChallenges(prev => prev.map(c => c.id === id ? {...c, active:!c.active} : c));
-  } catch(e) {
-    alert('Erro: ' + e.message);
+    const ch = challenges.find(c => c.id === id);
+    try {
+      await req(`/api/desafios/${id}`, { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ ativo: !ch.active }) });
+      setChallenges(prev => prev.map(c => c.id === id ? {...c, active:!c.active} : c));
+    } catch(e) {
+      alert('Erro: ' + e.message);
+    }
   }
-}
   async function handleSaveChallenge() {
-  if (!form.title || !form.question || form.options.some(o=>!o)) return;
-  try {
-    if (editing === 'new') {
-      const created = await req('/api/desafios', {
-        method: 'POST',
-        headers: authHeaders(),
-        body: JSON.stringify({
-          titulo: form.title,
-          pergunta: form.question,
-          opcoes: form.options,
-          correta: form.correct,
-          foco: form.focus,
-          dificuldade: form.difficulty,
-          intervencao: form.intervencao,
-        }),
-      });
-      setChallenges(prev => [...prev, { ...form, id: created.id }]);
-    } else {
-      await req(`/api/desafios/${editing}`, {
-        method: 'PUT',
-        headers: authHeaders(),
-        body: JSON.stringify({
-          titulo: form.title,
-          pergunta: form.question,
-          opcoes: form.options,
-          correta: form.correct,
-          foco: form.focus,
-          dificuldade: form.difficulty,
-          intervencao: form.intervencao,
-          ativo: form.active,
-        }),
-      });
+    if (!form.title || !form.question || form.options.some(o=>!o)) return;
+    try {
+      if (editing === 'new') {
+        const created = await req('/api/desafios', {
+          method: 'POST',
+          headers: authHeaders(),
+          body: JSON.stringify({
+            titulo: form.title,
+            pergunta: form.question,
+            opcoes: form.options,
+            correta: form.correct,
+            foco: form.focus,
+            dificuldade: form.difficulty,
+            intervencao: form.intervencao,
+          }),
+        });
+        setChallenges(prev => [...prev, { ...form, id: created.id }]);
+      } else {
+        await req(`/api/desafios/${editing}`, {
+          method: 'PUT',
+          headers: authHeaders(),
+          body: JSON.stringify({
+            titulo: form.title,
+            pergunta: form.question,
+            opcoes: form.options,
+            correta: form.correct,
+            foco: form.focus,
+            dificuldade: form.difficulty,
+            intervencao: form.intervencao,
+            ativo: form.active,
+          }),
+        });
+      }
+      if (editing !== 'new') {
+        setChallenges(prev => prev.map(c => c.id === editing ? { ...form, id:c.id } : c));
+      }
+    } catch(e) {
+      alert('Erro ao salvar desafio: ' + e.message);
     }
-    if (editing !== 'new') {
-      setChallenges(prev => prev.map(c => c.id === editing ? { ...form, id:c.id } : c));
-    }
-  } catch(e) {
-    alert('Erro ao salvar desafio: ' + e.message);
+    setEditing(null); setForm(null); setEditingType(null);
   }
-  setEditing(null); setForm(null); setEditingType(null);
-}
   function handleFormOption(i, val) {
     const opts = [...form.options]; opts[i] = val;
     setForm(f => ({ ...f, options:opts }));
@@ -241,49 +240,62 @@ useEffect(() => {
   function handleNewSimulation() { setEditingType('simulation'); setEditing('new'); setSimForm({ ...EMPTY_SIMULATION, params:getDefaultSimParams() }); }
   function handleEditSimulation(sim) { setEditingType('simulation'); setEditing(sim.id); setSimForm({ ...sim, params:{...sim.params} }); }
   async function handleDeleteSimulation(id) {
-  try { await req(`/api/simulacoes/${id}`, { method: 'DELETE', headers: authHeaders() }); } catch(e) {}
-  setSimulations(prev => prev.filter(s => s.id !== id));
-}
-async function handleToggleSimulation(id) {
-  const sim = simulations.find(s => s.id === id);
-  try { await req(`/api/simulacoes/${id}`, { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ ativo: !sim.active }) }); } catch(e) {}
-  setSimulations(prev => prev.map(s => s.id === id ? {...s, active:!s.active} : s));
-}
-  async function handleSaveSimulation() {
-  if (!simForm.title) return;
-  try {
-    if (editing === 'new') {
-      await req('/api/simulacoes', {
-        method: 'POST',
-        headers: authHeaders(),
-        body: JSON.stringify({
-          titulo: simForm.title,
-          descricao: simForm.description,
-          foco: simForm.focus,
-          params: simForm.params,
-        }),
-      });
-      const newId = Math.max(0, ...simulations.map(s=>s.id)) + 1;
-      setSimulations(prev => [...prev, { ...simForm, id:newId }]);
-    } else {
-      await req(`/api/simulacoes/${editing}`, {
-        method: 'PUT',
-        headers: authHeaders(),
-        body: JSON.stringify({
-          titulo: simForm.title,
-          descricao: simForm.description,
-          foco: simForm.focus,
-          params: simForm.params,
-          ativo: simForm.active,
-        }),
-      });
-      setSimulations(prev => prev.map(s => s.id === editing ? { ...simForm, id:s.id } : s));
-    }
-  } catch(e) {
-    alert('Erro ao salvar simulação: ' + e.message);
+    try { await req(`/api/simulacoes/${id}`, { method: 'DELETE', headers: authHeaders() }); } catch(e) {}
+    setSimulations(prev => prev.filter(s => s.id !== id));
   }
-  setEditing(null); setSimForm(null); setEditingType(null);
-}
+  async function handleToggleSimulation(id) {
+    const sim = simulations.find(s => s.id === id);
+    try { await req(`/api/simulacoes/${id}`, { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ ativo: !sim.active }) }); } catch(e) {}
+    setSimulations(prev => prev.map(s => s.id === id ? {...s, active:!s.active} : s));
+  }
+  async function handleAtivarSimulacao(id) {
+    if (!window.confirm('Ativar esta simulação vai alterar os parâmetros do animal de TODOS os alunos. Confirma?')) return;
+    setAtivandoId(id);
+    try {
+      await simulacoesApi.ativar(id);
+      setSimulations(prev => prev.map(s => ({ ...s, active: s.id === id })));
+      alert('✅ Simulação ativada! Os animais de todos os alunos foram atualizados.');
+    } catch(e) {
+      alert('Erro ao ativar simulação: ' + e.message);
+    } finally {
+      setAtivandoId(null);
+    }
+  }
+  async function handleSaveSimulation() {
+    if (!simForm.title) return;
+    try {
+      if (editing === 'new') {
+        await req('/api/simulacoes', {
+          method: 'POST',
+          headers: authHeaders(),
+          body: JSON.stringify({
+            titulo: simForm.title,
+            descricao: simForm.description,
+            foco: simForm.focus,
+            params: simForm.params,
+          }),
+        });
+        const newId = Math.max(0, ...simulations.map(s=>s.id)) + 1;
+        setSimulations(prev => [...prev, { ...simForm, id:newId }]);
+      } else {
+        await req(`/api/simulacoes/${editing}`, {
+          method: 'PUT',
+          headers: authHeaders(),
+          body: JSON.stringify({
+            titulo: simForm.title,
+            descricao: simForm.description,
+            foco: simForm.focus,
+            params: simForm.params,
+            ativo: simForm.active,
+          }),
+        });
+        setSimulations(prev => prev.map(s => s.id === editing ? { ...simForm, id:s.id } : s));
+      }
+    } catch(e) {
+      alert('Erro ao salvar simulação: ' + e.message);
+    }
+    setEditing(null); setSimForm(null); setEditingType(null);
+  }
   function handleSimParam(id, val) {
     setSimForm(f => ({ ...f, params:{ ...f.params, [id]: Number(val) } }));
   }
@@ -292,7 +304,7 @@ async function handleToggleSimulation(id) {
   const diffLabel = { facil:'Fácil', medio:'Médio', dificil:'Difícil' };
   const focusLabel = { renal:'🫗 Renal', cardiovascular:'❤️ Cardiovascular' };
 
-  // ── FORMULÁRIO DESAFIO ────────────────────────────────────────────────────
+  // ── FORMULÁRIO DESAFIO ──
   if (editingType === 'challenge' && form) {
     return (
       <div style={styles.screen}>
@@ -349,7 +361,7 @@ async function handleToggleSimulation(id) {
     );
   }
 
-  // ── FORMULÁRIO SIMULAÇÃO ──────────────────────────────────────────────────
+  // ── FORMULÁRIO SIMULAÇÃO ──
   if (editingType === 'simulation' && simForm) {
     return (
       <div style={styles.screen}>
@@ -361,7 +373,6 @@ async function handleToggleSimulation(id) {
         <div style={styles.formScroll}>
           <div style={styles.fieldLabel}>Título da simulação</div>
           <input style={styles.input} value={simForm.title} onChange={e=>setSimForm(f=>({...f,title:e.target.value}))} placeholder="Ex: Insuficiência Cardíaca"/>
-
           <div style={styles.fieldLabel}>Foco</div>
           <div style={{ display:'flex', gap:'8px', marginBottom:'4px' }}>
             <div
@@ -377,13 +388,10 @@ async function handleToggleSimulation(id) {
               🫗 Renal
             </div>
           </div>
-
           <div style={styles.fieldLabel}>Descrição para o aluno</div>
           <textarea style={{...styles.input, minHeight:'60px', resize:'vertical'}} value={simForm.description} onChange={e=>setSimForm(f=>({...f,description:e.target.value}))} placeholder="Descreva o quadro clínico que o aluno deverá reverter..."/>
-
           <div style={styles.fieldLabel}>Parâmetros alterados</div>
           <div style={styles.simNotice}>⚠️ Defina os valores que o animal terá quando a simulação for ativada. O aluno precisará reverter para a homeostase.</div>
-
           {PRIMARY_PARAMS.filter(p => p.id !== 'saude').map(p => {
             const val = simForm.params[p.id] ?? p.default;
             const inRange = val >= p.normal[0] && val <= p.normal[1];
@@ -405,7 +413,6 @@ async function handleToggleSimulation(id) {
               </div>
             );
           })}
-
           <div style={styles.activeRow}>
             <div style={styles.fieldLabel}>Simulação ativa</div>
             <div style={{ ...styles.toggle, background: simForm.active ? '#32C878' : 'rgba(255,255,255,.2)' }} onClick={()=>setSimForm(f=>({...f,active:!f.active}))}>
@@ -418,7 +425,7 @@ async function handleToggleSimulation(id) {
     );
   }
 
-  // ── PAINEL PRINCIPAL ──────────────────────────────────────────────────────
+  // ── PAINEL PRINCIPAL ──
   return (
     <div style={styles.screen}>
       <div style={styles.topbar}>
@@ -427,7 +434,6 @@ async function handleToggleSimulation(id) {
         <button style={styles.exportBtn} onClick={handleExport}>↓ Exportar</button>
       </div>
 
-      {/* TABS */}
       <div style={styles.tabs}>
         {[['desafios','🎯 Desafios'],['simulacoes','🔬 Simulações'],['alunos','👥 Alunos'],['pesos','⚖️ Pesos'],['mensagens','💬 Mensagens'],['crescimento','🐭 Crescimento']].map(([id,label])=>(
           <div key={id} style={{...styles.tab,...(tab===id?styles.tabActive:{})}} onClick={()=>setTab(id)}>{label}</div>
@@ -436,40 +442,40 @@ async function handleToggleSimulation(id) {
 
       {/* ── TAB DESAFIOS ── */}
       {tab==='desafios' && (
-  <>
-    <div style={{ margin:'0 1rem .75rem', background:'rgba(100,149,237,.15)', border:'1px solid rgba(100,149,237,.3)', borderRadius:'14px', padding:'1rem' }}>
-      <div style={{ fontSize:'12px', fontWeight:'700', color:'white', marginBottom:'8px' }}>📋 Foco do Modo Sessão</div>
-      <div style={{ fontSize:'11px', color:'rgba(255,255,255,.65)', marginBottom:'10px', lineHeight:'1.4' }}>
-        No Modo Sessão, os alunos verão apenas os desafios ativos do foco selecionado.
-      </div>
-      <div style={{ display:'flex', gap:'8px' }}>
-        {[
-          { value:'todos',           label:'📚 Todos' },
-          { value:'renal',           label:'🫗 Renal' },
-          { value:'cardiovascular',  label:'❤️ Cardio' },
-        ].map(opt => (
-          <div key={opt.value}
-            style={{
-              flex:1, padding:'8px 4px', borderRadius:'10px', textAlign:'center', cursor:'pointer',
-              fontSize:'11px', fontWeight:'600',
-              background: sessaoFoco === opt.value ? 'rgba(255,255,255,.3)' : 'rgba(255,255,255,.1)',
-              border: `1px solid ${sessaoFoco === opt.value ? 'rgba(255,255,255,.5)' : 'rgba(255,255,255,.2)'}`,
-              color: sessaoFoco === opt.value ? 'white' : 'rgba(255,255,255,.6)',
-            }}
-            onClick={() => {
-              setSessaoFoco(opt.value);
-              localStorage.setItem('phisys_sessao_config', JSON.stringify({ foco: opt.value }));
-            }}
-          >
-            {opt.label}
+        <>
+          <div style={{ margin:'0 1rem .75rem', background:'rgba(100,149,237,.15)', border:'1px solid rgba(100,149,237,.3)', borderRadius:'14px', padding:'1rem' }}>
+            <div style={{ fontSize:'12px', fontWeight:'700', color:'white', marginBottom:'8px' }}>📋 Foco do Modo Sessão</div>
+            <div style={{ fontSize:'11px', color:'rgba(255,255,255,.65)', marginBottom:'10px', lineHeight:'1.4' }}>
+              No Modo Sessão, os alunos verão apenas os desafios ativos do foco selecionado.
+            </div>
+            <div style={{ display:'flex', gap:'8px' }}>
+              {[
+                { value:'todos',          label:'📚 Todos' },
+                { value:'renal',          label:'🫗 Renal' },
+                { value:'cardiovascular', label:'❤️ Cardio' },
+              ].map(opt => (
+                <div key={opt.value}
+                  style={{
+                    flex:1, padding:'8px 4px', borderRadius:'10px', textAlign:'center', cursor:'pointer',
+                    fontSize:'11px', fontWeight:'600',
+                    background: sessaoFoco === opt.value ? 'rgba(255,255,255,.3)' : 'rgba(255,255,255,.1)',
+                    border: `1px solid ${sessaoFoco === opt.value ? 'rgba(255,255,255,.5)' : 'rgba(255,255,255,.2)'}`,
+                    color: sessaoFoco === opt.value ? 'white' : 'rgba(255,255,255,.6)',
+                  }}
+                  onClick={() => {
+                    setSessaoFoco(opt.value);
+                    localStorage.setItem('phisys_sessao_config', JSON.stringify({ foco: opt.value }));
+                  }}
+                >
+                  {opt.label}
+                </div>
+              ))}
+            </div>
+            <div style={{ fontSize:'10px', color:'rgba(255,255,255,.45)', marginTop:'8px' }}>
+              {challenges.filter(c => c.active && (sessaoFoco === 'todos' || c.focus === sessaoFoco)).length} desafio(s) ativo(s) neste foco
+            </div>
           </div>
-        ))}
-      </div>
-      <div style={{ fontSize:'10px', color:'rgba(255,255,255,.45)', marginTop:'8px' }}>
-        {challenges.filter(c => c.active && (sessaoFoco === 'todos' || c.focus === sessaoFoco)).length} desafio(s) ativo(s) neste foco
-      </div>
-    </div>
-    <div style={styles.challengeHeader}>
+          <div style={styles.challengeHeader}>
             <div style={styles.sectionTitle}>desafios cadastrados ({challenges.length})</div>
             <button style={styles.newBtn} onClick={handleNewChallenge}>+ Novo</button>
           </div>
@@ -511,13 +517,13 @@ async function handleToggleSimulation(id) {
             <button style={styles.newBtn} onClick={handleNewSimulation}>+ Nova</button>
           </div>
           <div style={styles.simInfo}>
-            🔬 Crie cenários fisiológicos alterados. Quando ativados, os parâmetros do animal do aluno mudam e ele precisa reverter para a homeostase.
+            🔬 Crie cenários fisiológicos alterados. Ao clicar em <strong>🚀 Lançar para Turma</strong>, os parâmetros do animal de todos os alunos serão atualizados e eles precisarão reverter para a homeostase.
           </div>
           {simulations.map(sim=>(
-            <div key={sim.id} style={{...styles.challengeCard,...(!sim.active?{opacity:.5}:{}), border: sim.active ? '1px solid rgba(255,200,50,.3)' : '1px solid rgba(255,255,255,.18)'}}>
+            <div key={sim.id} style={{...styles.challengeCard, border: sim.active ? '1px solid rgba(255,200,50,.5)' : '1px solid rgba(255,255,255,.18)'}}>
               <div style={styles.challengeTop}>
                 <div style={styles.challengeTitle}>🔬 {sim.title}</div>
-                <span style={{...styles.metaTag, color: sim.active?'#FFD700':'rgba(255,255,255,.4)'}}>{sim.active?'● Ativo':'○ Inativo'}</span>
+                <span style={{...styles.metaTag, color: sim.active?'#FFD700':'rgba(255,255,255,.4)', fontWeight:'700'}}>{sim.active?'● ATIVA':'○ Inativa'}</span>
               </div>
               <div style={styles.challengeMeta}>
                 <span style={styles.metaTag}>{focusLabel[sim.focus]}</span>
@@ -536,7 +542,13 @@ async function handleToggleSimulation(id) {
               </div>
               <div style={styles.challengeActions}>
                 <button style={styles.editBtn} onClick={()=>handleEditSimulation(sim)}>✏️ Editar</button>
-                <button style={styles.toggleBtn} onClick={()=>handleToggleSimulation(sim.id)}>{sim.active?'Desativar':'Ativar'}</button>
+                <button
+                  style={{ ...styles.ativarBtn, opacity: ativandoId === sim.id ? 0.6 : 1 }}
+                  onClick={() => handleAtivarSimulacao(sim.id)}
+                  disabled={ativandoId === sim.id}
+                >
+                  {ativandoId === sim.id ? '⏳ Ativando...' : '🚀 Lançar para Turma'}
+                </button>
                 <button style={styles.deleteBtn} onClick={()=>handleDeleteSimulation(sim.id)}>🗑️</button>
               </div>
             </div>
@@ -564,40 +576,37 @@ async function handleToggleSimulation(id) {
           <div style={styles.sectionTitle}>desempenho dos alunos</div>
           <div style={styles.tableWrap}>
             <div style={styles.tableHeader}>
-  <span>aluno</span>
-  <span style={{textAlign:'center'}}>pts</span>
-  <span style={{textAlign:'center'}}>mascote</span>
-  <span style={{textAlign:'center'}}>calc.</span>
-  <span style={{textAlign:'center'}}>final</span>
-</div>
+              <span>aluno</span>
+              <span style={{textAlign:'center'}}>pts</span>
+              <span style={{textAlign:'center'}}>mascote</span>
+              <span style={{textAlign:'center'}}>calc.</span>
+              <span style={{textAlign:'center'}}>final</span>
+            </div>
             {students.map(student=>(
-  <div key={student.id} style={styles.tableRow}>
-    <div>
-      <div style={styles.studentName}>{student.nome}</div>
-      <div style={styles.studentMeta}>{student.sessoes} sessoes</div>
-    </div>
-    <div style={styles.cell}>{student.xp_total}</div>
-    <div style={styles.cell}>-</div>
-    <div style={styles.cell}>-</div>
-    <div style={styles.cell}>
-      <input style={styles.notaInput} type="number" min="0" max="10" step="0.1"
-  value={manualGrades[student.id] || ''}
-  onChange={e=>setManualGrades(g=>({...g,[student.id]:Number(e.target.value)}))}
-  onBlur={async e => {
-    try {
-      await req(`/api/ranking/${student.id}/nota`, {
-        method: 'PUT',
-        headers: authHeaders(),
-        body: JSON.stringify({ nota_final: Number(e.target.value) }),
-      });
-    } catch(err) {}
-  }}/>
-    </div>
-    <div style={styles.cell}>
-      
-    </div>
-  </div>
-))}
+              <div key={student.id} style={styles.tableRow}>
+                <div>
+                  <div style={styles.studentName}>{student.nome}</div>
+                  <div style={styles.studentMeta}>{student.sessoes} sessoes</div>
+                </div>
+                <div style={styles.cell}>{student.xp_total}</div>
+                <div style={styles.cell}>-</div>
+                <div style={styles.cell}>-</div>
+                <div style={styles.cell}>
+                  <input style={styles.notaInput} type="number" min="0" max="10" step="0.1"
+                    value={manualGrades[student.id] || ''}
+                    onChange={e=>setManualGrades(g=>({...g,[student.id]:Number(e.target.value)}))}
+                    onBlur={async e => {
+                      try {
+                        await req(`/api/ranking/${student.id}/nota`, {
+                          method: 'PUT',
+                          headers: authHeaders(),
+                          body: JSON.stringify({ nota_final: Number(e.target.value) }),
+                        });
+                      } catch(err) {}
+                    }}/>
+                </div>
+              </div>
+            ))}
           </div>
           <div style={{height:'1rem'}}/>
         </>
@@ -618,10 +627,10 @@ async function handleToggleSimulation(id) {
                 <div style={styles.weightLabel}>{w.label}</div>
                 <input type="range" min="0" max="100" step="5" value={weights[w.key]}
                   onChange={e => {
-  const newWeights = { ...weights, [w.key]: Number(e.target.value) };
-  setWeights(newWeights);
-  localStorage.setItem('phisys_pesos', JSON.stringify(newWeights));
-}} 
+                    const newWeights = { ...weights, [w.key]: Number(e.target.value) };
+                    setWeights(newWeights);
+                    localStorage.setItem('phisys_pesos', JSON.stringify(newWeights));
+                  }}
                   style={styles.weightSlider}/>
                 <div style={styles.weightVal}>{weights[w.key]}%</div>
               </div>
@@ -644,7 +653,7 @@ async function handleToggleSimulation(id) {
             return (
               <div key={level} style={{ ...styles.challengeCard, border:`1px solid ${colors[level]}33` }}>
                 <div style={{ fontSize:'13px', fontWeight:'700', color: colors[level], marginBottom:'8px' }}>
-                  Nível {level} — {labels[level]}
+                  Nível {level} – {labels[level]}
                 </div>
                 <textarea
                   style={{ ...styles.input, minHeight:'70px', resize:'vertical', fontSize:'12px' }}
@@ -655,26 +664,26 @@ async function handleToggleSimulation(id) {
             );
           })}
           <div style={{ margin:'0 1rem .5rem', display:'flex', flexDirection:'column', gap:'8px' }}>
-  <button style={{ ...styles.newBtn, width:'100%', padding:'10px', borderRadius:'10px', background:'#32C878', color:'white' }}
-    onClick={async () => {
-      try {
-        await req('/api/mensagens', {
-          method: 'PUT',
-          headers: authHeaders(),
-          body: JSON.stringify({ mensagens: motivationMessages }),
-        });
-        alert('Mensagens salvas com sucesso!');
-      } catch(e) {
-        alert('Erro ao salvar mensagens.');
-      }
-    }}>
-    💾 Salvar mensagens
-  </button>
-  <button style={{ ...styles.newBtn, width:'100%', padding:'10px', borderRadius:'10px' }}
-    onClick={() => setMotivationMessages({...DEFAULT_MOTIVATION_MESSAGES})}>
-    🔄 Restaurar mensagens padrão
-  </button>
-</div>
+            <button style={{ ...styles.newBtn, width:'100%', padding:'10px', borderRadius:'10px', background:'#32C878', color:'white' }}
+              onClick={async () => {
+                try {
+                  await req('/api/mensagens', {
+                    method: 'PUT',
+                    headers: authHeaders(),
+                    body: JSON.stringify({ mensagens: motivationMessages }),
+                  });
+                  alert('Mensagens salvas com sucesso!');
+                } catch(e) {
+                  alert('Erro ao salvar mensagens.');
+                }
+              }}>
+              💾 Salvar mensagens
+            </button>
+            <button style={{ ...styles.newBtn, width:'100%', padding:'10px', borderRadius:'10px' }}
+              onClick={() => setMotivationMessages({...DEFAULT_MOTIVATION_MESSAGES})}>
+              🔄 Restaurar mensagens padrão
+            </button>
+          </div>
           <div style={{height:'1rem'}}/>
         </>
       )}
@@ -686,7 +695,6 @@ async function handleToggleSimulation(id) {
           <div style={styles.simInfo}>
             🐭 Configure quantos dias dura cada fase do animal. O professor controla o ritmo de crescimento conforme o módulo da disciplina.
           </div>
-
           <div style={styles.challengeCard}>
             <div style={{ fontSize:'13px', fontWeight:'700', color:'white', marginBottom:'12px' }}>
               📅 Idade atual do animal
@@ -696,16 +704,16 @@ async function handleToggleSimulation(id) {
                 type="range" min="0" max="365" step="1"
                 value={ageDays || 90}
                 onChange={async e => {
-  const newAge = Number(e.target.value);
-  if (setAgeDays) setAgeDays(newAge);
-  try {
-    await req('/api/animal/age', {
-      method: 'PUT',
-      headers: authHeaders(),
-      body: JSON.stringify({ age_days: newAge }),
-    });
-  } catch(e) {}
-}}
+                  const newAge = Number(e.target.value);
+                  if (setAgeDays) setAgeDays(newAge);
+                  try {
+                    await req('/api/animal/age', {
+                      method: 'PUT',
+                      headers: authHeaders(),
+                      body: JSON.stringify({ age_days: newAge }),
+                    });
+                  } catch(e) {}
+                }}
                 style={{ flex:1, accentColor:'white' }}
               />
               <div style={{ fontSize:'16px', fontWeight:'700', color:'white', width:'60px', textAlign:'right' }}>
@@ -714,31 +722,30 @@ async function handleToggleSimulation(id) {
             </div>
             <div style={{ display:'flex', gap:'6px' }}>
               {[
-  { label:'🐣 Recém-nascido', days:10,  color:'#FFD700' },
-  { label:'🐭 Juvenil',       days:90,  color:'#85B7EB' },
-  { label:'🐀 Adulto',        days:200, color:'#32C878' },
-  { label:'🦳 Idoso',         days:600, color:'#9B59B6' },
-].map(preset => (
+                { label:'🐣 Recém-nascido', days:10,  color:'#FFD700' },
+                { label:'🐭 Juvenil',       days:90,  color:'#85B7EB' },
+                { label:'🐀 Adulto',        days:200, color:'#32C878' },
+                { label:'🦳 Idoso',         days:600, color:'#9B59B6' },
+              ].map(preset => (
                 <div
                   key={preset.days}
                   style={{ flex:1, background:`${preset.color}22`, border:`1px solid ${preset.color}55`, borderRadius:'8px', padding:'6px 4px', textAlign:'center', cursor:'pointer', fontSize:'10px', color:'white' }}
                   onClick={async () => {
-  if (setAgeDays) setAgeDays(preset.days);
-  try {
-    await req('/api/animal/age', {
-      method: 'PUT',
-      headers: authHeaders(),
-      body: JSON.stringify({ age_days: preset.days }),
-    });
-  } catch(e) {}
-}}
+                    if (setAgeDays) setAgeDays(preset.days);
+                    try {
+                      await req('/api/animal/age', {
+                        method: 'PUT',
+                        headers: authHeaders(),
+                        body: JSON.stringify({ age_days: preset.days }),
+                      });
+                    } catch(e) {}
+                  }}
                 >
                   {preset.label}
                 </div>
               ))}
             </div>
           </div>
-
           <div style={styles.challengeCard}>
             <div style={{ fontSize:'13px', fontWeight:'700', color:'white', marginBottom:'8px' }}>
               📋 Fases e limites
@@ -746,13 +753,13 @@ async function handleToggleSimulation(id) {
             {[
               { icon:'🐣', label:'Recém-nascido', range:'0–30 dias',   color:'#FFD700', desc:'Cabeça grande, sem cauda, olhos enormes, sem braços visíveis' },
               { icon:'🐭', label:'Juvenil',       range:'31–180 dias', color:'#85B7EB', desc:'Tamanho médio, orelhas maiores, braços aparecem, cauda presente' },
-              { icon:'🐀', label:'Adulto',  range:'181–540 dias', color:'#32C878', desc:'Tamanho completo, bigodes visíveis, cauda longa, proporções adultas' },
-{ icon:'🦳', label:'Idoso',   range:'541+ dias',    color:'#9B59B6', desc:'Maior vulnerabilidade fisiológica, menor capacidade compensatória, maior necessidade de cuidado' },
+              { icon:'🐀', label:'Adulto',        range:'181–540 dias', color:'#32C878', desc:'Tamanho completo, bigodes visíveis, cauda longa, proporções adultas' },
+              { icon:'🦳', label:'Idoso',         range:'541+ dias',    color:'#9B59B6', desc:'Maior vulnerabilidade fisiológica, menor capacidade compensatória, maior necessidade de cuidado' },
             ].map(fase => (
               <div key={fase.label} style={{ display:'flex', gap:'10px', alignItems:'flex-start', marginBottom:'10px' }}>
                 <div style={{ fontSize:'20px' }}>{fase.icon}</div>
                 <div style={{ flex:1 }}>
-                  <div style={{ fontSize:'12px', fontWeight:'700', color: fase.color }}>{fase.label} — {fase.range}</div>
+                  <div style={{ fontSize:'12px', fontWeight:'700', color: fase.color }}>{fase.label} – {fase.range}</div>
                   <div style={{ fontSize:'10px', color:'rgba(255,255,255,.6)', marginTop:'2px' }}>{fase.desc}</div>
                 </div>
               </div>
@@ -773,7 +780,7 @@ const styles = {
   exportBtn:        { fontSize:'11px', background:'rgba(255,255,255,.15)', border:'1px solid rgba(255,255,255,.25)', color:'white', padding:'5px 12px', borderRadius:'20px', cursor:'pointer', fontFamily:'inherit' },
   saveBtn:          { fontSize:'11px', background:'#32C878', border:'none', color:'white', padding:'6px 14px', borderRadius:'20px', cursor:'pointer', fontFamily:'inherit', fontWeight:'700' },
   tabs:             { margin:'0 1rem .75rem', display:'flex', gap:'4px' },
-  tab: { flex:1, padding:'7px 2px', textAlign:'center', fontSize:'10px', fontWeight:'600', color:'rgba(255,255,255,.6)', background:'rgba(255,255,255,.1)', border:'1px solid rgba(255,255,255,.15)', borderRadius:'10px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', minHeight:'36px', lineHeight:'1.2' },
+  tab:              { flex:1, padding:'7px 2px', textAlign:'center', fontSize:'10px', fontWeight:'600', color:'rgba(255,255,255,.6)', background:'rgba(255,255,255,.1)', border:'1px solid rgba(255,255,255,.15)', borderRadius:'10px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', minHeight:'36px', lineHeight:'1.2' },
   tabActive:        { background:'rgba(255,255,255,.25)', color:'white', borderColor:'rgba(255,255,255,.4)' },
   challengeHeader:  { display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 1rem .25rem' },
   sectionTitle:     { padding:'.5rem 1rem .25rem', fontSize:'11px', color:'rgba(255,255,255,.6)', letterSpacing:'.08em', textTransform:'uppercase' },
@@ -790,6 +797,7 @@ const styles = {
   challengeActions: { display:'flex', gap:'8px' },
   editBtn:          { fontSize:'11px', background:'rgba(255,255,255,.15)', border:'1px solid rgba(255,255,255,.25)', color:'white', padding:'5px 12px', borderRadius:'8px', cursor:'pointer', fontFamily:'inherit' },
   toggleBtn:        { fontSize:'11px', background:'rgba(255,255,255,.15)', border:'1px solid rgba(255,255,255,.25)', color:'white', padding:'5px 12px', borderRadius:'8px', cursor:'pointer', fontFamily:'inherit' },
+  ativarBtn:        { fontSize:'11px', background:'rgba(255,200,50,.25)', border:'1px solid rgba(255,200,50,.5)', color:'#FFD700', padding:'5px 12px', borderRadius:'8px', cursor:'pointer', fontFamily:'inherit', fontWeight:'700' },
   deleteBtn:        { fontSize:'14px', background:'rgba(220,60,60,.2)', border:'1px solid rgba(220,60,60,.3)', color:'#FF8080', padding:'5px 10px', borderRadius:'8px', cursor:'pointer', fontFamily:'inherit' },
   simInfo:          { margin:'0 1rem .75rem', background:'rgba(255,200,50,.12)', border:'1px solid rgba(255,200,50,.3)', borderRadius:'12px', padding:'.75rem', fontSize:'12px', color:'rgba(255,255,255,.85)', lineHeight:'1.5' },
   simNotice:        { background:'rgba(255,200,50,.12)', border:'1px solid rgba(255,200,50,.25)', borderRadius:'10px', padding:'.75rem', fontSize:'11px', color:'rgba(255,255,255,.75)', lineHeight:'1.5', marginBottom:'1rem' },
