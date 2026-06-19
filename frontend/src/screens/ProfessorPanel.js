@@ -156,6 +156,19 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
   const avgTime = students.length > 0 ? students.reduce((a,s)=>a+(s.sessoes||0),0) : 0;
   const formatTime = s => `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'00')}`;
 
+  async function handleZerarTurma() {
+    if (!window.confirm('⚠️ ATENÇÃO: Isso vai zerar o ranking, sessões e animais de TODOS os alunos. Essa ação não pode ser desfeita. Confirma?')) return;
+    if (!window.confirm('Tem certeza absoluta? Todos os dados de desempenho serão perdidos.')) return;
+    try {
+      await rankingApi.reset();
+      setStudents([]);
+      setManualGrades({});
+      alert('✅ Turma zerada com sucesso! Todos os alunos foram resetados.');
+    } catch(e) {
+      alert('Erro ao zerar turma: ' + e.message);
+    }
+  }
+
   async function handleExport() {
     try {
       const data = await rankingApi.get();
@@ -496,6 +509,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
         <button style={styles.backBtn} onClick={onBack}>←</button>
         <div style={styles.title}>Painel do Professor</div>
         <button style={styles.exportBtn} onClick={handleExport}>↓ Exportar</button>
+        <button style={styles.resetTurmaBtn} onClick={handleZerarTurma}>🗑️ Zerar</button>
       </div>
 
       <div style={styles.tabs}>
@@ -842,6 +856,7 @@ const styles = {
   backBtn:          { fontSize:'20px', cursor:'pointer', background:'none', border:'none', color:'white' },
   title:            { fontSize:'16px', fontWeight:'700', color:'white' },
   exportBtn:        { fontSize:'11px', background:'rgba(255,255,255,.15)', border:'1px solid rgba(255,255,255,.25)', color:'white', padding:'5px 12px', borderRadius:'20px', cursor:'pointer', fontFamily:'inherit' },
+  resetTurmaBtn:    { fontSize:'11px', background:'rgba(220,60,60,.25)', border:'1px solid rgba(220,60,60,.5)', color:'#FF8080', padding:'5px 12px', borderRadius:'20px', cursor:'pointer', fontFamily:'inherit', fontWeight:'700' },
   saveBtn:          { fontSize:'11px', background:'#32C878', border:'none', color:'white', padding:'6px 14px', borderRadius:'20px', cursor:'pointer', fontFamily:'inherit', fontWeight:'700' },
   tabs:             { margin:'0 1rem .75rem', display:'flex', gap:'4px' },
   tab:              { flex:1, padding:'7px 2px', textAlign:'center', fontSize:'10px', fontWeight:'600', color:'rgba(255,255,255,.6)', background:'rgba(255,255,255,.1)', border:'1px solid rgba(255,255,255,.15)', borderRadius:'10px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', minHeight:'36px', lineHeight:'1.2' },

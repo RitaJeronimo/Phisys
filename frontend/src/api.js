@@ -27,6 +27,7 @@ export const animal = {
 export const ranking = {
   get:    ()     => req('/api/ranking', { headers: authHeaders() }),
   update: (data) => req('/api/ranking', { method: 'PUT', headers: authHeaders(), body: JSON.stringify(data) }),
+  reset:  ()     => req('/api/ranking/reset', { method: 'POST', headers: authHeaders() }),
 };
 export const desafios = {
   get: () => req('/api/desafios', { headers: authHeaders() }),
