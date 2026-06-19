@@ -13,6 +13,8 @@ const MOCK_CHALLENGES = [
       { letter: 'D', text: 'Volume urinário aumenta e pressão arterial cai', correct: false },
     ],
     intervention: { hidratacao:40, pas:85, pad:55, fc:420, peso:300, saude:50 },
+    delta_acerto: { hidratacao:20, energia:10, pas:-10, pad:-5, fc:-30 },
+    delta_erro:   { hidratacao:-20, energia:-15, pas:10, pad:5, fc:30 },
     explanation: 'Na desidratação: ↓ hidratação → ↓ volemia → ↓ pré-carga → ↓ VS → ↓ DC → ↓ PA. O rim retém água reduzindo o volume urinário. A FC aumenta compensatoriamente para manter a perfusão.',
   },
   {
@@ -25,6 +27,8 @@ const MOCK_CHALLENGES = [
       { letter: 'D', text: 'Débito cardíaco cai mas a pressão arterial sempre sobe', correct: false },
     ],
     intervention: { hidratacao:60, pas:95, pad:60, fc:200, peso:300, saude:60 },
+    delta_acerto: { hidratacao:10, energia:10, pas:-5, pad:-5, fc:40 },
+    delta_erro:   { hidratacao:-10, energia:-15, pas:10, pad:5, fc:-40 },
     explanation: 'FC baixa reduz o débito cardíaco (DC = FC × VS). Com DC reduzido, a PA pode cair por menor perfusão. O organismo tenta compensar com aumento da RVP para manter a pressão.',
   },
   {
@@ -37,6 +41,8 @@ const MOCK_CHALLENGES = [
       { letter: 'D', text: 'Volume urinário aumenta e volemia aumenta', correct: false },
     ],
     intervention: { hidratacao:35, pas:140, pad:90, fc:400, peso:300, saude:45 },
+    delta_acerto: { hidratacao:20, energia:10, pas:-15, pad:-10, fc:-20 },
+    delta_erro:   { hidratacao:-20, energia:-15, pas:15, pad:10, fc:20 },
     explanation: 'Na insuficiência renal, a filtração glomerular cai, reduzindo o volume urinário. A retenção de sódio e água aumenta a volemia, podendo elevar a PA sistólica e diastólica.',
   },
 ];
@@ -150,8 +156,8 @@ function GameScreen({ user, mode, values: initialValues, score: initialScore, on
               correct: i === d.correta,
             })),
             intervention: {},
-          delta_acerto: typeof d.delta_acerto === 'string' ? JSON.parse(d.delta_acerto) : (d.delta_acerto || {}),
-          delta_erro:   typeof d.delta_erro   === 'string' ? JSON.parse(d.delta_erro)   : (d.delta_erro   || {}),
+            delta_acerto: typeof d.delta_acerto === 'string' ? JSON.parse(d.delta_acerto) : (d.delta_acerto || {}),
+            delta_erro:   typeof d.delta_erro   === 'string' ? JSON.parse(d.delta_erro)   : (d.delta_erro   || {}),
             explanation: d.explicacao || 'Revise os conceitos fisiológicos relacionados a este cenário clínico.',
             active: d.ativo,
           }))
@@ -214,8 +220,8 @@ function GameScreen({ user, mode, values: initialValues, score: initialScore, on
       const newScore = applyBonus(score, 'correct_answer');
       setScore(newScore);
       setSolvedCount(s => s + 1);
-      let novosValores;
       const da = challenge.delta_acerto || {};
+      let novosValores;
       if (mode === 'sessao') {
         novosValores = {
           ...values,
@@ -230,7 +236,7 @@ function GameScreen({ user, mode, values: initialValues, score: initialScore, on
           ...values,
           ...challenge.intervention,
           hidratacao: da.hidratacao !== undefined ? Math.min(100, (values.hidratacao || 70) + da.hidratacao) : values.hidratacao,
-          energia:    Math.max(0, (values.energia || 80) - 10),
+          energia: Math.max(0, (values.energia || 80) - 10),
         };
       }
       setValues(novosValores);
@@ -246,9 +252,8 @@ function GameScreen({ user, mode, values: initialValues, score: initialScore, on
         setResponseTimes(t => [...t, elapsed]);
         setAnswered(true);
         setAttempts(0);
-        let novosValoresErro;
-        let novosValoresErro;
         const de = challenge.delta_erro || {};
+        let novosValoresErro;
         if (mode === 'sessao') {
           novosValoresErro = {
             ...values,
