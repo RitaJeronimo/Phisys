@@ -55,11 +55,23 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
   const [editingType, setEditingType] = useState(null); // 'challenge' | 'simulation'
   const [form, setForm] = useState(null);
   const [simForm, setSimForm] = useState(null);
-  const [weights, setWeights] = useState({
-    score: DEFAULT_WEIGHTS.score * 100,
-    survival: DEFAULT_WEIGHTS.survival * 100,
-    challenges: DEFAULT_WEIGHTS.challenges * 100,
-    response_time: DEFAULT_WEIGHTS.response_time * 100,
+  const [weights, setWeights] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('phisys_pesos') || '{}');
+      return {
+        score:         saved.score         ?? DEFAULT_WEIGHTS.score * 100,
+        survival:      saved.survival      ?? DEFAULT_WEIGHTS.survival * 100,
+        challenges:    saved.challenges    ?? DEFAULT_WEIGHTS.challenges * 100,
+        response_time: saved.response_time ?? DEFAULT_WEIGHTS.response_time * 100,
+      };
+    } catch {
+      return {
+        score:         DEFAULT_WEIGHTS.score * 100,
+        survival:      DEFAULT_WEIGHTS.survival * 100,
+        challenges:    DEFAULT_WEIGHTS.challenges * 100,
+        response_time: DEFAULT_WEIGHTS.response_time * 100,
+      };
+    }
   });
   const [manualGrades, setManualGrades] = useState({});
   const [sessaoFoco, setSessaoFoco] = useState(() => {
@@ -605,7 +617,12 @@ async function handleToggleSimulation(id) {
               <div key={w.key} style={styles.weightRow}>
                 <div style={styles.weightLabel}>{w.label}</div>
                 <input type="range" min="0" max="100" step="5" value={weights[w.key]}
-                  onChange={e=>setWeights(ww=>({...ww,[w.key]:Number(e.target.value)}))} style={styles.weightSlider}/>
+                  onChange={e => {
+  const newWeights = { ...weights, [w.key]: Number(e.target.value) };
+  setWeights(newWeights);
+  localStorage.setItem('phisys_pesos', JSON.stringify(newWeights));
+}} 
+                  style={styles.weightSlider}/>
                 <div style={styles.weightVal}>{weights[w.key]}%</div>
               </div>
             ))}
