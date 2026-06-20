@@ -185,7 +185,7 @@ function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, on
   const [miniRanking, setMiniRanking] = useState([]);
   const [careEffect, setCareEffect] = useState(null);
 
-uuseEffect(() => {
+useEffect(() => {
   rankingApi.get().then(data => setMiniRanking(Array.isArray(data) ? data.slice(0, 3) : [])).catch(() => {});
 }, []);
 
