@@ -535,8 +535,8 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
         <button style={styles.backBtn} onClick={onBack}>←</button>
         <div style={styles.title}>Painel do Professor</div>
         <button style={styles.exportBtn} onClick={handleExport}>↓ Exportar</button>
-        <button style={styles.resetTurmaBtn} onClick={handleZerarTurma}>↺ Zerar XP</button>
-        <button style={styles.resetTurmaBtn} onClick={handleLimparTodosAlunos}>🗑️ Limpar</button>
+        {tab === 'alunos' && <button style={styles.resetTurmaBtn} onClick={handleZerarTurma}>↺ Zerar XP</button>}
+        {tab === 'alunos' && <button style={styles.resetTurmaBtn} onClick={handleLimparTodosAlunos}>🗑️ Limpar</button>}
       </div>
 
       <div style={styles.tabs}>
