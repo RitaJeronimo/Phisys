@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { DEFAULT_MOTIVATION_MESSAGES } from './MotivationScreen';
 import { DEFAULT_WEIGHTS, INTERVENTIONS, PRIMARY_PARAMS } from '../engine/mascotEngine';
 import { ranking as rankingApi, authHeaders, simulacoes as simulacoesApi } from '../api';
@@ -47,6 +47,8 @@ const EMPTY_SIMULATION = {
   params: getDefaultSimParams(),
 };
 
+const MEDAL = ['🥇','🥈','🥉'];
+
 function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
   const [motivationMessages, setMotivationMessages] = useState({...DEFAULT_MOTIVATION_MESSAGES});
   const [tab, setTab] = useState('desafios');
@@ -57,6 +59,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
   const [form, setForm] = useState(null);
   const [simForm, setSimForm] = useState(null);
   const [ativandoId, setAtivandoId] = useState(null);
+  const [lastUpdate, setLastUpdate] = useState(null);
   const [weights, setWeights] = useState(() => {
     try {
       const saved = JSON.parse(localStorage.getItem('phisys_pesos') || '{}');
@@ -84,11 +87,12 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
   });
   const [students, setStudents] = useState([]);
 
-  useEffect(() => {
+  const fetchStudents = useCallback(() => {
     rankingApi.get()
       .then(data => {
         if (Array.isArray(data)) {
           setStudents(data);
+          setLastUpdate(new Date().toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit', second:'2-digit' }));
           const grades = {};
           data.forEach(s => {
             if (s.nota_final !== null && s.nota_final !== undefined) {
@@ -100,6 +104,17 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
       })
       .catch(() => setStudents([]));
   }, []);
+
+  useEffect(() => {
+    fetchStudents();
+  }, [fetchStudents]);
+
+  // Atualiza ranking a cada 30 segundos quando na aba alunos
+  useEffect(() => {
+    if (tab !== 'alunos') return;
+    const interval = setInterval(fetchStudents, 30000);
+    return () => clearInterval(interval);
+  }, [tab, fetchStudents]);
 
   useEffect(() => {
     req('/api/desafios', { headers: authHeaders() })
@@ -152,9 +167,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
       .catch(() => {});
   }, []);
 
-  const avgGrade = students.length > 0 ? (students.reduce((a,s)=>a+Number(s.xp_total||0),0)/students.length).toFixed(0) : '0';
-  const avgTime = students.length > 0 ? students.reduce((a,s)=>a+(s.sessoes||0),0) : 0;
-  const formatTime = s => `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'00')}`;
+  const avgXP = students.length > 0 ? (students.reduce((a,s)=>a+Number(s.xp_total||0),0)/students.length).toFixed(0) : '0';
 
   async function handleZerarTurma() {
     if (!window.confirm('⚠️ ATENÇÃO: Isso vai zerar o ranking, sessões e animais de TODOS os alunos. Essa ação não pode ser desfeita. Confirma?')) return;
@@ -172,9 +185,9 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
   async function handleExport() {
     try {
       const data = await rankingApi.get();
-      const header = 'Nome,Matricula,XP Total,Sessoes,Media Saude,Nota Final\n';
-      const rows = data.map(r =>
-        `${r.nome},${r.matricula},${r.xp_total},${r.sessoes},${Number(r.media_saude).toFixed(1)},${manualGrades[r.id] || '-'}`
+      const header = 'Posicao,Nome,Matricula,XP Total,Sessoes,Media Saude,Nota Final\n';
+      const rows = data.map((r, i) =>
+        `${i+1},${r.nome},${r.matricula},${r.xp_total},${r.sessoes},${Number(r.media_saude).toFixed(1)},${manualGrades[r.id] || '-'}`
       ).join('\n');
       const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
@@ -221,16 +234,16 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
           method: 'POST',
           headers: authHeaders(),
           body: JSON.stringify({
-          titulo: form.title,
-          pergunta: form.question,
-          opcoes: form.options,
-          correta: form.correct,
-          foco: form.focus,
-          dificuldade: form.difficulty,
-          intervencao: form.intervencao,
-          delta_acerto: form.delta_acerto || {},
-          delta_erro:   form.delta_erro   || {},
-        }),
+            titulo: form.title,
+            pergunta: form.question,
+            opcoes: form.options,
+            correta: form.correct,
+            foco: form.focus,
+            dificuldade: form.difficulty,
+            intervencao: form.intervencao,
+            delta_acerto: form.delta_acerto || {},
+            delta_erro:   form.delta_erro   || {},
+          }),
         });
         setChallenges(prev => [...prev, { ...form, id: created.id }]);
       } else {
@@ -238,17 +251,17 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
           method: 'PUT',
           headers: authHeaders(),
           body: JSON.stringify({
-          titulo: form.title,
-          pergunta: form.question,
-          opcoes: form.options,
-          correta: form.correct,
-          foco: form.focus,
-          dificuldade: form.difficulty,
-          intervencao: form.intervencao,
-          ativo: form.active,
-          delta_acerto: form.delta_acerto || {},
-          delta_erro:   form.delta_erro   || {},
-        }),
+            titulo: form.title,
+            pergunta: form.question,
+            opcoes: form.options,
+            correta: form.correct,
+            foco: form.focus,
+            dificuldade: form.difficulty,
+            intervencao: form.intervencao,
+            ativo: form.active,
+            delta_acerto: form.delta_acerto || {},
+            delta_erro:   form.delta_erro   || {},
+          }),
         });
       }
       if (editing !== 'new') {
@@ -270,11 +283,6 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
   async function handleDeleteSimulation(id) {
     try { await req(`/api/simulacoes/${id}`, { method: 'DELETE', headers: authHeaders() }); } catch(e) {}
     setSimulations(prev => prev.filter(s => s.id !== id));
-  }
-  async function handleToggleSimulation(id) {
-    const sim = simulations.find(s => s.id === id);
-    try { await req(`/api/simulacoes/${id}`, { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ ativo: !sim.active }) }); } catch(e) {}
-    setSimulations(prev => prev.map(s => s.id === id ? {...s, active:!s.active} : s));
   }
   async function handleAtivarSimulacao(id) {
     if (!window.confirm('Ativar esta simulação vai alterar os parâmetros do animal de TODOS os alunos. Confirma?')) return;
@@ -379,7 +387,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
           <div style={styles.fieldHint}>Clique na letra para marcar como correta</div>
 
           <div style={styles.fieldLabel}>Impacto no ACERTO (deltas)</div>
-          <div style={styles.simNotice}>✅ Defina quanto cada parâmetro melhora quando o aluno acerta. Use valores positivos para melhora.</div>
+          <div style={styles.simNotice}>✅ Defina quanto cada parâmetro melhora quando o aluno acerta.</div>
           {[
             { id:'hidratacao', label:'💧 Hidratação', unit:'%', min:0, max:50, step:5 },
             { id:'energia',    label:'⚡ Energia',    unit:'%', min:0, max:50, step:5 },
@@ -403,7 +411,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
           })}
 
           <div style={styles.fieldLabel}>Impacto no ERRO (deltas)</div>
-          <div style={styles.simNotice}>❌ Defina quanto cada parâmetro piora quando o aluno erra. Use valores negativos para piora.</div>
+          <div style={styles.simNotice}>❌ Defina quanto cada parâmetro piora quando o aluno erra.</div>
           {[
             { id:'hidratacao', label:'💧 Hidratação', unit:'%', min:-50, max:0, step:5 },
             { id:'energia',    label:'⚡ Energia',    unit:'%', min:-50, max:0, step:5 },
@@ -452,23 +460,19 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
           <input style={styles.input} value={simForm.title} onChange={e=>setSimForm(f=>({...f,title:e.target.value}))} placeholder="Ex: Insuficiência Cardíaca"/>
           <div style={styles.fieldLabel}>Foco</div>
           <div style={{ display:'flex', gap:'8px', marginBottom:'4px' }}>
-            <div
-              style={{ flex:1, padding:'10px', borderRadius:'10px', border:'1px solid rgba(255,255,255,.25)', background: simForm.focus === 'cardiovascular' ? 'rgba(255,255,255,.3)' : 'rgba(255,255,255,.1)', color:'white', fontSize:'13px', textAlign:'center', cursor:'pointer', fontWeight: simForm.focus === 'cardiovascular' ? '700' : '400' }}
-              onClick={() => setSimForm(f=>({...f, focus:'cardiovascular'}))}
-            >
+            <div style={{ flex:1, padding:'10px', borderRadius:'10px', border:'1px solid rgba(255,255,255,.25)', background: simForm.focus === 'cardiovascular' ? 'rgba(255,255,255,.3)' : 'rgba(255,255,255,.1)', color:'white', fontSize:'13px', textAlign:'center', cursor:'pointer', fontWeight: simForm.focus === 'cardiovascular' ? '700' : '400' }}
+              onClick={() => setSimForm(f=>({...f, focus:'cardiovascular'}))}>
               ❤️ Cardiovascular
             </div>
-            <div
-              style={{ flex:1, padding:'10px', borderRadius:'10px', border:'1px solid rgba(255,255,255,.25)', background: simForm.focus === 'renal' ? 'rgba(255,255,255,.3)' : 'rgba(255,255,255,.1)', color:'white', fontSize:'13px', textAlign:'center', cursor:'pointer', fontWeight: simForm.focus === 'renal' ? '700' : '400' }}
-              onClick={() => setSimForm(f=>({...f, focus:'renal'}))}
-            >
+            <div style={{ flex:1, padding:'10px', borderRadius:'10px', border:'1px solid rgba(255,255,255,.25)', background: simForm.focus === 'renal' ? 'rgba(255,255,255,.3)' : 'rgba(255,255,255,.1)', color:'white', fontSize:'13px', textAlign:'center', cursor:'pointer', fontWeight: simForm.focus === 'renal' ? '700' : '400' }}
+              onClick={() => setSimForm(f=>({...f, focus:'renal'}))}>
               🫗 Renal
             </div>
           </div>
           <div style={styles.fieldLabel}>Descrição para o aluno</div>
           <textarea style={{...styles.input, minHeight:'60px', resize:'vertical'}} value={simForm.description} onChange={e=>setSimForm(f=>({...f,description:e.target.value}))} placeholder="Descreva o quadro clínico que o aluno deverá reverter..."/>
           <div style={styles.fieldLabel}>Parâmetros alterados</div>
-          <div style={styles.simNotice}>⚠️ Defina os valores que o animal terá quando a simulação for ativada. O aluno precisará reverter para a homeostase.</div>
+          <div style={styles.simNotice}>⚠️ Defina os valores que o animal terá quando a simulação for ativada.</div>
           {PRIMARY_PARAMS.filter(p => p.id !== 'saude').map(p => {
             const val = simForm.params[p.id] ?? p.default;
             const inRange = val >= p.normal[0] && val <= p.normal[1];
@@ -481,8 +485,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
                   <span style={{ ...styles.simParamVal, color }}>{Math.round(val)} {p.unit}</span>
                   <span style={{ fontSize:'10px', color, marginLeft:'4px' }}>{inRange ? '✓' : '⚠️'}</span>
                 </div>
-                <input
-                  type="range" min={p.min} max={p.max} step={p.step} value={val}
+                <input type="range" min={p.min} max={p.max} step={p.step} value={val}
                   onChange={e => handleSimParam(p.id, e.target.value)}
                   style={{ width:'100%', accentColor: color, margin:'4px 0' }}
                 />
@@ -595,7 +598,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
             <button style={styles.newBtn} onClick={handleNewSimulation}>+ Nova</button>
           </div>
           <div style={styles.simInfo}>
-            🔬 Crie cenários fisiológicos alterados. Ao clicar em <strong>🚀 Lançar para Turma</strong>, os parâmetros do animal de todos os alunos serão atualizados e eles precisarão reverter para a homeostase.
+            🔬 Crie cenários fisiológicos alterados. Ao clicar em <strong>🚀 Lançar para Turma</strong>, os parâmetros do animal de todos os alunos serão atualizados.
           </div>
           {simulations.map(sim=>(
             <div key={sim.id} style={{...styles.challengeCard, border: sim.active ? '1px solid rgba(255,200,50,.5)' : '1px solid rgba(255,255,255,.18)'}}>
@@ -635,57 +638,86 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
         </>
       )}
 
-      {/* ── TAB ALUNOS ── */}
+      {/* ── TAB ALUNOS — RANKING EM TEMPO REAL ── */}
       {tab==='alunos' && (
         <>
-          <div style={styles.summary}>
-            {[
-              {val:students.length, lbl:'Alunos'},
-              {val:challenges.filter(c=>c.active).length, lbl:'Desafios'},
-              {val:avgGrade, lbl:'Média'},
-              {val:formatTime(avgTime), lbl:'Tempo médio'},
-            ].map(item=>(
-              <div key={item.lbl} style={styles.summaryCard}>
-                <div style={styles.summaryVal}>{item.val}</div>
-                <div style={styles.summaryLbl}>{item.lbl}</div>
-              </div>
-            ))}
-          </div>
-          <div style={styles.sectionTitle}>desempenho dos alunos</div>
-          <div style={styles.tableWrap}>
-            <div style={styles.tableHeader}>
-              <span>aluno</span>
-              <span style={{textAlign:'center'}}>pts</span>
-              <span style={{textAlign:'center'}}>mascote</span>
-              <span style={{textAlign:'center'}}>calc.</span>
-              <span style={{textAlign:'center'}}>final</span>
+          {/* Cabeçalho com resumo e atualização */}
+          <div style={{ margin:'0 1rem .5rem', display:'flex', gap:'8px' }}>
+            <div style={styles.summaryCard}>
+              <div style={styles.summaryVal}>{students.length}</div>
+              <div style={styles.summaryLbl}>Alunos</div>
             </div>
-            {students.map(student=>(
-              <div key={student.id} style={styles.tableRow}>
-                <div>
-                  <div style={styles.studentName}>{student.nome}</div>
-                  <div style={styles.studentMeta}>{student.sessoes} sessoes</div>
-                </div>
-                <div style={styles.cell}>{student.xp_total}</div>
-                <div style={styles.cell}>-</div>
-                <div style={styles.cell}>-</div>
-                <div style={styles.cell}>
-                  <input style={styles.notaInput} type="number" min="0" max="10" step="0.1"
-                    value={manualGrades[student.id] || ''}
-                    onChange={e=>setManualGrades(g=>({...g,[student.id]:Number(e.target.value)}))}
-                    onBlur={async e => {
-                      try {
-                        await req(`/api/ranking/${student.id}/nota`, {
-                          method: 'PUT',
-                          headers: authHeaders(),
-                          body: JSON.stringify({ nota_final: Number(e.target.value) }),
-                        });
-                      } catch(err) {}
-                    }}/>
-                </div>
-              </div>
-            ))}
+            <div style={styles.summaryCard}>
+              <div style={styles.summaryVal}>{avgXP}</div>
+              <div style={styles.summaryLbl}>XP médio</div>
+            </div>
+            <div style={styles.summaryCard}>
+              <div style={styles.summaryVal}>{students.filter(s=>s.xp_total>0).length}</div>
+              <div style={styles.summaryLbl}>Jogando</div>
+            </div>
           </div>
+
+          {/* Status de atualização */}
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 1rem .5rem' }}>
+            <div style={{ fontSize:'10px', color:'rgba(255,255,255,.4)' }}>
+              {lastUpdate ? `Atualizado às ${lastUpdate}` : 'Carregando...'}
+            </div>
+            <button
+              style={{ fontSize:'10px', background:'rgba(255,255,255,.15)', border:'1px solid rgba(255,255,255,.25)', color:'white', padding:'3px 10px', borderRadius:'10px', cursor:'pointer', fontFamily:'inherit' }}
+              onClick={fetchStudents}
+            >
+              🔄 Atualizar
+            </button>
+          </div>
+
+          {/* Ranking */}
+          <div style={styles.sectionTitle}>🏆 ranking da simulação atual</div>
+          {students.length === 0 ? (
+            <div style={{ margin:'0 1rem', background:'rgba(255,255,255,.08)', borderRadius:'14px', padding:'2rem', textAlign:'center', color:'rgba(255,255,255,.4)', fontSize:'13px' }}>
+              Nenhum aluno no ranking ainda.<br/>Use 🗑️ Zerar e 🚀 Lançar para começar uma nova simulação.
+            </div>
+          ) : (
+            students.map((student, idx) => {
+              const xp = Number(student.xp_total || 0);
+              const saude = Number(student.media_saude || 0);
+              const saudeColor = saude >= 75 ? '#32C878' : saude >= 40 ? '#EF9F27' : '#E24B4A';
+              const medal = MEDAL[idx] || `#${idx+1}`;
+              return (
+                <div key={student.id} style={{
+                  margin:'0 1rem .5rem',
+                  background: idx === 0 ? 'rgba(255,215,0,.15)' : idx === 1 ? 'rgba(192,192,192,.12)' : idx === 2 ? 'rgba(205,127,50,.12)' : 'rgba(255,255,255,.08)',
+                  border: idx === 0 ? '1px solid rgba(255,215,0,.4)' : '1px solid rgba(255,255,255,.12)',
+                  borderRadius:'12px', padding:'.75rem 1rem',
+                  display:'flex', alignItems:'center', gap:'12px',
+                }}>
+                  <div style={{ fontSize: idx < 3 ? '22px' : '14px', fontWeight:'700', color:'white', width:'28px', textAlign:'center' }}>{medal}</div>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:'13px', fontWeight:'700', color:'white' }}>{student.nome}</div>
+                    <div style={{ fontSize:'10px', color:'rgba(255,255,255,.45)', marginTop:'2px' }}>{student.matricula} · {student.sessoes} sessão(ões)</div>
+                  </div>
+                  <div style={{ textAlign:'right' }}>
+                    <div style={{ fontSize:'16px', fontWeight:'700', color:'#FFD700' }}>⭐ {xp}</div>
+                    <div style={{ fontSize:'10px', color: saudeColor, fontWeight:'600' }}>❤️ {saude.toFixed(0)}%</div>
+                  </div>
+                  <div style={{ textAlign:'right', minWidth:'52px' }}>
+                    <div style={{ fontSize:'9px', color:'rgba(255,255,255,.4)', marginBottom:'2px' }}>nota</div>
+                    <input style={styles.notaInput} type="number" min="0" max="10" step="0.1"
+                      value={manualGrades[student.id] || ''}
+                      onChange={e=>setManualGrades(g=>({...g,[student.id]:Number(e.target.value)}))}
+                      onBlur={async e => {
+                        try {
+                          await req(`/api/ranking/${student.id}/nota`, {
+                            method: 'PUT',
+                            headers: authHeaders(),
+                            body: JSON.stringify({ nota_final: Number(e.target.value) }),
+                          });
+                        } catch(err) {}
+                      }}/>
+                  </div>
+                </div>
+              );
+            })
+          )}
           <div style={{height:'1rem'}}/>
         </>
       )}
@@ -771,32 +803,22 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
         <>
           <div style={styles.sectionTitle}>fases de crescimento do animal</div>
           <div style={styles.simInfo}>
-            🐭 Configure quantos dias dura cada fase do animal. O professor controla o ritmo de crescimento conforme o módulo da disciplina.
+            🐭 Configure quantos dias dura cada fase do animal.
           </div>
           <div style={styles.challengeCard}>
-            <div style={{ fontSize:'13px', fontWeight:'700', color:'white', marginBottom:'12px' }}>
-              📅 Idade atual do animal
-            </div>
+            <div style={{ fontSize:'13px', fontWeight:'700', color:'white', marginBottom:'12px' }}>📅 Idade atual do animal</div>
             <div style={{ display:'flex', alignItems:'center', gap:'12px', marginBottom:'8px' }}>
-              <input
-                type="range" min="0" max="365" step="1"
-                value={ageDays || 90}
+              <input type="range" min="0" max="365" step="1" value={ageDays || 90}
                 onChange={async e => {
                   const newAge = Number(e.target.value);
                   if (setAgeDays) setAgeDays(newAge);
                   try {
-                    await req('/api/animal/age', {
-                      method: 'PUT',
-                      headers: authHeaders(),
-                      body: JSON.stringify({ age_days: newAge }),
-                    });
+                    await req('/api/animal/age', { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ age_days: newAge }) });
                   } catch(e) {}
                 }}
                 style={{ flex:1, accentColor:'white' }}
               />
-              <div style={{ fontSize:'16px', fontWeight:'700', color:'white', width:'60px', textAlign:'right' }}>
-                {ageDays || 90} dias
-              </div>
+              <div style={{ fontSize:'16px', fontWeight:'700', color:'white', width:'60px', textAlign:'right' }}>{ageDays || 90} dias</div>
             </div>
             <div style={{ display:'flex', gap:'6px' }}>
               {[
@@ -805,17 +827,12 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
                 { label:'🐀 Adulto',        days:200, color:'#32C878' },
                 { label:'🦳 Idoso',         days:600, color:'#9B59B6' },
               ].map(preset => (
-                <div
-                  key={preset.days}
+                <div key={preset.days}
                   style={{ flex:1, background:`${preset.color}22`, border:`1px solid ${preset.color}55`, borderRadius:'8px', padding:'6px 4px', textAlign:'center', cursor:'pointer', fontSize:'10px', color:'white' }}
                   onClick={async () => {
                     if (setAgeDays) setAgeDays(preset.days);
                     try {
-                      await req('/api/animal/age', {
-                        method: 'PUT',
-                        headers: authHeaders(),
-                        body: JSON.stringify({ age_days: preset.days }),
-                      });
+                      await req('/api/animal/age', { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ age_days: preset.days }) });
                     } catch(e) {}
                   }}
                 >
@@ -825,14 +842,12 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
             </div>
           </div>
           <div style={styles.challengeCard}>
-            <div style={{ fontSize:'13px', fontWeight:'700', color:'white', marginBottom:'8px' }}>
-              📋 Fases e limites
-            </div>
+            <div style={{ fontSize:'13px', fontWeight:'700', color:'white', marginBottom:'8px' }}>📋 Fases e limites</div>
             {[
-              { icon:'🐣', label:'Recém-nascido', range:'0–30 dias',   color:'#FFD700', desc:'Cabeça grande, sem cauda, olhos enormes, sem braços visíveis' },
-              { icon:'🐭', label:'Juvenil',       range:'31–180 dias', color:'#85B7EB', desc:'Tamanho médio, orelhas maiores, braços aparecem, cauda presente' },
-              { icon:'🐀', label:'Adulto',        range:'181–540 dias', color:'#32C878', desc:'Tamanho completo, bigodes visíveis, cauda longa, proporções adultas' },
-              { icon:'🦳', label:'Idoso',         range:'541+ dias',    color:'#9B59B6', desc:'Maior vulnerabilidade fisiológica, menor capacidade compensatória, maior necessidade de cuidado' },
+              { icon:'🐣', label:'Recém-nascido', range:'0–30 dias',    color:'#FFD700', desc:'Cabeça grande, sem cauda, olhos enormes' },
+              { icon:'🐭', label:'Juvenil',       range:'31–180 dias',  color:'#85B7EB', desc:'Tamanho médio, orelhas maiores, braços aparecem' },
+              { icon:'🐀', label:'Adulto',        range:'181–540 dias', color:'#32C878', desc:'Tamanho completo, bigodes visíveis, cauda longa' },
+              { icon:'🦳', label:'Idoso',         range:'541+ dias',    color:'#9B59B6', desc:'Maior vulnerabilidade fisiológica, menor capacidade compensatória' },
             ].map(fase => (
               <div key={fase.label} style={{ display:'flex', gap:'10px', alignItems:'flex-start', marginBottom:'10px' }}>
                 <div style={{ fontSize:'20px' }}>{fase.icon}</div>
@@ -907,12 +922,6 @@ const styles = {
   weightLabel:      { fontSize:'12px', color:'rgba(255,255,255,.8)', flex:1 },
   weightSlider:     { flex:1, accentColor:'white' },
   weightVal:        { fontSize:'12px', fontWeight:'700', color:'white', width:'36px', textAlign:'right' },
-  tableWrap:        { margin:'0 1rem', background:'rgba(255,255,255,.1)', border:'1px solid rgba(255,255,255,.18)', borderRadius:'14px', overflow:'hidden' },
-  tableHeader:      { display:'grid', gridTemplateColumns:'1fr 50px 60px 50px 60px', padding:'.75rem 1rem', background:'rgba(255,255,255,.1)', fontSize:'9px', color:'rgba(255,255,255,.5)', letterSpacing:'.06em', textTransform:'uppercase', gap:'4px' },
-  tableRow:         { display:'grid', gridTemplateColumns:'1fr 50px 60px 50px 60px', padding:'.875rem 1rem', borderTop:'1px solid rgba(255,255,255,.08)', alignItems:'center', gap:'4px' },
-  studentName:      { fontSize:'13px', color:'white', fontWeight:'500' },
-  studentMeta:      { fontSize:'10px', color:'rgba(255,255,255,.45)', marginTop:'1px' },
-  cell:             { fontSize:'13px', color:'rgba(255,255,255,.8)', textAlign:'center' },
   notaInput:        { width:'52px', padding:'4px 6px', borderRadius:'6px', border:'1px solid rgba(255,255,255,.3)', background:'rgba(255,255,255,.12)', color:'white', fontSize:'13px', fontFamily:'inherit', textAlign:'center', outline:'none' },
 };
 
