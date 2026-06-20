@@ -40,6 +40,7 @@ function LoginScreen({ onLogin }) {
 
   async function handleSubmit() {
     if (!name.trim()) { setError("Por favor, informe seu nome completo."); return; }
+    if (name.trim().split(/\s+/).length < 2) { setError("Por favor, digite seu nome completo (nome e sobrenome)."); return; }
     if (!credential.trim()) { setError(mode === "aluno" ? "Por favor, informe sua matricula." : "Por favor, informe o codigo de acesso."); return; }
 if (mode === "aluno" && !/^\d{6,}$/.test(credential.trim())) {
   setError("Matricula invalida. Use apenas numeros com no minimo 6 digitos.");

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { DEFAULT_MOTIVATION_MESSAGES } from './MotivationScreen';
 import { DEFAULT_WEIGHTS, INTERVENTIONS, PRIMARY_PARAMS } from '../engine/mascotEngine';
-import { ranking as rankingApi, authHeaders, simulacoes as simulacoesApi } from '../api';
+import { ranking as rankingApi, authHeaders, simulacoes as simulacoesApi, usuarios as usuariosApi } from '../api';
 const BASE = process.env.REACT_APP_API_URL || 'https://phisys-production.up.railway.app';
 async function req(path, options = {}) {
   const { headers: optHeaders, ...restOptions } = options;
@@ -169,6 +169,29 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
 
   const avgXP = students.length > 0 ? (students.reduce((a,s)=>a+Number(s.xp_total||0),0)/students.length).toFixed(0) : '0';
 
+  async function handleDeletarAluno(id, nome) {
+    if (!window.confirm(`Remover ${nome} permanentemente? Isso apaga o cadastro e todos os dados do aluno.`)) return;
+    try {
+      await usuariosApi.deletar(id);
+      setStudents(prev => prev.filter(s => s.id !== id));
+    } catch(e) {
+      alert('Erro ao remover aluno: ' + e.message);
+    }
+  }
+
+  async function handleLimparTodosAlunos() {
+    if (!window.confirm('⚠️ Isso vai DELETAR todos os alunos cadastrados permanentemente. Eles precisarão se cadastrar novamente. Confirma?')) return;
+    if (!window.confirm('Tem certeza absoluta? Essa ação não pode ser desfeita.')) return;
+    try {
+      await usuariosApi.limparTodos();
+      setStudents([]);
+      setManualGrades({});
+      alert('✅ Todos os alunos foram removidos. A turma está pronta para novo cadastro.');
+    } catch(e) {
+      alert('Erro ao limpar alunos: ' + e.message);
+    }
+  }
+  
   async function handleZerarTurma() {
     if (!window.confirm('⚠️ ATENÇÃO: Isso vai zerar o ranking, sessões e animais de TODOS os alunos. Essa ação não pode ser desfeita. Confirma?')) return;
     if (!window.confirm('Tem certeza absoluta? Todos os dados de desempenho serão perdidos.')) return;
@@ -512,7 +535,8 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
         <button style={styles.backBtn} onClick={onBack}>←</button>
         <div style={styles.title}>Painel do Professor</div>
         <button style={styles.exportBtn} onClick={handleExport}>↓ Exportar</button>
-        <button style={styles.resetTurmaBtn} onClick={handleZerarTurma}>🗑️ Zerar</button>
+        <button style={styles.resetTurmaBtn} onClick={handleZerarTurma}>↺ Zerar XP</button>
+        <button style={styles.resetTurmaBtn} onClick={handleLimparTodosAlunos}>🗑️ Limpar</button>
       </div>
 
       <div style={styles.tabs}>
@@ -714,6 +738,11 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
                         } catch(err) {}
                       }}/>
                   </div>
+                  <button
+                    onClick={() => handleDeletarAluno(student.id, student.nome)}
+                    style={{ background:'rgba(220,60,60,.2)', border:'1px solid rgba(220,60,60,.3)', color:'#FF8080', borderRadius:'8px', padding:'4px 8px', cursor:'pointer', fontSize:'12px', fontFamily:'inherit' }}
+                    title="Remover aluno"
+                  >🗑️</button>
                 </div>
               );
             })

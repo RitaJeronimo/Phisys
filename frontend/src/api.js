@@ -29,6 +29,10 @@ export const ranking = {
   update: (data) => req('/api/ranking', { method: 'PUT', headers: authHeaders(), body: JSON.stringify(data) }),
   reset:  ()     => req('/api/ranking/reset', { method: 'POST', headers: authHeaders() }),
 };
+export const usuarios = {
+  deletar:      (id) => req(`/api/usuarios/${id}`, { method: 'DELETE', headers: authHeaders() }),
+  limparTodos:  ()   => req('/api/usuarios', { method: 'DELETE', headers: authHeaders() }),
+};
 export const desafios = {
   get: () => req('/api/desafios', { headers: authHeaders() }),
 };
