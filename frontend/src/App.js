@@ -103,15 +103,16 @@ function App() {
   }
 
   async function handleCare(careId, newValues) {
+    const valuesComAge = { ...newValues, age_days: ageDays };
     try { await animalApi.cuidado(careId); } catch(e) { console.log('Cuidado:', e.message); }
     try {
       await animalApi.update({
-        energia:    newValues.energia,
-        hidratacao: newValues.hidratacao,
-        pas:        newValues.pas,
-        pad:        newValues.pad,
-        fc:         newValues.fc,
-        peso:       newValues.peso,
+        energia:    valuesComAge.energia,
+        hidratacao: valuesComAge.hidratacao,
+        pas:        valuesComAge.pas,
+        pad:        valuesComAge.pad,
+        fc:         valuesComAge.fc,
+        peso:       valuesComAge.peso,
       });
     } catch(e) {
       console.log('Erro ao salvar animal:', e.message);
@@ -119,7 +120,7 @@ function App() {
     try {
       const newScore = score + 5;
       setScore(newScore);
-      await rankingApi.update({ xp_total: newScore, media_saude: calcularSaude(newValues) });
+      await rankingApi.update({ xp_total: newScore, media_saude: calcularSaude(valuesComAge) });
     } catch(e) {}
   }
 
@@ -149,7 +150,7 @@ function App() {
         await sessoesApi.finalizar(sessaoId, {
           duracao_segundos: seconds,
           xp_total: score,
-          saude_final: calcularSaude(values),
+          saude_final: calcularSaude({ ...values, age_days: ageDays }),
         });
       }
     } catch(e) {}
@@ -208,7 +209,7 @@ function App() {
       score={score} setScore={setScore} onBack={handleBack} onFinish={handleGameFinish}/>;
 
   if (screen === 'final') {
-    const saude = calcularSaude(values);
+    const saude = calcularSaude({ ...values, age_days: ageDays });
     return <FinalScreen user={user} score={score} saude={saude}
       seconds={sessionData?.seconds || 0}
       solvedChallenges={sessionData?.solvedChallenges || 0}

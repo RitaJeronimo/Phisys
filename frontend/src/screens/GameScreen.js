@@ -108,7 +108,7 @@ function ParamBar({ param, value }) {
   const displayVal = param.step < 1 ? value.toFixed(1) : Math.round(value);
   return (
     <div style={styles.paramItem}>
-      <div style={styles.paramLabel}>{param.name.split(' ')[0]}</div>
+      <div style={styles.paramLabel}>{param.id === 'pas' ? 'PAS' : param.id === 'pad' ? 'PAD' : param.name.split(' ')[0]}</div>
       <div style={styles.paramTrack}>
         <div style={{ ...styles.paramNormal, left: normalMin + '%', width: normalWidth + '%' }}/>
         <div style={{ ...styles.paramFill, width: Math.min(pct, 100) + '%', background: fillColor }}/>
@@ -136,9 +136,9 @@ function GameScreen({ user, mode, values: initialValues, score: initialScore, on
   const [attempts, setAttempts] = useState(0);
   const [paramHistory, setParamHistory] = useState([{
     label: 'Início',
-    hidratacao: getDefaultValues().hidratacao,
-    pas: getDefaultValues().pas,
-    fc: getDefaultValues().fc,
+    hidratacao: (initialValues || getDefaultValues()).hidratacao,
+    pas: (initialValues || getDefaultValues()).pas,
+    fc: (initialValues || getDefaultValues()).fc,
     saude: 85,
   }]);
 
@@ -224,13 +224,15 @@ function GameScreen({ user, mode, values: initialValues, score: initialScore, on
       let novosValores;
       if (mode === 'sessao') {
         novosValores = {
-          ...values,
-          hidratacao: Math.min(100, (values.hidratacao || 70) + (da.hidratacao ?? 20)),
-          energia:    Math.min(100, (values.energia    || 80) + (da.energia    ?? 10)),
-          pas: da.pas !== undefined ? Math.max(60,  Math.min(200, (values.pas || 110) + da.pas)) : 110,
-          pad: da.pad !== undefined ? Math.max(40,  Math.min(120, (values.pad || 70)  + da.pad)) : 70,
-          fc:  da.fc  !== undefined ? Math.max(100, Math.min(600, (values.fc  || 370) + da.fc))  : 370,
-        };
+        ...values,
+        hidratacao: Math.min(100, (values.hidratacao || 70) + (da.hidratacao ?? 20)),
+        energia:    Math.min(100, (values.energia    || 80) + (da.energia    ?? 10)),
+        pas: da.pas !== undefined ? Math.max(60,  Math.min(200, (values.pas || 110) + da.pas)) : 110,
+        pad: da.pad !== undefined ? Math.max(40,  Math.min(120, (values.pad || 70)  + da.pad)) : 70,
+        fc:  da.fc  !== undefined ? Math.max(100, Math.min(600, (values.fc  || 370) + da.fc))  : 370,
+        age_days: values.age_days || 90,
+      };
+      novosValores.saude = calcularSaude(novosValores);
       } else {
         novosValores = {
           ...values,
@@ -262,7 +264,9 @@ function GameScreen({ user, mode, values: initialValues, score: initialScore, on
             pas: de.pas !== undefined ? Math.max(60,  Math.min(200, (values.pas || 110) + de.pas)) : values.pas,
             pad: de.pad !== undefined ? Math.max(40,  Math.min(120, (values.pad || 70)  + de.pad)) : values.pad,
             fc:  de.fc  !== undefined ? Math.max(100, Math.min(600, (values.fc  || 370) + de.fc))  : values.fc,
+            age_days: values.age_days || 90,
           };
+          novosValoresErro.saude = calcularSaude(novosValoresErro);
         } else {
           novosValoresErro = {
             ...values,
@@ -286,7 +290,7 @@ function GameScreen({ user, mode, values: initialValues, score: initialScore, on
       hidratacao: values.hidratacao,
       pas: values.pas,
       fc: values.fc,
-      saude: calcularSaude(values),
+      saude: calcularSaude({ ...values, age_days: values.age_days || 90 }),
     };
     const updatedHistory = [...paramHistory, snapshot];
     setParamHistory(updatedHistory);
