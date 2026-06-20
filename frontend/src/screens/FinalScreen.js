@@ -125,24 +125,43 @@ function FinalScreen({ user, score, saude, seconds, solvedChallenges, totalChall
       {/* GRÁFICO DE EVOLUÇÃO */}
       <div style={styles.sectionLabel}>evolucao dos parametros</div>
       <div style={styles.chartCard}>
+        <div style={{ fontSize:'10px', color:'rgba(255,255,255,.5)', textAlign:'center', marginBottom:'4px' }}>
+          Valores normalizados em % do máximo fisiológico de cada parâmetro
+        </div>
         <svg width={chartW} height={chartH}>
-          {/* FUNDO GRADE */}
+          {/* FUNDO GRADE + RÓTULOS EIXO Y */}
           {[0,25,50,75,100].map(pct => {
             const y = padT + innerH - (pct/100)*innerH;
-            return <line key={pct} x1={padL} y1={y} x2={chartW-padR} y2={y} stroke="rgba(255,255,255,.1)" strokeWidth="1"/>;
+            return (
+              <g key={pct}>
+                <line x1={padL} y1={y} x2={chartW-padR} y2={y} stroke="rgba(255,255,255,.1)" strokeWidth="1"/>
+                <text x={padL-4} y={y+3} textAnchor="end" fontSize="8" fill="rgba(255,255,255,.45)">{pct}%</text>
+              </g>
+            );
           })}
-          {/* EIXO X */}
+          {/* EIXO Y — rótulo vertical */}
+          <text x="8" y={padT + innerH/2} textAnchor="middle" fontSize="8" fill="rgba(255,255,255,.45)" transform={`rotate(-90, 8, ${padT + innerH/2})`}>% normalizado</text>
+          {/* LINHA DO EIXO Y */}
+          <line x1={padL} y1={padT} x2={padL} y2={padT+innerH} stroke="rgba(255,255,255,.2)" strokeWidth="1"/>
+          {/* LINHA DO EIXO X */}
+          <line x1={padL} y1={padT+innerH} x2={chartW-padR} y2={padT+innerH} stroke="rgba(255,255,255,.2)" strokeWidth="1"/>
+          {/* EIXO X — labels dos desafios */}
           {history.map((pt, i) => (
             <text key={i} x={padL + i*xStep} y={chartH-6} textAnchor="middle" fontSize="9" fill="rgba(255,255,255,.55)">{pt.label}</text>
           ))}
+          {/* RÓTULO EIXO X */}
+          <text x={padL + innerW/2} y={chartH} textAnchor="middle" fontSize="8" fill="rgba(255,255,255,.45)">Momentos da sessão</text>
           {/* LINHAS DOS PARÂMETROS */}
           {chartParams.map(p => (
             <path key={p.id} d={makePath(p.id, p.max)} stroke={p.color} strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
           ))}
-          {/* PONTOS */}
+          {/* PONTOS com tooltip de valor real */}
           {chartParams.map(p =>
             history.map((pt, i) => (
-              <circle key={`${p.id}-${i}`} cx={padL + i*xStep} cy={getY(pt[p.id]||0, p.max)} r="3" fill={p.color}/>
+              <g key={`${p.id}-${i}`}>
+                <circle cx={padL + i*xStep} cy={getY(pt[p.id]||0, p.max)} r="3" fill={p.color}/>
+                <title>{p.label}: {Math.round(pt[p.id]||0)}</title>
+              </g>
             ))
           )}
         </svg>
