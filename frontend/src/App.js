@@ -117,9 +117,9 @@ function App() {
     } catch(e) {
       console.log('Erro ao salvar animal:', e.message);
     }
+    const newScore = score + 5;
+    setScore(newScore);
     try {
-      const newScore = score + 5;
-      setScore(newScore);
       await rankingApi.update({ xp_total: newScore, media_saude: calcularSaude(valuesComAge) });
     } catch(e) {}
   }

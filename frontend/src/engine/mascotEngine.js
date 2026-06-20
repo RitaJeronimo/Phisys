@@ -235,22 +235,22 @@ export const DAILY_CARES = {
     id: 'hidratacao',
     label: 'Trocar Água',
     icon: '💧',
-    effect: { hidratacao: +20 },
-    description: 'Aumenta hidratação em 20%. Impacta volume urinário e RVP.',
+    effect: { hidratacao: +20, pas: +5, pad: +3, fc: -10 },
+    description: 'Aumenta hidratação → ↑ volemia → ↑ pré-carga → ↑ PA leve e ↓ FC compensatória.',
   },
   racao: {
     id: 'racao',
     label: 'Alimentar Animal',
     icon: '🍚',
-    effect: { energia: +30 },
-    description: 'Recarrega energia em 30%.',
+    effect: { energia: +30, peso: +5 },
+    description: 'Recarrega energia em 30%. Aumenta levemente o peso corporal.',
   },
   maravalha: {
     id: 'maravalha',
     label: 'Limpar Maravalha',
     icon: '🧹',
-    effect: { energia: +10, saude: +5 },
-    description: 'Higienização evita estresse. Melhora energia e saúde.',
+    effect: { energia: +10 },
+    description: 'Higienização evita estresse. Melhora energia e bem-estar geral.',
   },
 };
 

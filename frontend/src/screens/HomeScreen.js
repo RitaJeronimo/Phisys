@@ -215,8 +215,8 @@ setTimeout(() => setCareEffect(null), 1500);
     } catch(e) { console.log('Erro:', e.message); }
     try {
       const newScore = (score || 100) + 5;
-      await rankingApi.update({ xp_total: newScore, media_saude: calcularSaude(newValues) });
-      
+      await rankingApi.update({ xp_total: newScore, media_saude: calcularSaude({ ...newValues, age_days: ageDays || 90 }) });
+      if (onCare) onCare(id, newValues);
     } catch(e) {}
   }
 
