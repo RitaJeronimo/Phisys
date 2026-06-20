@@ -185,8 +185,28 @@ function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, on
   const [miniRanking, setMiniRanking] = useState([]);
   const [careEffect, setCareEffect] = useState(null);
 
-useEffect(() => {
+uuseEffect(() => {
   rankingApi.get().then(data => setMiniRanking(Array.isArray(data) ? data.slice(0, 3) : [])).catch(() => {});
+}, []);
+
+useEffect(() => {
+  // Verifica simulacao ativa a cada 30 segundos
+  const checkSim = () => {
+    animalApi.get().then(a => {
+      const fc = Number(a.fc) < 100 ? 370 : Number(a.fc);
+      setValues(prev => ({
+        ...prev,
+        energia:    Number(a.energia),
+        hidratacao: Number(a.hidratacao),
+        pas:        Number(a.pas),
+        pad:        Number(a.pad),
+        fc,
+        peso:       Number(a.peso),
+      }));
+    }).catch(() => {});
+  };
+  const interval = setInterval(checkSim, 30000);
+  return () => clearInterval(interval);
 }, []);
 
   const saude = calcularSaude(values);
