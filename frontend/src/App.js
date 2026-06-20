@@ -10,6 +10,19 @@ import { getDefaultPrimaryValues, calcularSaude } from './engine/mascotEngine';
 import { animal as animalApi, ranking as rankingApi, sessoes as sessoesApi, mensagens as mensagensApi, getToken, removeToken } from './api';
 import React, { useState, useEffect } from 'react';
 
+function corrigirAnimal(a) {
+  const fc = Number(a.fc) < 100 ? 370 : Number(a.fc);
+  const pas = Number(a.pas) < 60 ? 110 : Number(a.pas);
+  const pad = Number(a.pad) < 40 ? 70 : Number(a.pad);
+  return {
+    energia:    Number(a.energia)    || 80,
+    hidratacao: Number(a.hidratacao) || 70,
+    pas, pad, fc,
+    peso:       Number(a.peso)       || 300,
+    age_days:   Number(a.age_days)   || 90,
+  };
+}
+
 function App() {
   const [user, setUser]               = useState(null);
   const [screen, setScreen]           = useState('home');
@@ -43,8 +56,12 @@ function App() {
       if (payload.modo === 'professor') { setScreen('professor'); return; }
       setScreen('home');
       animalApi.get().then(a => {
-        setValues({ energia: Number(a.energia), hidratacao: Number(a.hidratacao), pas: Number(a.pas), pad: Number(a.pad), fc: Number(a.fc), peso: Number(a.peso), age_days: Number(a.age_days) || 90 });
-        setAgeDays(Number(a.age_days) || 90);
+        const corrigido = corrigirAnimal(a);
+        if (Number(a.fc) < 100 || Number(a.pas) < 60 || Number(a.pad) < 40) {
+          animalApi.update({ fc: corrigido.fc, pas: corrigido.pas, pad: corrigido.pad }).catch(() => {});
+        }
+        setValues(corrigido);
+        setAgeDays(corrigido.age_days);
       }).catch(() => {});
       rankingApi.get().then(rankData => {
         const myRank = rankData.find(r => r.id === payload.id || r.nome === payload.nome);
@@ -81,16 +98,12 @@ function App() {
 
     try {
       const a = await animalApi.get();
-      setValues({
-        energia:    Number(a.energia),
-        hidratacao: Number(a.hidratacao),
-        pas:        Number(a.pas),
-        pad:        Number(a.pad),
-        fc:         Number(a.fc),
-        peso:       Number(a.peso),
-        age_days:   Number(a.age_days) || 90,
-      });
-      setAgeDays(Number(a.age_days) || 90);
+      const corrigido = corrigirAnimal(a);
+      if (Number(a.fc) < 100 || Number(a.pas) < 60 || Number(a.pad) < 40) {
+        animalApi.update({ fc: corrigido.fc, pas: corrigido.pas, pad: corrigido.pad }).catch(() => {});
+      }
+      setValues(corrigido);
+      setAgeDays(corrigido.age_days);
     } catch(e) {
       console.log('Usando valores padrao do animal');
     }
