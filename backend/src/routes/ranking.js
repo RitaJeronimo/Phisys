@@ -29,10 +29,9 @@ router.put('/', auth, async (req, res) => {
   try {
     const result = await pool.query(
       `INSERT INTO ranking (usuario_id, xp_total, sessoes, media_saude)
-       VALUES ($1, $2, 1, $3)
+       VALUES ($1, $2, 0, $3)
        ON CONFLICT (usuario_id) DO UPDATE SET
-         xp_total      = GREATEST(ranking.xp_total, $2),
-         sessoes       = ranking.sessoes + 1,
+         xp_total      = $2,
          media_saude   = ($3 + ranking.media_saude) / 2,
          atualizado_em = NOW()
        RETURNING *`,
