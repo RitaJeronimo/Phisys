@@ -106,6 +106,7 @@ async function adicionarColunas() {
     await pool.query(`UPDATE animal SET fc = 370 WHERE fc = 75`);
     await pool.query(`ALTER TABLE desafios ADD COLUMN IF NOT EXISTS delta_acerto JSONB DEFAULT '{}'`);
     await pool.query(`ALTER TABLE desafios ADD COLUMN IF NOT EXISTS delta_erro JSONB DEFAULT '{}'`);
+    await pool.query(`UPDATE animal SET fc = 370 WHERE fc < 100`);
     await pool.query(`
       CREATE TABLE IF NOT EXISTS mensagens (
         id          SERIAL PRIMARY KEY,
