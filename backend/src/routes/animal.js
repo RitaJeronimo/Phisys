@@ -3,6 +3,8 @@ const router = express.Router();
 const pool = require('../db/connection');
 const auth = require('../middleware/auth');
 
+const COOLDOWN_HORAS_MODO_LIVRE = 2;
+
 // GET /api/animal — estado atual do animal do aluno logado
 router.get('/', auth, async (req, res) => {
   try {
@@ -54,6 +56,70 @@ router.put('/', auth, async (req, res) => {
   }
 });
 
+// GET /api/animal/cuidado/status — retorna, para cada cuidado, se pode ser usado
+// agora e informacoes de contexto (modo sessao/livre, quantos restam, quando libera).
+// O frontend usa essa rota para desenhar os botoes de cuidado corretamente
+// (habilitado, desabilitado com contagem, ou com tempo restante).
+router.get('/cuidado/status', auth, async (req, res) => {
+  try {
+    const simAtiva = await pool.query(
+      'SELECT * FROM simulacoes WHERE ativo = TRUE ORDER BY criado_em DESC LIMIT 1'
+    );
+    const emSessao = simAtiva.rows.length > 0;
+    const cuidadoIds = ['hidratacao', 'racao', 'maravalha'];
+    const statusPorCuidado = {};
+
+    if (emSessao) {
+      const sessao = simAtiva.rows[0];
+      const inicioSessao = sessao.ativado_em || sessao.criado_em;
+
+      const configResult = await pool.query(`SELECT valor FROM configuracoes WHERE chave = 'cuidados_por_sessao'`);
+      const limite = configResult.rows.length > 0 ? Number(configResult.rows[0].valor) : 3;
+
+      for (const cuidadoId of cuidadoIds) {
+        const usoResult = await pool.query(
+          `SELECT COUNT(*)::int AS total FROM cuidados_uso
+           WHERE usuario_id = $1 AND cuidado_id = $2 AND usado_em >= $3`,
+          [req.usuario.id, cuidadoId, inicioSessao]
+        );
+        const usados = usoResult.rows[0].total;
+        statusPorCuidado[cuidadoId] = {
+          disponivel: usados < limite,
+          modo: 'sessao',
+          usados,
+          limite,
+        };
+      }
+    } else {
+      for (const cuidadoId of cuidadoIds) {
+        const ultimoUsoResult = await pool.query(
+          `SELECT usado_em FROM cuidados_uso
+           WHERE usuario_id = $1 AND cuidado_id = $2
+           ORDER BY usado_em DESC LIMIT 1`,
+          [req.usuario.id, cuidadoId]
+        );
+        if (ultimoUsoResult.rows.length === 0) {
+          statusPorCuidado[cuidadoId] = { disponivel: true, modo: 'livre' };
+        } else {
+          const ultimoUso = new Date(ultimoUsoResult.rows[0].usado_em);
+          const liberaEm = new Date(ultimoUso.getTime() + COOLDOWN_HORAS_MODO_LIVRE * 60 * 60 * 1000);
+          const agora = new Date();
+          statusPorCuidado[cuidadoId] = {
+            disponivel: agora >= liberaEm,
+            modo: 'livre',
+            liberaEm: liberaEm.toISOString(),
+          };
+        }
+      }
+    }
+
+    res.json(statusPorCuidado);
+  } catch (err) {
+    console.error('Erro ao verificar status dos cuidados:', err.message);
+    res.status(500).json({ erro: 'Erro interno do servidor.' });
+  }
+});
+
 // POST /api/animal/cuidado — aplica cuidado diario
 router.post('/cuidado', auth, async (req, res) => {
   const { cuidado_id } = req.body;
@@ -70,6 +136,57 @@ router.post('/cuidado', auth, async (req, res) => {
   }
 
   try {
+    // Verifica se existe sessao/simulacao ativa do professor
+    const simAtiva = await pool.query(
+      'SELECT * FROM simulacoes WHERE ativo = TRUE ORDER BY criado_em DESC LIMIT 1'
+    );
+    const emSessao = simAtiva.rows.length > 0;
+
+    if (emSessao) {
+      const sessao = simAtiva.rows[0];
+      const inicioSessao = sessao.ativado_em || sessao.criado_em;
+
+      const configResult = await pool.query(`SELECT valor FROM configuracoes WHERE chave = 'cuidados_por_sessao'`);
+      const limite = configResult.rows.length > 0 ? Number(configResult.rows[0].valor) : 3;
+
+      const usoResult = await pool.query(
+        `SELECT COUNT(*)::int AS total FROM cuidados_uso
+         WHERE usuario_id = $1 AND cuidado_id = $2 AND usado_em >= $3`,
+        [req.usuario.id, cuidado_id, inicioSessao]
+      );
+      const usados = usoResult.rows[0].total;
+
+      if (usados >= limite) {
+        return res.status(429).json({
+          erro: `Limite de ${limite} usos deste cuidado atingido nesta sessao.`,
+          modo: 'sessao',
+          usados,
+          limite,
+        });
+      }
+    } else {
+      const ultimoUsoResult = await pool.query(
+        `SELECT usado_em FROM cuidados_uso
+         WHERE usuario_id = $1 AND cuidado_id = $2
+         ORDER BY usado_em DESC LIMIT 1`,
+        [req.usuario.id, cuidado_id]
+      );
+
+      if (ultimoUsoResult.rows.length > 0) {
+        const ultimoUso = new Date(ultimoUsoResult.rows[0].usado_em);
+        const liberaEm = new Date(ultimoUso.getTime() + COOLDOWN_HORAS_MODO_LIVRE * 60 * 60 * 1000);
+        const agora = new Date();
+
+        if (agora < liberaEm) {
+          return res.status(429).json({
+            erro: 'Este cuidado ainda esta em cooldown.',
+            modo: 'livre',
+            liberaEm: liberaEm.toISOString(),
+          });
+        }
+      }
+    }
+
     const animal = await pool.query(
       'SELECT * FROM animal WHERE usuario_id = $1',
       [req.usuario.id]
@@ -93,6 +210,12 @@ router.post('/cuidado', auth, async (req, res) => {
        WHERE usuario_id = $4
        RETURNING *`,
       [novaHidratacao, novaEnergia, novaSaude, req.usuario.id]
+    );
+
+    // Registra o uso deste cuidado, para os controles de cooldown/quantidade acima
+    await pool.query(
+      `INSERT INTO cuidados_uso (usuario_id, cuidado_id) VALUES ($1, $2)`,
+      [req.usuario.id, cuidado_id]
     );
 
     res.json(result.rows[0]);

@@ -52,9 +52,11 @@ router.put('/:id/ativar', auth, async (req, res) => {
     // 1. Desativa todas as simulações
     await client.query('UPDATE simulacoes SET ativo = FALSE');
 
-    // 2. Ativa a simulação escolhida e busca os params
+    // 2. Ativa a simulação escolhida, marca o momento da ativação e busca os params.
+    //    O campo ativado_em marca o inicio da sessao para fins de contagem de
+    //    cuidados usados (quantidade por sessao).
     const simResult = await client.query(
-      'UPDATE simulacoes SET ativo = TRUE WHERE id = $1 RETURNING *',
+      'UPDATE simulacoes SET ativo = TRUE, ativado_em = NOW() WHERE id = $1 RETURNING *',
       [id]
     );
     if (simResult.rows.length === 0) {
@@ -128,6 +130,36 @@ router.delete('/:id', auth, async (req, res) => {
   try {
     await pool.query('DELETE FROM simulacoes WHERE id = $1', [id]);
     res.json({ mensagem: 'Simulacao excluida.' });
+  } catch (err) {
+    res.status(500).json({ erro: 'Erro interno.' });
+  }
+});
+
+// GET /api/simulacoes/config/cuidados-por-sessao – valor configurado pelo professor
+router.get('/config/cuidados-por-sessao', auth, async (req, res) => {
+  try {
+    const result = await pool.query(`SELECT valor FROM configuracoes WHERE chave = 'cuidados_por_sessao'`);
+    const valor = result.rows.length > 0 ? Number(result.rows[0].valor) : 3;
+    res.json({ cuidados_por_sessao: valor });
+  } catch (err) {
+    res.status(500).json({ erro: 'Erro interno.' });
+  }
+});
+
+// PUT /api/simulacoes/config/cuidados-por-sessao – professor define o valor padrao
+router.put('/config/cuidados-por-sessao', auth, async (req, res) => {
+  if (req.usuario.modo !== 'professor') return res.status(403).json({ erro: 'Acesso negado.' });
+  const { valor } = req.body;
+  if (valor === undefined || Number(valor) < 1) {
+    return res.status(400).json({ erro: 'Valor invalido.' });
+  }
+  try {
+    await pool.query(
+      `INSERT INTO configuracoes (chave, valor) VALUES ('cuidados_por_sessao', $1)
+       ON CONFLICT (chave) DO UPDATE SET valor = $1`,
+      [String(Math.round(Number(valor)))]
+    );
+    res.json({ cuidados_por_sessao: Math.round(Number(valor)) });
   } catch (err) {
     res.status(500).json({ erro: 'Erro interno.' });
   }
