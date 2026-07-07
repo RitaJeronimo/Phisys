@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { animal as animalApi, ranking as rankingApi } from '../api';
 import { PRIMARY_PARAMS, calcularSaude, calcularEnergiaModulada, getAgePANormal, getMascotStatus, STATUS, DAILY_CARES, aplicarCuidado } from '../engine/mascotEngine';
 
 
 const GRADIENT = 'linear-gradient(160deg, #1B4FCC 0%, #7B2FBE 50%, #CC1B1B 100%)';
 
-// ─── FASES DE CRESCIMENTO ─────────────────────────────────────────────────────
+// ─── FASES DE CRESCIMENTO ────────────────────────────────────────────────
 export const GROWTH_STAGES = {
   RECEM_NASCIDO: { id:'RECEM_NASCIDO', label:'Recém-nascido', icon:'🐣', minDays:0,   maxDays:30  },
   JUVENIL:       { id:'JUVENIL',       label:'Juvenil',       icon:'🐭', minDays:31,  maxDays:180 },
@@ -43,7 +43,7 @@ const PARAM_INFO = {
   },
   peso: {
     pergunta: 'Como o peso corporal influencia os parâmetros cardiovasculares do Phisys?',
-    resposta: 'O peso representa a condição corporal geral do rato virtual. Excesso de peso aumenta a demanda metabólica e o esforço cardiovascular. Também eleva a Resistência Vascular Periférica, aumentando a pós-carga cardíaca e consequentemente a Pressão Arterial. Regras fisiológicas: ↑ peso excessivo → ↑ demanda metabólica → ↑ esforço cardiovascular; ↑ peso/adiposidade → ↑ RVP → ↑ PA. Peso saudável aproximado: 200–400g.',  
+    resposta: 'O peso representa a condição corporal geral do rato virtual. Excesso de peso aumenta a demanda metabólica e o esforço cardiovascular. Também eleva a Resistência Vascular Periférica, aumentando a pós-carga cardíaca e consequentemente a Pressão Arterial. Regras fisiológicas: ↑ peso excessivo → ↑ demanda metabólica → ↑ esforço cardiovascular; ↑ peso/adiposidade → ↑ RVP → ↑ PA. Peso saudável aproximado: 200–400g.',
     dica: '💡 Peso normal: 200–400g. Obesidade é fator de risco cardiovascular!',
   },
   saude: {
@@ -178,36 +178,71 @@ function Mascot({ status, ageDays }) {
   );
 }
 
+// Formata o tempo restante ate liberar (ex: "1h 23min") a partir de um ISO string
+function formatarTempoRestante(liberaEmISO) {
+  const liberaEm = new Date(liberaEmISO);
+  const agora = new Date();
+  const diffMs = liberaEm - agora;
+  if (diffMs <= 0) return null;
+  const horas = Math.floor(diffMs / (1000 * 60 * 60));
+  const minutos = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+  if (horas > 0) return `${horas}h ${minutos}min`;
+  return `${minutos}min`;
+}
+
 function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, onViewRanking, onViewPanel, onViewSecondary, ageDays, onCare }) {
-  const [caresDone, setCaresDone] = useState({});
+  // cuidadoStatus vem do backend (fonte de verdade real) em vez de um useState
+  // local vazio - isso corrige o bug em que um F5 "esquecia" que o cuidado ja
+  // tinha sido usado, permitindo repeticao ilimitada.
+  const [cuidadoStatus, setCuidadoStatus] = useState({});
   const [showModes, setShowModes] = useState(false);
   const [activeParam, setActiveParam] = useState(null);
   const [miniRanking, setMiniRanking] = useState([]);
   const [careEffect, setCareEffect] = useState(null);
+  const [careError, setCareError] = useState(null);
+  const [pendingCares, setPendingCares] = useState({});
+  const [, forceTick] = useState(0);
 
-useEffect(() => {
-  rankingApi.get().then(data => setMiniRanking(Array.isArray(data) ? data.slice(0, 3) : [])).catch(() => {});
-}, []);
+  const fetchCuidadoStatus = useCallback(() => {
+    animalApi.cuidadoStatus().then(setCuidadoStatus).catch(() => {});
+  }, []);
 
-useEffect(() => {
-  // Verifica simulacao ativa a cada 30 segundos
-  const checkSim = () => {
-    animalApi.get().then(a => {
-      const fc = Number(a.fc) < 100 ? 370 : Number(a.fc);
-      setValues(prev => ({
-        ...prev,
-        energia:    Number(a.energia),
-        hidratacao: Number(a.hidratacao),
-        pas:        Number(a.pas),
-        pad:        Number(a.pad),
-        fc,
-        peso:       Number(a.peso),
-      }));
-    }).catch(() => {});
-  };
-  const interval = setInterval(checkSim, 30000);
-  return () => clearInterval(interval);
-}, []);
+  useEffect(() => {
+    rankingApi.get().then(data => setMiniRanking(Array.isArray(data) ? data.slice(0, 3) : [])).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    fetchCuidadoStatus();
+  }, [fetchCuidadoStatus]);
+
+  useEffect(() => {
+    // Verifica simulacao ativa a cada 30 segundos, e tambem reavalia o status
+    // dos cuidados (ex: cooldown que acabou de expirar, ou nova sessao ativada)
+    const checkSim = () => {
+      animalApi.get().then(a => {
+        const fc = Number(a.fc) < 100 ? 370 : Number(a.fc);
+        setValues(prev => ({
+          ...prev,
+          energia:    Number(a.energia),
+          hidratacao: Number(a.hidratacao),
+          pas:        Number(a.pas),
+          pad:        Number(a.pad),
+          fc,
+          peso:       Number(a.peso),
+        }));
+      }).catch(() => {});
+      fetchCuidadoStatus();
+    };
+    const interval = setInterval(checkSim, 30000);
+    return () => clearInterval(interval);
+  }, [fetchCuidadoStatus]);
+
+  useEffect(() => {
+    // Re-renderiza a cada minuto para atualizar o texto de "tempo restante"
+    // dos cuidados bloqueados por cooldown, sem precisar de nova chamada ao servidor
+    const interval = setInterval(() => forceTick(t => t + 1), 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   const saude = calcularSaude(values);
   const status = getMascotStatus(values);
@@ -220,13 +255,35 @@ useEffect(() => {
   const idadeParam = { id:'idade', name:`Idade · ${stage.label}`, unit:'', min:0, max:730, normal:[0,730], default:currentAge, step:1, icon:stage.icon };
 
   async function handleCare(id) {
-    if (caresDone[id]) return;
+    const statusDoCuidado = cuidadoStatus[id];
+    if (statusDoCuidado && statusDoCuidado.disponivel === false) return;
+    if (pendingCares[id]) return; // trava cliques repetidos enquanto a chamada anterior ainda nao respondeu
+
+    // Trava o card visualmente na hora do clique, antes mesmo da resposta do
+    // servidor chegar - evita a impressao de "cliquei e nao aconteceu nada"
+    // quando o usuario clica varias vezes rapido.
+    setPendingCares(prev => ({ ...prev, [id]: true }));
+
     const newValues = aplicarCuidado(values, id);
+
+    try {
+      await animalApi.cuidado(id);
+    } catch (e) {
+      // 429 = bloqueado (cooldown ou limite de sessao atingido). Recarrega o
+      // status real do servidor para refletir o bloqueio na tela corretamente.
+      setCareError(id);
+      setTimeout(() => setCareError(null), 2000);
+      fetchCuidadoStatus();
+      setPendingCares(prev => ({ ...prev, [id]: false }));
+      return;
+    }
+
     setValues(newValues);
-    setCaresDone(prev => ({ ...prev, [id]: true }));
     setCareEffect(id);
-setTimeout(() => setCareEffect(null), 1500);
-    try { await animalApi.cuidado(id); } catch(e) {}
+    setTimeout(() => setCareEffect(null), 1500);
+    fetchCuidadoStatus();
+    setPendingCares(prev => ({ ...prev, [id]: false }));
+
     try {
       await animalApi.update({
         energia: newValues.energia, hidratacao: newValues.hidratacao,
@@ -284,32 +341,58 @@ setTimeout(() => setCareEffect(null), 1500);
       </div>
       <div style={styles.caresLabel}>cuidados diários</div>
       <div style={styles.cares}>
-        {Object.values(DAILY_CARES).map(c => (
-  <div key={c.id} style={{ ...styles.careCard, ...(caresDone[c.id] ? styles.careDone : {}), position:'relative' }} onClick={() => handleCare(c.id)}>
-    <div style={styles.careIcon}>{c.icon}</div>
-    <div style={styles.careName}>{c.label.split(' ')[0]}</div>
-    <div style={styles.careDesc}>{caresDone[c.id] ? '✓ Feito' : c.label}</div>
-    {careEffect === c.id && (
-      <div style={{ position:'absolute', top:'-10px', right:'4px', fontSize:'11px', fontWeight:'700', color:'#FFD700', animation:'fadeUp 1.5s ease-out', pointerEvents:'none' }}>+5 XP ⚡</div>
-    )}
-  </div>
-))}
+        {Object.values(DAILY_CARES).map(c => {
+          const st = cuidadoStatus[c.id];
+          const bloqueado = (st && st.disponivel === false) || pendingCares[c.id];
+          let desc = c.label;
+          if (bloqueado) {
+            if (st.modo === 'sessao') {
+              desc = `Limite atingido (${st.usados}/${st.limite})`;
+            } else {
+              const restante = formatarTempoRestante(st.liberaEm);
+              desc = restante ? `Libera em ${restante}` : c.label;
+            }
+          }
+          return (
+            <div
+              key={c.id}
+              style={{
+                ...styles.careCard,
+                ...(bloqueado ? styles.careBlocked : {}),
+                position:'relative',
+                cursor: bloqueado ? 'not-allowed' : 'pointer',
+                opacity: bloqueado ? 0.55 : 1,
+              }}
+              onClick={() => handleCare(c.id)}
+            >
+              <div style={styles.careIcon}>{c.icon}</div>
+              <div style={styles.careName}>{c.label.split(' ')[0]}</div>
+              <div style={styles.careDesc}>{desc}</div>
+              {careEffect === c.id && (
+                <div style={{ position:'absolute', top:'-10px', right:'4px', fontSize:'11px', fontWeight:'700', color:'#FFD700', animation:'fadeUp 1.5s ease-out', pointerEvents:'none' }}>+5 XP ⚡</div>
+              )}
+              {careError === c.id && (
+                <div style={{ position:'absolute', top:'-10px', right:'4px', fontSize:'10px', fontWeight:'700', color:'#E24B4A', pointerEvents:'none' }}>Indisponível</div>
+              )}
+            </div>
+          );
+        })}
       </div>
       {miniRanking.length > 0 && (
-  <div style={{ margin:'0 1rem .5rem', background:'rgba(255,255,255,.1)', border:'1px solid rgba(255,255,255,.18)', borderRadius:'14px', padding:'.75rem' }}>
-    <div style={{ fontSize:'10px', color:'rgba(255,255,255,.6)', letterSpacing:'.08em', textTransform:'uppercase', marginBottom:'8px' }}>🏆 ranking</div>
-    {miniRanking.map((r, i) => {
-      const isMe = r.nome === user.name;
-      return (
-        <div key={r.id} style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'6px', background: isMe ? 'rgba(255,255,255,.15)' : 'transparent', borderRadius:'8px', padding: isMe ? '4px 6px' : '0' }}>
-          <div style={{ fontSize:'12px', fontWeight:'700', color: i===0?'#FFD700':i===1?'#C0C0C0':'#CD7F32', width:'16px' }}>{i+1}</div>
-          <div style={{ flex:1, fontSize:'12px', color:'white', fontWeight: isMe ? '700' : '400' }}>{r.nome?.split(' ')[0]} {isMe ? '👤' : ''}</div>
-          <div style={{ fontSize:'11px', color:'rgba(255,255,255,.7)', fontWeight:'600' }}>⚡{r.xp_total}</div>
+        <div style={{ margin:'0 1rem .5rem', background:'rgba(255,255,255,.1)', border:'1px solid rgba(255,255,255,.18)', borderRadius:'14px', padding:'.75rem' }}>
+          <div style={{ fontSize:'10px', color:'rgba(255,255,255,.6)', letterSpacing:'.08em', textTransform:'uppercase', marginBottom:'8px' }}>🏆 ranking</div>
+          {miniRanking.map((r, i) => {
+            const isMe = r.nome === user.name;
+            return (
+              <div key={r.id} style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'6px', background: isMe ? 'rgba(255,255,255,.15)' : 'transparent', borderRadius:'8px', padding: isMe ? '4px 6px' : '0' }}>
+                <div style={{ fontSize:'12px', fontWeight:'700', color: i===0?'#FFD700':i===1?'#C0C0C0':'#CD7F32', width:'16px' }}>{i+1}</div>
+                <div style={{ flex:1, fontSize:'12px', color:'white', fontWeight: isMe ? '700' : '400' }}>{r.nome?.split(' ')[0]} {isMe ? '👤' : ''}</div>
+                <div style={{ fontSize:'11px', color:'rgba(255,255,255,.7)', fontWeight:'600' }}>⚡{r.xp_total}</div>
+              </div>
+            );
+          })}
         </div>
-      );
-    })}
-  </div>
-)}
+      )}
       <div style={styles.footer}>
         {user.mode === 'professor' && (<button style={styles.panelBtn} onClick={onViewPanel}>Painel do Professor</button>)}
         <button style={styles.logoutBtn} onClick={onLogout}>sair da conta</button>
@@ -344,7 +427,7 @@ const styles = {
   caresLabel:       { padding:'.25rem 1rem', fontSize:'10px', color:'rgba(255,255,255,.6)', letterSpacing:'.08em', textTransform:'uppercase' },
   cares:            { margin:'0 1rem .5rem', display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'7px' },
   careCard:         { background:'rgba(255,255,255,.14)', border:'1px solid rgba(255,255,255,.25)', borderRadius:'12px', padding:'.625rem .5rem', display:'flex', flexDirection:'column', alignItems:'center', gap:'3px', cursor:'pointer' },
-  careDone:         { background:'rgba(50,200,120,.25)', borderColor:'#32C878' },
+  careBlocked:      { background:'rgba(255,255,255,.06)', borderColor:'rgba(255,255,255,.12)' },
   careIcon:         { fontSize:'20px' },
   careName:         { fontSize:'11px', fontWeight:'600', color:'white', textAlign:'center' },
   careDesc:         { fontSize:'9px', color:'rgba(255,255,255,.55)', textAlign:'center' },
