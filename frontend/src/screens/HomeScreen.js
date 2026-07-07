@@ -235,6 +235,7 @@ function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, on
     };
     const interval = setInterval(checkSim, 30000);
     return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchCuidadoStatus]);
 
   useEffect(() => {
