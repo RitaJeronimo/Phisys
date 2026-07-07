@@ -224,22 +224,31 @@ function GameScreen({ user, mode, values: initialValues, score: initialScore, on
       let novosValores;
       if (mode === 'sessao') {
         novosValores = {
-        ...values,
-        hidratacao: Math.min(100, (values.hidratacao || 70) + (da.hidratacao ?? 20)),
-        energia:    Math.min(100, (values.energia    || 80) + (da.energia    ?? 10)),
-        pas: da.pas !== undefined ? Math.max(60,  Math.min(200, (values.pas || 110) + da.pas)) : 110,
-        pad: da.pad !== undefined ? Math.max(40,  Math.min(120, (values.pad || 70)  + da.pad)) : 70,
-        fc:  da.fc  !== undefined ? Math.max(100, Math.min(600, (values.fc  || 370) + da.fc))  : 370,
-        age_days: values.age_days || 90,
-      };
-      novosValores.saude = calcularSaude(novosValores);
+          ...values,
+          hidratacao: Math.min(100, (values.hidratacao || 70) + (da.hidratacao ?? 20)),
+          energia:    Math.min(100, (values.energia    || 80) + (da.energia    ?? 10)),
+          pas: da.pas !== undefined ? Math.max(60,  Math.min(200, (values.pas || 110) + da.pas)) : 110,
+          pad: da.pad !== undefined ? Math.max(40,  Math.min(120, (values.pad || 70)  + da.pad)) : 70,
+          fc:  da.fc  !== undefined ? Math.max(100, Math.min(600, (values.fc  || 370) + da.fc))  : 370,
+          age_days: values.age_days || 90,
+        };
+        novosValores.saude = calcularSaude(novosValores);
       } else {
+        // Modo Livre: aplica os deltas de acerto em TODOS os parametros primarios.
+        // Antes, o spread de challenge.intervention sobrescrevia os valores com a
+        // intervencao original (a crise), travando o animal em estado critico mesmo
+        // apos o aluno acertar o desafio. Removido, e PAS/PAD/FC agora recebem os
+        // deltas de acerto, com saude recalculada ao final.
         novosValores = {
           ...values,
-          ...challenge.intervention,
           hidratacao: da.hidratacao !== undefined ? Math.min(100, (values.hidratacao || 70) + da.hidratacao) : values.hidratacao,
+          pas: da.pas !== undefined ? Math.max(60,  Math.min(200, (values.pas || 110) + da.pas)) : values.pas,
+          pad: da.pad !== undefined ? Math.max(40,  Math.min(120, (values.pad || 70)  + da.pad)) : values.pad,
+          fc:  da.fc  !== undefined ? Math.max(100, Math.min(600, (values.fc  || 370) + da.fc))  : values.fc,
           energia: Math.max(0, (values.energia || 80) - 10),
+          age_days: values.age_days || 90,
         };
+        novosValores.saude = calcularSaude(novosValores);
       }
       setValues(novosValores);
       try { await animalApi.update(novosValores); } catch(e) { console.log('Erro ao salvar animal (acerto):', e.message); }
@@ -268,10 +277,17 @@ function GameScreen({ user, mode, values: initialValues, score: initialScore, on
           };
           novosValoresErro.saude = calcularSaude(novosValoresErro);
         } else {
+          // Modo Livre: mesmo tratamento do acerto, so que aplicando os deltas de erro
           novosValoresErro = {
             ...values,
+            hidratacao: de.hidratacao !== undefined ? Math.max(0, Math.min(100, (values.hidratacao || 70) + de.hidratacao)) : values.hidratacao,
+            pas: de.pas !== undefined ? Math.max(60,  Math.min(200, (values.pas || 110) + de.pas)) : values.pas,
+            pad: de.pad !== undefined ? Math.max(40,  Math.min(120, (values.pad || 70)  + de.pad)) : values.pad,
+            fc:  de.fc  !== undefined ? Math.max(100, Math.min(600, (values.fc  || 370) + de.fc))  : values.fc,
             energia: Math.max(0, (values.energia || 80) - 10),
+            age_days: values.age_days || 90,
           };
+          novosValoresErro.saude = calcularSaude(novosValoresErro);
         }
         setValues(novosValoresErro);
         try { await animalApi.update(novosValoresErro); } catch(e) { console.log('Erro ao salvar animal (erro):', e.message); }
@@ -400,7 +416,7 @@ function GameScreen({ user, mode, values: initialValues, score: initialScore, on
 
       <div style={styles.challengeCard}>
         <div style={styles.challengeHeader}>
-          <div style={styles.challengeTag}>🃏 {challenge.tag}</div>
+          <div style={styles.challengeTag}>🏃 {challenge.tag}</div>
           <div style={styles.challengeFocus}>{challenge.focus}</div>
         </div>
         <div style={styles.challengeText}>{challenge.text}</div>
