@@ -115,26 +115,15 @@ function App() {
     } catch(e) {}
   }
 
-  async function handleCare(careId, newValues) {
-    const valuesComAge = { ...newValues, age_days: ageDays };
-    try { await animalApi.cuidado(careId); } catch(e) { console.log('Cuidado:', e.message); }
-    try {
-      await animalApi.update({
-        energia:    valuesComAge.energia,
-        hidratacao: valuesComAge.hidratacao,
-        pas:        valuesComAge.pas,
-        pad:        valuesComAge.pad,
-        fc:         valuesComAge.fc,
-        peso:       valuesComAge.peso,
-      });
-    } catch(e) {
-      console.log('Erro ao salvar animal:', e.message);
-    }
+  // NOTA: HomeScreen.handleCare ja chama animalApi.cuidado(), animalApi.update()
+  // e rankingApi.update() sozinho, e so avisa aqui via onCare(id, newValues)
+  // para o App.js atualizar seu proprio estado local de score. As chamadas de
+  // API duplicadas foram removidas - elas causavam 2 requisicoes por clique
+  // (uma aqui, outra no HomeScreen), o que quebrava a contagem exata de usos
+  // por sessao implementada para o Modo Sessao.
+  function handleCare(careId, newValues) {
     const newScore = score + 5;
     setScore(newScore);
-    try {
-      await rankingApi.update({ xp_total: newScore, media_saude: calcularSaude(valuesComAge) });
-    } catch(e) {}
   }
 
   async function handleMotivation(nivel) {

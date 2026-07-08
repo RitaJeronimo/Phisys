@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { animal as animalApi, ranking as rankingApi } from '../api';
 import { PRIMARY_PARAMS, calcularSaude, calcularEnergiaModulada, getAgePANormal, getMascotStatus, STATUS, DAILY_CARES, aplicarCuidado } from '../engine/mascotEngine';
 
@@ -201,6 +201,12 @@ function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, on
   const [careEffect, setCareEffect] = useState(null);
   const [careError, setCareError] = useState(null);
   const [pendingCares, setPendingCares] = useState({});
+  // Ref paralela ao pendingCares: o useState so reflete na tela apos o proximo
+  // render, deixando uma pequena janela onde 2 cliques quase simultaneos veem
+  // o mesmo valor "destravado" e disparam 2 requisicoes ao servidor (foi o que
+  // causou o salto de contagem visto em teste, ex: indo de 1 para 4 usos com
+  // apenas 2 cliques). A ref e sincrona: trava no mesmo instante do clique.
+  const pendingCaresRef = useRef({});
   const [, forceTick] = useState(0);
 
   const fetchCuidadoStatus = useCallback(() => {
@@ -258,11 +264,10 @@ function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, on
   async function handleCare(id) {
     const statusDoCuidado = cuidadoStatus[id];
     if (statusDoCuidado && statusDoCuidado.disponivel === false) return;
-    if (pendingCares[id]) return; // trava cliques repetidos enquanto a chamada anterior ainda nao respondeu
-
-    // Trava o card visualmente na hora do clique, antes mesmo da resposta do
-    // servidor chegar - evita a impressao de "cliquei e nao aconteceu nada"
-    // quando o usuario clica varias vezes rapido.
+    // Bloqueio SINCRONO via ref - impede cliques duplos/rapidos que passariam
+    // despercebidos pelo useState (que so atualiza a tela no proximo render).
+    if (pendingCaresRef.current[id]) return;
+    pendingCaresRef.current[id] = true;
     setPendingCares(prev => ({ ...prev, [id]: true }));
 
     const newValues = aplicarCuidado(values, id);
@@ -275,6 +280,7 @@ function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, on
       setCareError(id);
       setTimeout(() => setCareError(null), 2000);
       fetchCuidadoStatus();
+      pendingCaresRef.current[id] = false;
       setPendingCares(prev => ({ ...prev, [id]: false }));
       return;
     }
@@ -283,6 +289,7 @@ function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, on
     setCareEffect(id);
     setTimeout(() => setCareEffect(null), 1500);
     fetchCuidadoStatus();
+    pendingCaresRef.current[id] = false;
     setPendingCares(prev => ({ ...prev, [id]: false }));
 
     try {
