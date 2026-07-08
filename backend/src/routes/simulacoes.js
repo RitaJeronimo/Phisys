@@ -29,11 +29,12 @@ router.get('/', auth, async (req, res) => {
 // POST /api/simulacoes – cria nova simulação (professor only)
 router.post('/', auth, async (req, res) => {
   if (req.usuario.modo !== 'professor') return res.status(403).json({ erro: 'Acesso negado.' });
-  const { titulo, descricao, foco, params } = req.body;
+  const { titulo, descricao, foco, params, cuidados_por_sessao } = req.body;
   try {
     const result = await pool.query(
-      `INSERT INTO simulacoes (titulo, descricao, foco, params) VALUES ($1, $2, $3, $4) RETURNING *`,
-      [titulo, descricao, foco, JSON.stringify(params)]
+      `INSERT INTO simulacoes (titulo, descricao, foco, params, cuidados_por_sessao)
+       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+      [titulo, descricao, foco, JSON.stringify(params), cuidados_por_sessao ?? 3]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -105,17 +106,18 @@ router.put('/:id/ativar', auth, async (req, res) => {
 router.put('/:id', auth, async (req, res) => {
   if (req.usuario.modo !== 'professor') return res.status(403).json({ erro: 'Acesso negado.' });
   const { id } = req.params;
-  const { titulo, descricao, foco, params, ativo } = req.body;
+  const { titulo, descricao, foco, params, ativo, cuidados_por_sessao } = req.body;
   try {
     const result = await pool.query(
       `UPDATE simulacoes SET
-        titulo    = COALESCE($1, titulo),
-        descricao = COALESCE($2, descricao),
-        foco      = COALESCE($3, foco),
-        params    = COALESCE($4, params),
-        ativo     = COALESCE($5, ativo)
-       WHERE id = $6 RETURNING *`,
-      [titulo, descricao, foco, params ? JSON.stringify(params) : null, ativo, id]
+        titulo               = COALESCE($1, titulo),
+        descricao            = COALESCE($2, descricao),
+        foco                 = COALESCE($3, foco),
+        params               = COALESCE($4, params),
+        ativo                = COALESCE($5, ativo),
+        cuidados_por_sessao  = COALESCE($6, cuidados_por_sessao)
+       WHERE id = $7 RETURNING *`,
+      [titulo, descricao, foco, params ? JSON.stringify(params) : null, ativo, cuidados_por_sessao, id]
     );
     res.json(result.rows[0]);
   } catch (err) {
@@ -135,7 +137,7 @@ router.delete('/:id', auth, async (req, res) => {
   }
 });
 
-// GET /api/simulacoes/config/cuidados-por-sessao – valor configurado pelo professor
+// GET /api/simulacoes/config/cuidados-por-sessao – (legado) valor padrao generico
 router.get('/config/cuidados-por-sessao', auth, async (req, res) => {
   try {
     const result = await pool.query(`SELECT valor FROM configuracoes WHERE chave = 'cuidados_por_sessao'`);
@@ -146,7 +148,7 @@ router.get('/config/cuidados-por-sessao', auth, async (req, res) => {
   }
 });
 
-// PUT /api/simulacoes/config/cuidados-por-sessao – professor define o valor padrao
+// PUT /api/simulacoes/config/cuidados-por-sessao – (legado) mantido por compatibilidade
 router.put('/config/cuidados-por-sessao', auth, async (req, res) => {
   if (req.usuario.modo !== 'professor') return res.status(403).json({ erro: 'Acesso negado.' });
   const { valor } = req.body;

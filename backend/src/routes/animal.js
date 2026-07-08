@@ -58,8 +58,6 @@ router.put('/', auth, async (req, res) => {
 
 // GET /api/animal/cuidado/status — retorna, para cada cuidado, se pode ser usado
 // agora e informacoes de contexto (modo sessao/livre, quantos restam, quando libera).
-// O frontend usa essa rota para desenhar os botoes de cuidado corretamente
-// (habilitado, desabilitado com contagem, ou com tempo restante).
 router.get('/cuidado/status', auth, async (req, res) => {
   try {
     const simAtiva = await pool.query(
@@ -71,18 +69,15 @@ router.get('/cuidado/status', auth, async (req, res) => {
 
     if (emSessao) {
       const sessao = simAtiva.rows[0];
-      const inicioSessao = sessao.ativado_em || sessao.criado_em;
-
-      const configResult = await pool.query(`SELECT valor FROM configuracoes WHERE chave = 'cuidados_por_sessao'`);
-      const limite = configResult.rows.length > 0 ? Number(configResult.rows[0].valor) : 3;
+      const limite = sessao.cuidados_por_sessao ?? 3;
 
       for (const cuidadoId of cuidadoIds) {
-        const usoResult = await pool.query(
-          `SELECT COUNT(*)::int AS total FROM cuidados_uso
-           WHERE usuario_id = $1 AND cuidado_id = $2 AND usado_em >= $3`,
-          [req.usuario.id, cuidadoId, inicioSessao]
+        const contagemResult = await pool.query(
+          `SELECT quantidade FROM cuidados_sessao_contagem
+           WHERE usuario_id = $1 AND simulacao_id = $2 AND cuidado_id = $3`,
+          [req.usuario.id, sessao.id, cuidadoId]
         );
-        const usados = usoResult.rows[0].total;
+        const usados = contagemResult.rows.length > 0 ? contagemResult.rows[0].quantidade : 0;
         statusPorCuidado[cuidadoId] = {
           disponivel: usados < limite,
           modo: 'sessao',
@@ -144,17 +139,14 @@ router.post('/cuidado', auth, async (req, res) => {
 
     if (emSessao) {
       const sessao = simAtiva.rows[0];
-      const inicioSessao = sessao.ativado_em || sessao.criado_em;
+      const limite = sessao.cuidados_por_sessao ?? 3;
 
-      const configResult = await pool.query(`SELECT valor FROM configuracoes WHERE chave = 'cuidados_por_sessao'`);
-      const limite = configResult.rows.length > 0 ? Number(configResult.rows[0].valor) : 3;
-
-      const usoResult = await pool.query(
-        `SELECT COUNT(*)::int AS total FROM cuidados_uso
-         WHERE usuario_id = $1 AND cuidado_id = $2 AND usado_em >= $3`,
-        [req.usuario.id, cuidado_id, inicioSessao]
+      const contagemResult = await pool.query(
+        `SELECT quantidade FROM cuidados_sessao_contagem
+         WHERE usuario_id = $1 AND simulacao_id = $2 AND cuidado_id = $3`,
+        [req.usuario.id, sessao.id, cuidado_id]
       );
-      const usados = usoResult.rows[0].total;
+      const usados = contagemResult.rows.length > 0 ? contagemResult.rows[0].quantidade : 0;
 
       if (usados >= limite) {
         return res.status(429).json({
@@ -212,11 +204,23 @@ router.post('/cuidado', auth, async (req, res) => {
       [novaHidratacao, novaEnergia, novaSaude, req.usuario.id]
     );
 
-    // Registra o uso deste cuidado, para os controles de cooldown/quantidade acima
-    await pool.query(
-      `INSERT INTO cuidados_uso (usuario_id, cuidado_id) VALUES ($1, $2)`,
-      [req.usuario.id, cuidado_id]
-    );
+    // Registra o uso: em Modo Livre, na tabela de historico (cooldown); em Modo
+    // Sessao, incrementa o contador exato daquela simulacao especifica.
+    if (emSessao) {
+      const sessao = simAtiva.rows[0];
+      await pool.query(
+        `INSERT INTO cuidados_sessao_contagem (usuario_id, simulacao_id, cuidado_id, quantidade)
+         VALUES ($1, $2, $3, 1)
+         ON CONFLICT (usuario_id, simulacao_id, cuidado_id)
+         DO UPDATE SET quantidade = cuidados_sessao_contagem.quantidade + 1`,
+        [req.usuario.id, sessao.id, cuidado_id]
+      );
+    } else {
+      await pool.query(
+        `INSERT INTO cuidados_uso (usuario_id, cuidado_id) VALUES ($1, $2)`,
+        [req.usuario.id, cuidado_id]
+      );
+    }
 
     res.json(result.rows[0]);
   } catch (err) {

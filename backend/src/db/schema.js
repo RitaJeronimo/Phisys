@@ -117,8 +117,9 @@ async function adicionarColunas() {
     `);
 
     // Registro de cada uso de cuidado diario (Trocar Agua, Alimentar, Limpar Maravalha)
-    // usado tanto para o cooldown de 2h (Modo Livre) quanto para a contagem por
-    // quantidade de vezes (quando existe uma simulacao/sessao ativa do professor).
+    // usado para o cooldown de 2h (Modo Livre). A contagem por quantidade de vezes
+    // (Modo Sessao) passou a usar um contador exato (ver cuidados_sessao_contagem
+    // abaixo), em vez de comparar timestamps.
     // IMPORTANTE: TIMESTAMPTZ (com fuso horario) em vez de TIMESTAMP, para o
     // calculo de cooldown funcionar certo independente do fuso do servidor Postgres
     // vs o fuso de quem executa o backend (evita erro de +3h em Recife/UTC-3).
@@ -134,18 +135,19 @@ async function adicionarColunas() {
     // Migra a coluna caso ja tenha sido criada como TIMESTAMP (execucao anterior)
     await pool.query(`ALTER TABLE cuidados_uso ALTER COLUMN usado_em TYPE TIMESTAMPTZ USING usado_em AT TIME ZONE 'UTC'`);
 
-    // Marca quando cada simulacao foi ativada pela ultima vez - necessario para
-    // contar quantos usos de cuidado aconteceram DESDE que a sessao atual comecou
-    // (e nao desde sempre). Tambem em TIMESTAMPTZ pelo mesmo motivo acima.
+    // Marca quando cada simulacao foi ativada pela ultima vez. Mantido para
+    // referencia/histórico, mas o Modo Sessao nao depende mais deste campo para
+    // contar usos (ver cuidados_sessao_contagem abaixo).
     await pool.query(`ALTER TABLE simulacoes ADD COLUMN IF NOT EXISTS ativado_em TIMESTAMPTZ`);
     // O ADD COLUMN IF NOT EXISTS acima nao altera o tipo se a coluna ja existia
     // como TIMESTAMP (sem fuso) de uma execucao anterior - forca a conversao aqui.
     await pool.query(`ALTER TABLE simulacoes ALTER COLUMN ativado_em TYPE TIMESTAMPTZ USING ativado_em AT TIME ZONE 'UTC'`);
     
-    // Configuracoes gerais editaveis pelo professor (chave/valor).
-    // cuidados_por_sessao: quantas vezes cada cuidado pode ser usado durante uma
-    // sessao ativa do professor. Valor padrao editavel, conforme decidido com a
-    // Marcia e a Samela.
+    // Configuracoes gerais editaveis pelo professor (chave/valor). Mantida por
+    // compatibilidade, mas o controle de cuidados_por_sessao passou a ser feito
+    // POR SIMULACAO (ver coluna abaixo), conforme pedido da Samela e da Marcia
+    // em 07/07/2026: cada sessao criada tem sua propria quantidade, ajustada ao
+    // foco da aula, dando ao professor controle total (nao aleatorio).
     await pool.query(`
       CREATE TABLE IF NOT EXISTS configuracoes (
         chave VARCHAR(50) PRIMARY KEY,
@@ -155,6 +157,27 @@ async function adicionarColunas() {
     await pool.query(`
       INSERT INTO configuracoes (chave, valor) VALUES ('cuidados_por_sessao', '3')
       ON CONFLICT (chave) DO NOTHING
+    `);
+
+    // Quantidade de cuidados diarios liberados POR SESSAO: cada simulacao tem
+    // seu proprio valor, editavel pelo professor na hora de criar/editar aquela
+    // simulacao especifica.
+    await pool.query(`ALTER TABLE simulacoes ADD COLUMN IF NOT EXISTS cuidados_por_sessao INTEGER DEFAULT 3`);
+
+    // Contador exato de usos por aluno + simulacao + cuidado, no Modo Sessao.
+    // Substitui o calculo por comparacao de horario (usado_em >= inicio_sessao),
+    // que se mostrou fragil (varios bugs de fuso horario ja encontrados nessa
+    // area, e um bloqueio prematuro nao explicado em teste real). Aqui e uma
+    // contagem direta: 1 linha por combinacao usuario+simulacao+cuidado,
+    // incrementada a cada uso, sem depender de datas.
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS cuidados_sessao_contagem (
+        usuario_id    INTEGER REFERENCES usuarios(id) ON DELETE CASCADE,
+        simulacao_id  INTEGER REFERENCES simulacoes(id) ON DELETE CASCADE,
+        cuidado_id    VARCHAR(50) NOT NULL,
+        quantidade    INTEGER NOT NULL DEFAULT 0,
+        PRIMARY KEY (usuario_id, simulacao_id, cuidado_id)
+      )
     `);
 
     console.log('Colunas e tabelas adicionadas com sucesso!');
