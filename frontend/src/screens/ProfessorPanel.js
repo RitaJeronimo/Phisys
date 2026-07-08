@@ -45,6 +45,7 @@ const INITIAL_SIMULATIONS = [
 const EMPTY_SIMULATION = {
   title:'', focus:'cardiovascular', active:true, description:'',
   params: getDefaultSimParams(),
+  cuidadosPorSessao: 3,
 };
 
 const MEDAL = ['🥇','🥈','🥉'];
@@ -86,30 +87,6 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
     } catch { return 'todos'; }
   });
   const [students, setStudents] = useState([]);
-  const [cuidadosPorSessao, setCuidadosPorSessao] = useState(3);
-  const [savingCuidados, setSavingCuidados] = useState(false);
-
-  useEffect(() => {
-    req('/api/simulacoes/config/cuidados-por-sessao', { headers: authHeaders() })
-      .then(data => { if (data && data.cuidados_por_sessao) setCuidadosPorSessao(data.cuidados_por_sessao); })
-      .catch(() => {});
-  }, []);
-
-  async function handleSaveCuidadosPorSessao(novoValor) {
-    setCuidadosPorSessao(novoValor);
-    setSavingCuidados(true);
-    try {
-      await req('/api/simulacoes/config/cuidados-por-sessao', {
-        method: 'PUT',
-        headers: authHeaders(),
-        body: JSON.stringify({ valor: novoValor }),
-      });
-    } catch(e) {
-      alert('Erro ao salvar configuracao: ' + e.message);
-    } finally {
-      setSavingCuidados(false);
-    }
-  }
 
   const fetchStudents = useCallback(() => {
     rankingApi.get()
@@ -174,6 +151,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
             active: d.ativo,
             description: d.descricao || '',
             params: typeof d.params === 'string' ? JSON.parse(d.params) : d.params,
+            cuidadosPorSessao: d.cuidados_por_sessao ?? 3,
           }));
           setSimulations(formatted);
         } else {
@@ -326,7 +304,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
 
   // ── SIMULAÇÕES ──
   function handleNewSimulation() { setEditingType('simulation'); setEditing('new'); setSimForm({ ...EMPTY_SIMULATION, params:getDefaultSimParams() }); }
-  function handleEditSimulation(sim) { setEditingType('simulation'); setEditing(sim.id); setSimForm({ ...sim, params:{...sim.params} }); }
+  function handleEditSimulation(sim) { setEditingType('simulation'); setEditing(sim.id); setSimForm({ ...sim, params:{...sim.params}, cuidadosPorSessao: sim.cuidadosPorSessao ?? 3 }); }
   async function handleDeleteSimulation(id) {
     try { await req(`/api/simulacoes/${id}`, { method: 'DELETE', headers: authHeaders() }); } catch(e) {}
     setSimulations(prev => prev.filter(s => s.id !== id));
@@ -344,6 +322,9 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
       setAtivandoId(null);
     }
   }
+  function handleSimParam(id, val) {
+    setSimForm(f => ({ ...f, params:{ ...f.params, [id]: Number(val) } }));
+  }
   async function handleSaveSimulation() {
     if (!simForm.title) return;
     try {
@@ -356,11 +337,9 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
             descricao: simForm.description,
             foco: simForm.focus,
             params: simForm.params,
+            cuidados_por_sessao: simForm.cuidadosPorSessao,
           }),
         });
-        // Usa o id real retornado pelo banco (created.id), em vez de calcular
-        // um id local que nao corresponde ao que existe de fato na tabela -
-        // isso causava "Simulacao nao encontrada" ao tentar ativar.
         setSimulations(prev => [...prev, { ...simForm, id: created.id }]);
       } else {
         await req(`/api/simulacoes/${editing}`, {
@@ -372,6 +351,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
             foco: simForm.focus,
             params: simForm.params,
             ativo: simForm.active,
+            cuidados_por_sessao: simForm.cuidadosPorSessao,
           }),
         });
         setSimulations(prev => prev.map(s => s.id === editing ? { ...simForm, id:s.id } : s));
@@ -380,9 +360,6 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
       alert('Erro ao salvar simulação: ' + e.message);
     }
     setEditing(null); setSimForm(null); setEditingType(null);
-  }
-  function handleSimParam(id, val) {
-    setSimForm(f => ({ ...f, params:{ ...f.params, [id]: Number(val) } }));
   }
 
   const diffColor = { facil:'#32C878', medio:'#EF9F27', dificil:'#E24B4A' };
@@ -520,6 +497,20 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
           </div>
           <div style={styles.fieldLabel}>Descrição para o aluno</div>
           <textarea style={{...styles.input, minHeight:'60px', resize:'vertical'}} value={simForm.description} onChange={e=>setSimForm(f=>({...f,description:e.target.value}))} placeholder="Descreva o quadro clínico que o aluno deverá reverter..."/>
+          <div style={styles.fieldLabel}>Cuidados diários liberados nesta sessão</div>
+          <div style={styles.simNotice}>
+            🔁 Quando esta simulação estiver ativa, cada cuidado (Trocar Água, Alimentar, Limpar Maravalha) poderá ser usado esta quantidade de vezes pelo aluno durante a sessão. Ajuste conforme o foco da atividade.
+          </div>
+          <div style={{ display:'flex', alignItems:'center', gap:'12px', marginBottom:'1rem' }}>
+            <input type="range" min="1" max="10" step="1" value={simForm.cuidadosPorSessao ?? 3}
+              onChange={e => setSimForm(f => ({ ...f, cuidadosPorSessao: Number(e.target.value) }))}
+              style={{ flex:1, accentColor:'#32C878' }}
+            />
+            <div style={{ fontSize:'16px', fontWeight:'700', color:'white', width:'40px', textAlign:'right' }}>
+              {simForm.cuidadosPorSessao ?? 3}x
+            </div>
+          </div>
+
           <div style={styles.fieldLabel}>Parâmetros alterados</div>
           <div style={styles.simNotice}>⚠️ Defina os valores que o animal terá quando a simulação for ativada.</div>
           {PRIMARY_PARAMS.filter(p => p.id !== 'saude').map(p => {
@@ -648,22 +639,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
             <button style={styles.newBtn} onClick={handleNewSimulation}>+ Nova</button>
           </div>
           <div style={styles.simInfo}>
-            🔬 Crie cenários fisiológicos alterados. Ao clicar em <strong>🚀 Lançar para Turma</strong>, os parâmetros do animal de todos os alunos serão atualizados.
-          </div>
-          <div style={{ margin:'0 1rem .75rem', background:'rgba(50,200,120,.12)', border:'1px solid rgba(50,200,120,.3)', borderRadius:'14px', padding:'1rem' }}>
-            <div style={{ fontSize:'12px', fontWeight:'700', color:'white', marginBottom:'6px' }}>🔁 Cuidados diários por sessão</div>
-            <div style={{ fontSize:'11px', color:'rgba(255,255,255,.65)', marginBottom:'10px', lineHeight:'1.4' }}>
-              Quando uma sessão estiver ativa, cada cuidado (Trocar Água, Alimentar, Limpar Maravalha) poderá ser usado esta quantidade de vezes pelo aluno durante a sessão.
-            </div>
-            <div style={{ display:'flex', alignItems:'center', gap:'12px' }}>
-              <input type="range" min="1" max="10" step="1" value={cuidadosPorSessao}
-                onChange={e => handleSaveCuidadosPorSessao(Number(e.target.value))}
-                style={{ flex:1, accentColor:'#32C878' }}
-              />
-              <div style={{ fontSize:'16px', fontWeight:'700', color:'white', width:'70px', textAlign:'right' }}>
-                {cuidadosPorSessao}x {savingCuidados ? '⏳' : ''}
-              </div>
-            </div>
+            🔬 Crie cenários fisiológicos alterados. Ao clicar em <strong>🚀 Lançar para Turma</strong>, os parâmetros do animal de todos os alunos serão atualizados. Cada simulação tem sua própria quantidade de cuidados liberados, definida ao criar/editar.
           </div>
           {simulations.map(sim=>(
             <div key={sim.id} style={{...styles.challengeCard, border: sim.active ? '1px solid rgba(255,200,50,.5)' : '1px solid rgba(255,255,255,.18)'}}>
