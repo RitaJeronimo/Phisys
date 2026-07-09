@@ -29,19 +29,6 @@ function getDefaultSimParams() {
   return v;
 }
 
-const INITIAL_SIMULATIONS = [
-  {
-    id:1, title:'Insuficiência Cardíaca', focus:'cardiovascular', active:true,
-    description:'Débito cardíaco reduzido. FC compensatória elevada. O aluno deve reverter o quadro.',
-    params: { energia:60, hidratacao:55, pas:85, pad:55, fc:200, peso:300, saude:40 },
-  },
-  {
-    id:2, title:'Desidratação Severa', focus:'renal', active:true,
-    description:'Perda hídrica intensa. Pressão arterial reduzida. O aluno deve reidratar o animal.',
-    params: { energia:40, hidratacao:20, pas:80, pad:50, fc:420, peso:280, saude:30 },
-  },
-];
-
 const EMPTY_SIMULATION = {
   title:'', focus:'cardiovascular', active:true, description:'',
   params: getDefaultSimParams(),
@@ -141,6 +128,12 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
   }, []);
 
   useEffect(() => {
+    // Removido o fallback para INITIAL_SIMULATIONS quando o banco esta vazio -
+    // esse mock aparecia marcado como "ATIVA" com ids fixos (1, 2) que nunca
+    // existiam de verdade no banco, causando "Simulacao nao encontrada" ao
+    // tentar lancar para a turma. Agora, se nao houver simulacoes reais
+    // cadastradas, a lista aparece vazia de verdade, incentivando o professor
+    // a criar uma nova.
     req('/api/simulacoes', { headers: authHeaders() })
       .then(data => {
         if (Array.isArray(data) && data.length > 0) {
@@ -155,10 +148,10 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
           }));
           setSimulations(formatted);
         } else {
-          setSimulations(INITIAL_SIMULATIONS);
+          setSimulations([]);
         }
       })
-      .catch(() => setSimulations(INITIAL_SIMULATIONS));
+      .catch(() => setSimulations([]));
   }, []);
 
   useEffect(() => {
