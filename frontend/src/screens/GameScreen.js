@@ -12,7 +12,6 @@ const MOCK_CHALLENGES = [
       { letter: 'C', text: 'Ambos os parâmetros permanecem estáveis', correct: false },
       { letter: 'D', text: 'Volume urinário aumenta e pressão arterial cai', correct: false },
     ],
-    intervention: { hidratacao:40, pas:85, pad:55, fc:420, peso:300, saude:50 },
     delta_acerto: { hidratacao:20, energia:10, pas:-10, pad:-5, fc:-30 },
     delta_erro:   { hidratacao:-20, energia:-15, pas:10, pad:5, fc:30 },
     explanation: 'Na desidratação: ↓ hidratação → ↓ volemia → ↓ pré-carga → ↓ VS → ↓ DC → ↓ PA. O rim retém água reduzindo o volume urinário. A FC aumenta compensatoriamente para manter a perfusão.',
@@ -26,7 +25,6 @@ const MOCK_CHALLENGES = [
       { letter: 'C', text: 'Ambos os parâmetros permanecem estáveis', correct: false },
       { letter: 'D', text: 'Débito cardíaco cai mas a pressão arterial sempre sobe', correct: false },
     ],
-    intervention: { hidratacao:60, pas:95, pad:60, fc:200, peso:300, saude:60 },
     delta_acerto: { hidratacao:10, energia:10, pas:-5, pad:-5, fc:40 },
     delta_erro:   { hidratacao:-10, energia:-15, pas:10, pad:5, fc:-40 },
     explanation: 'FC baixa reduz o débito cardíaco (DC = FC × VS). Com DC reduzido, a PA pode cair por menor perfusão. O organismo tenta compensar com aumento da RVP para manter a pressão.',
@@ -40,12 +38,16 @@ const MOCK_CHALLENGES = [
       { letter: 'C', text: 'Ambos permanecem dentro da normalidade', correct: false },
       { letter: 'D', text: 'Volume urinário aumenta e volemia aumenta', correct: false },
     ],
-    intervention: { hidratacao:35, pas:140, pad:90, fc:400, peso:300, saude:45 },
     delta_acerto: { hidratacao:20, energia:10, pas:-15, pad:-10, fc:-20 },
     delta_erro:   { hidratacao:-20, energia:-15, pas:15, pad:10, fc:20 },
     explanation: 'Na insuficiência renal, a filtração glomerular cai, reduzindo o volume urinário. A retenção de sódio e água aumenta a volemia, podendo elevar a PA sistólica e diastólica.',
   },
 ];
+// Nota: o campo "intervention" que existia em cada desafio acima foi removido.
+// Ele nunca era lido em nenhum lugar do handleAnswer (nem no Modo Livre, nem no
+// Modo Sessao) - so ocupava espaco e podia confundir quem fosse editar o
+// codigo depois, dando a falsa impressao de que a "crise" descrita ali era
+// aplicada ao animal. O que realmente e aplicado sao sempre delta_acerto/delta_erro.
 
 function ChibiMascot({ status, size = 72 }) {
   const bodyColor = status === STATUS.SAUDAVEL ? '#D4D4D4' : status === STATUS.DEBILITADO ? '#FAC775' : '#F09595';
@@ -120,7 +122,7 @@ function ParamBar({ param, value }) {
 
 function GameScreen({ user, mode, values: initialValues, score: initialScore, onBack, onFinish }) {
   const [values, setValues] = useState(initialValues || getDefaultValues());
-  const [score, setScore] = useState(initialScore || 100);
+  const [score, setScore] = useState(initialScore ?? 100);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [selected, setSelected] = useState(null);
   const [answered, setAnswered] = useState(false);
@@ -155,7 +157,6 @@ function GameScreen({ user, mode, values: initialValues, score: initialScore, on
               text: opt,
               correct: i === d.correta,
             })),
-            intervention: {},
             delta_acerto: typeof d.delta_acerto === 'string' ? JSON.parse(d.delta_acerto) : (d.delta_acerto || {}),
             delta_erro:   typeof d.delta_erro   === 'string' ? JSON.parse(d.delta_erro)   : (d.delta_erro   || {}),
             explanation: d.explicacao || 'Revise os conceitos fisiológicos relacionados a este cenário clínico.',
@@ -173,7 +174,20 @@ function GameScreen({ user, mode, values: initialValues, score: initialScore, on
               c.focus?.toLowerCase().includes(foco.toLowerCase())
             );
           }
-          setChallenges(sessaoChallenges.length > 0 ? sessaoChallenges : MOCK_CHALLENGES);
+          // CORRECAO: antes, quando nao havia nenhum desafio ativo do foco
+          // selecionado, o fallback usava MOCK_CHALLENGES por inteiro, sem
+          // filtro - isso quebrava a promessa de isolamento por foco (ex: um
+          // aluno em Modo Sessao com foco "Renal" acabava vendo o desafio
+          // mock de Fisiologia Cardiovascular tambem). Agora o fallback dos
+          // mocks tambem respeita o foco selecionado.
+          let fallback = MOCK_CHALLENGES;
+          if (foco !== 'todos') {
+            fallback = MOCK_CHALLENGES.filter(c =>
+              c.focus?.toLowerCase().includes(foco.toLowerCase())
+            );
+            if (fallback.length === 0) fallback = MOCK_CHALLENGES; // seguranca: nunca deixar o quiz vazio
+          }
+          setChallenges(sessaoChallenges.length > 0 ? sessaoChallenges : fallback);
         } catch {
           setChallenges(fromDB.length > 0 ? fromDB : MOCK_CHALLENGES);
         }
@@ -217,19 +231,34 @@ function GameScreen({ user, mode, values: initialValues, score: initialScore, on
       setSelected(option.letter);
       setAnswered(true);
       setAttempts(0);
-      const newScore = applyBonus(score, 'correct_answer');
+      // CORRECAO CRITICA: a chamada usava a chave 'correct_answer', que nao
+      // existe em SCORE_RULES.bonus (mascotEngine.js) - a chave real e
+      // 'resposta_correta'. Como a chave nao batia, applyBonus somava 0
+      // pontos sempre, ou seja, ACERTAR UM DESAFIO NAO AUMENTAVA O XP/SCORE
+      // salvo no banco. So o timer (applyPenalty) alterava o score, e so pra
+      // baixo. Corrigido para usar a chave certa.
+      const newScore = applyBonus(score, 'resposta_correta');
       setScore(newScore);
       setSolvedCount(s => s + 1);
       const da = challenge.delta_acerto || {};
       let novosValores;
       if (mode === 'sessao') {
+        // CORRECAO (decisao: professor tem controle total): antes, quando o
+        // desafio nao definia pas/pad/fc no delta_acerto, o codigo forcava a
+        // recuperacao total do animal para os valores basais (110/70/370).
+        // Isso conflitava com desafios que definem seus proprios deltas (que
+        // ai sim eram aplicados) - um comportamento inconsistente dependendo
+        // de quais campos o professor preenchia. Agora a regra e unica e
+        // igual ao Modo Livre: um parametro so muda se o professor configurou
+        // um delta para ele. Se nao configurou, o parametro simplesmente
+        // permanece como estava.
         novosValores = {
           ...values,
-          hidratacao: Math.min(100, (values.hidratacao || 70) + (da.hidratacao ?? 20)),
-          energia:    Math.min(100, (values.energia    || 80) + (da.energia    ?? 10)),
-          pas: da.pas !== undefined ? Math.max(60,  Math.min(200, (values.pas || 110) + da.pas)) : 110,
-          pad: da.pad !== undefined ? Math.max(40,  Math.min(120, (values.pad || 70)  + da.pad)) : 70,
-          fc:  da.fc  !== undefined ? Math.max(100, Math.min(600, (values.fc  || 370) + da.fc))  : 370,
+          hidratacao: da.hidratacao !== undefined ? Math.min(100, (values.hidratacao || 70) + da.hidratacao) : values.hidratacao,
+          energia:    da.energia    !== undefined ? Math.min(100, (values.energia    || 80) + da.energia)    : values.energia,
+          pas: da.pas !== undefined ? Math.max(60,  Math.min(200, (values.pas || 110) + da.pas)) : values.pas,
+          pad: da.pad !== undefined ? Math.max(40,  Math.min(120, (values.pad || 70)  + da.pad)) : values.pad,
+          fc:  da.fc  !== undefined ? Math.max(100, Math.min(600, (values.fc  || 370) + da.fc))  : values.fc,
           age_days: values.age_days || 90,
         };
         novosValores.saude = calcularSaude(novosValores);
@@ -266,10 +295,16 @@ function GameScreen({ user, mode, values: initialValues, score: initialScore, on
         const de = challenge.delta_erro || {};
         let novosValoresErro;
         if (mode === 'sessao') {
+          // CORRECAO (mesmo principio do acerto acima): removidos os
+          // valores-padrao escondidos (?? -20, ?? -15) que aplicavam uma
+          // piora fixa em hidratacao/energia mesmo quando o professor nao
+          // configurou nada para esses campos no delta_erro. Agora, assim
+          // como pas/pad/fc, hidratacao e energia so mudam se o professor
+          // configurou um delta_erro para elas.
           novosValoresErro = {
             ...values,
-            hidratacao: Math.max(0,   Math.min(100, (values.hidratacao || 70) + (de.hidratacao ?? -20))),
-            energia:    Math.max(0,   Math.min(100, (values.energia    || 80) + (de.energia    ?? -15))),
+            hidratacao: de.hidratacao !== undefined ? Math.max(0, Math.min(100, (values.hidratacao || 70) + de.hidratacao)) : values.hidratacao,
+            energia:    de.energia    !== undefined ? Math.max(0, Math.min(100, (values.energia    || 80) + de.energia))    : values.energia,
             pas: de.pas !== undefined ? Math.max(60,  Math.min(200, (values.pas || 110) + de.pas)) : values.pas,
             pad: de.pad !== undefined ? Math.max(40,  Math.min(120, (values.pad || 70)  + de.pad)) : values.pad,
             fc:  de.fc  !== undefined ? Math.max(100, Math.min(600, (values.fc  || 370) + de.fc))  : values.fc,
@@ -314,10 +349,6 @@ function GameScreen({ user, mode, values: initialValues, score: initialScore, on
     if (mode === 'livre' && energiaAtual <= 0) {
       alert('⚡ Energia esgotada! Volte à tela principal e alimente o Phisys para continuar.');
       if (onFinish) {
-        // finalValues carrega o estado REAL e atualizado do animal ao fim do
-        // jogo. Sem isso, o App.js usava o estado antigo (de antes da sessao)
-        // para calcular a saude final, causando divergencia entre o card
-        // "Saude Final" (desatualizado) e o grafico de evolucao (atualizado).
         onFinish({ seconds, solvedChallenges: solvedCount, totalChallenges: challenges.length, errors: errorCount, paramHistory: updatedHistory, finalScore: score, finalValues: values });
       }
       return;
@@ -325,10 +356,6 @@ function GameScreen({ user, mode, values: initialValues, score: initialScore, on
 
     if (currentIdx + 1 >= challenges.length) {
       if (onFinish) {
-        // finalValues carrega o estado REAL e atualizado do animal ao fim do
-        // jogo. Sem isso, o App.js usava o estado antigo (de antes da sessao)
-        // para calcular a saude final, causando divergencia entre o card
-        // "Saude Final" (desatualizado) e o grafico de evolucao (atualizado).
         onFinish({ seconds, solvedChallenges: solvedCount, totalChallenges: challenges.length, errors: errorCount, paramHistory: updatedHistory, finalScore: score, finalValues: values });
       } else {
         setFinished(true);
