@@ -557,7 +557,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
       </div>
 
       <div style={styles.tabs}>
-        {[['desafios','🎯 Desafios'],['simulacoes','🔬 Simulações'],['alunos','👥 Alunos'],['pesos','⚖️ Pesos'],['mensagens','💬 Mensagens'],['crescimento','🐭 Crescimento']].map(([id,label])=>(
+        {[['desafios','🎯 Desafios'],['simulacoes','🔬 Simulações'],['alunos','👥 Alunos'],['notas','📝 Notas'],['pesos','⚖️ Pesos'],['mensagens','💬 Mensagens'],['crescimento','🐭 Crescimento']].map(([id,label])=>(
           <div key={id} style={{...styles.tab,...(tab===id?styles.tabActive:{})}} onClick={()=>setTab(id)}>{label}</div>
         ))}
       </div>
@@ -763,6 +763,62 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
                 </div>
               );
             })
+          )}
+          <div style={{height:'1rem'}}/>
+        </>
+      )}
+
+      {/* ── TAB NOTAS — separada do ranking de XP, conforme decisão de Samela e Marcia (09/07/2026): ranking continua por XP, notas ficam numa visualizacao propria ── */}
+      {tab==='notas' && (
+        <>
+          <div style={styles.sectionTitle}>notas finais da turma</div>
+          <div style={styles.simInfo}>
+            📝 Esta lista é ordenada pela nota final que você lançou para cada aluno (independente do XP/ranking do jogo). Alunos sem nota lançada aparecem por último.
+          </div>
+          {students.length === 0 ? (
+            <div style={{ margin:'0 1rem', background:'rgba(255,255,255,.08)', borderRadius:'14px', padding:'2rem', textAlign:'center', color:'rgba(255,255,255,.4)', fontSize:'13px' }}>
+              Nenhum aluno cadastrado ainda.
+            </div>
+          ) : (
+            [...students]
+              .sort((a, b) => {
+                const notaA = manualGrades[a.id];
+                const notaB = manualGrades[b.id];
+                const temA = notaA !== undefined && notaA !== null && notaA !== '';
+                const temB = notaB !== undefined && notaB !== null && notaB !== '';
+                if (temA && !temB) return -1;
+                if (!temA && temB) return 1;
+                if (!temA && !temB) return 0;
+                return Number(notaB) - Number(notaA);
+              })
+              .map((student, idx) => {
+                const nota = manualGrades[student.id];
+                const temNota = nota !== undefined && nota !== null && nota !== '';
+                return (
+                  <div key={student.id} style={{
+                    margin:'0 1rem .5rem',
+                    background: idx === 0 && temNota ? 'rgba(255,215,0,.15)' : 'rgba(255,255,255,.08)',
+                    border: idx === 0 && temNota ? '1px solid rgba(255,215,0,.4)' : '1px solid rgba(255,255,255,.12)',
+                    borderRadius:'12px', padding:'.75rem 1rem',
+                    display:'flex', alignItems:'center', gap:'12px',
+                  }}>
+                    <div style={{ fontSize:'14px', fontWeight:'700', color:'white', width:'24px', textAlign:'center' }}>
+                      {temNota ? idx + 1 : '—'}
+                    </div>
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontSize:'13px', fontWeight:'700', color:'white' }}>{student.nome}</div>
+                      <div style={{ fontSize:'10px', color:'rgba(255,255,255,.45)', marginTop:'2px' }}>{student.matricula}</div>
+                    </div>
+                    <div style={{ textAlign:'right' }}>
+                      {temNota ? (
+                        <div style={{ fontSize:'18px', fontWeight:'700', color:'#FFD700' }}>{Number(nota).toFixed(1)}</div>
+                      ) : (
+                        <div style={{ fontSize:'11px', color:'rgba(255,255,255,.4)', fontStyle:'italic' }}>Sem nota</div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })
           )}
           <div style={{height:'1rem'}}/>
         </>
