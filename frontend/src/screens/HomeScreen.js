@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { animal as animalApi, ranking as rankingApi } from '../api';
-import { PRIMARY_PARAMS, calcularSaude, calcularEnergiaModulada, getAgePANormal, getMascotStatus, STATUS, DAILY_CARES, aplicarCuidado } from '../engine/mascotEngine';
+import { PRIMARY_PARAMS, calcularSaude, calcularEnergiaModulada, getAgePANormal, getAgeStage, getMascotStatus, STATUS, DAILY_CARES, aplicarCuidado } from '../engine/mascotEngine';
 
 
 const GRADIENT = 'linear-gradient(160deg, #1B4FCC 0%, #7B2FBE 50%, #CC1B1B 100%)';
@@ -75,10 +75,20 @@ function PACard({ pas, pad, paNormal, onClick }) {
   );
 }
 
-function ParamCard({ param, value, onClick }) {
+function ParamCard({ param, value, onClick, normalOverride }) {
+  // normalOverride permite que a faixa "normal" usada para decidir a cor do
+  // card seja a faixa correta da FASE ATUAL do animal (ex: Peso Juvenil =
+  // 50-200g), em vez de sempre usar param.normal, que e um valor FIXO vindo
+  // de PRIMARY_PARAMS (a faixa do Adulto). Antes disso, um animal Juvenil com
+  // peso de 300g (fora da faixa Juvenil) aparecia com o card em VERDE, porque
+  // 300g esta dentro da faixa fixa do Adulto (200-400g) - mesmo a saude ja
+  // estando penalizada corretamente por tras (calcularSaude ja usava a faixa
+  // certa). Isso corrige a divergencia entre "o que o card mostra" e "o que
+  // a saude realmente considera".
+  const normal = normalOverride || param.normal;
   const pct = ((value - param.min) / (param.max - param.min)) * 100;
-  const inRange = value >= param.normal[0] && value <= param.normal[1];
-  const deviation = Math.abs(value - (param.normal[0] + param.normal[1]) / 2) / ((param.normal[1] - param.normal[0]) / 2);
+  const inRange = value >= normal[0] && value <= normal[1];
+  const deviation = Math.abs(value - (normal[0] + normal[1]) / 2) / ((normal[1] - normal[0]) / 2);
   const color = inRange ? '#32C878' : deviation > 2 ? '#E24B4A' : '#EF9F27';
   const display = param.step < 1 ? value.toFixed(1) : Math.round(value);
   const isHealth = param.id === 'saude';
@@ -254,6 +264,10 @@ function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, on
   const line2 = PRIMARY_PARAMS.filter(p => ['peso','saude'].includes(p.id));
   const currentAge = ageDays || 90;
   const stage = getGrowthStage(currentAge);
+  // stageInfo vem do mascotEngine (getAgeStage), que carrega as faixas
+  // fisiologicas reais por fase (fcNormal, pesoNormal) - usadas abaixo para
+  // corrigir a cor dos cards de FC e Peso conforme a fase atual do animal.
+  const stageInfo = getAgeStage(currentAge);
   const idadeParam = { id:'idade', name:`Idade · ${stage.label}`, unit:'', min:0, max:730, normal:[0,730], default:currentAge, step:1, icon:stage.icon };
 
   async function handleCare(id) {
@@ -329,11 +343,27 @@ function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, on
         <div style={styles.xpBadge}>⚡ {Math.round(score)} XP</div>
       </div>
       <div style={styles.paramsGrid}>
-        {line1.map(p => <ParamCard key={p.id} param={p} value={valsWithSaude[p.id] ?? p.default} onClick={setActiveParam}/>)}
+        {line1.map(p => (
+          <ParamCard
+            key={p.id}
+            param={p}
+            value={valsWithSaude[p.id] ?? p.default}
+            onClick={setActiveParam}
+            normalOverride={p.id === 'fc' ? stageInfo.fcNormal : undefined}
+          />
+        ))}
        <PACard pas={valsWithSaude.pas ?? 110} pad={valsWithSaude.pad ?? 70} paNormal={getAgePANormal(currentAge)} onClick={setActiveParam}/>
       </div>
       <div style={styles.paramsGridBottom}>
-        {line2.map(p => <ParamCard key={p.id} param={p} value={valsWithSaude[p.id] ?? p.default} onClick={setActiveParam}/>)}
+        {line2.map(p => (
+          <ParamCard
+            key={p.id}
+            param={p}
+            value={valsWithSaude[p.id] ?? p.default}
+            onClick={setActiveParam}
+            normalOverride={p.id === 'peso' ? stageInfo.pesoNormal : undefined}
+          />
+        ))}
         <ParamCard param={idadeParam} value={currentAge} onClick={setActiveParam}/>
       </div>
       <div style={styles.animalArea}><Mascot status={status} ageDays={currentAge}/></div>
