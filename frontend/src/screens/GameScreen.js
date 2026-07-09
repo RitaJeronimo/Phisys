@@ -314,14 +314,22 @@ function GameScreen({ user, mode, values: initialValues, score: initialScore, on
     if (mode === 'livre' && energiaAtual <= 0) {
       alert('⚡ Energia esgotada! Volte à tela principal e alimente o Phisys para continuar.');
       if (onFinish) {
-        onFinish({ seconds, solvedChallenges: solvedCount, totalChallenges: challenges.length, errors: errorCount, paramHistory: updatedHistory, finalScore: score });
+        // finalValues carrega o estado REAL e atualizado do animal ao fim do
+        // jogo. Sem isso, o App.js usava o estado antigo (de antes da sessao)
+        // para calcular a saude final, causando divergencia entre o card
+        // "Saude Final" (desatualizado) e o grafico de evolucao (atualizado).
+        onFinish({ seconds, solvedChallenges: solvedCount, totalChallenges: challenges.length, errors: errorCount, paramHistory: updatedHistory, finalScore: score, finalValues: values });
       }
       return;
     }
 
     if (currentIdx + 1 >= challenges.length) {
       if (onFinish) {
-        onFinish({ seconds, solvedChallenges: solvedCount, totalChallenges: challenges.length, errors: errorCount, paramHistory: updatedHistory, finalScore: score });
+        // finalValues carrega o estado REAL e atualizado do animal ao fim do
+        // jogo. Sem isso, o App.js usava o estado antigo (de antes da sessao)
+        // para calcular a saude final, causando divergencia entre o card
+        // "Saude Final" (desatualizado) e o grafico de evolucao (atualizado).
+        onFinish({ seconds, solvedChallenges: solvedCount, totalChallenges: challenges.length, errors: errorCount, paramHistory: updatedHistory, finalScore: score, finalValues: values });
       } else {
         setFinished(true);
       }

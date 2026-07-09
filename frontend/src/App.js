@@ -65,7 +65,10 @@ function App() {
       }).catch(() => {});
       rankingApi.get().then(rankData => {
         const myRank = rankData.find(r => r.id === payload.id || r.nome === payload.nome);
-        if (myRank && myRank.xp_total > 0) setScore(myRank.xp_total);
+        // Corrige o score sempre que houver registro no ranking, mesmo que
+        // xp_total seja 0 - antes so atualizava se fosse > 0, deixando o valor
+        // inicial "100" exibido incorretamente para alunos novos (XP real = 0).
+        if (myRank) setScore(Number(myRank.xp_total) || 0);
       }).catch(() => {});
     } catch(e) {
       removeToken();
@@ -111,7 +114,7 @@ function App() {
     try {
       const rankData = await rankingApi.get();
       const myRank = rankData.find(r => r.id === loggedUser.id || r.nome === loggedUser.name);
-      if (myRank && myRank.xp_total > 0) setScore(myRank.xp_total);
+      if (myRank) setScore(Number(myRank.xp_total) || 0);
     } catch(e) {}
   }
 
@@ -144,6 +147,12 @@ function App() {
 
   async function handleGameFinish(data) {
     const seconds = sessionStart ? Math.floor((Date.now() - sessionStart) / 1000) : 0;
+    // Sincroniza o estado global (values) com o resultado real do jogo. Antes,
+    // o GameScreen so atualizava sua propria copia local dos parametros, e o
+    // App.js continuava com os valores de ANTES da sessao - causando a tela
+    // final e a Home mostrarem saude desatualizada ate um F5 buscar do banco.
+    const valoresFinais = data.finalValues || values;
+    if (data.finalValues) setValues(data.finalValues);
     setSessionData({ ...data, seconds });
     if (data.finalScore) setScore(data.finalScore);
     setScreen('final');
@@ -152,7 +161,7 @@ function App() {
         await sessoesApi.finalizar(sessaoId, {
           duracao_segundos: seconds,
           xp_total: score,
-          saude_final: calcularSaude({ ...values, age_days: ageDays }),
+          saude_final: calcularSaude({ ...valoresFinais, age_days: ageDays }),
         });
       }
     } catch(e) {}
