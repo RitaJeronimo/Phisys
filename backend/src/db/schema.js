@@ -97,8 +97,6 @@ async function criarTabelas() {
   }
 }
 
-criarTabelas();
-
 async function adicionarColunas() {
   try {
     await pool.query(`ALTER TABLE ranking ADD COLUMN IF NOT EXISTS nota_final NUMERIC DEFAULT NULL`);
@@ -185,6 +183,15 @@ async function adicionarColunas() {
     console.error('Erro ao adicionar colunas:', err.message);
   }
 }
-adicionarColunas();
+
+// CORRECAO: antes, criarTabelas() e adicionarColunas() eram chamadas em
+// sequencia mas SEM await, rodando na pratica em paralelo. Em um banco novo
+// (sem as tabelas ainda existindo), adicionarColunas() podia executar antes
+// de criarTabelas() terminar de criar a tabela "ranking", causando erro
+// "relation does not exist". Agora garantimos a ordem certa.
+(async () => {
+  await criarTabelas();
+  await adicionarColunas();
+})();
 
 module.exports = { criarTabelas };
