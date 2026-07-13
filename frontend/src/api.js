@@ -49,3 +49,7 @@ export const sessoes = {
   iniciar:   (data)     => req('/api/sessoes/iniciar', { method: 'POST', headers: authHeaders(), body: JSON.stringify(data) }),
   finalizar: (id, data) => req(`/api/sessoes/${id}/finalizar`, { method: 'PUT', headers: authHeaders(), body: JSON.stringify(data) }),
 };
+export const configuracoes = {
+  getPesos: ()     => req('/api/configuracoes/pesos', { headers: authHeaders() }),
+  setPesos: (data) => req('/api/configuracoes/pesos', { method: 'PUT', headers: authHeaders(), body: JSON.stringify(data) }),
+};

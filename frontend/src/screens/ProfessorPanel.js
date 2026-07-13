@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { DEFAULT_MOTIVATION_MESSAGES } from './MotivationScreen';
 import { DEFAULT_WEIGHTS, INTERVENTIONS, PRIMARY_PARAMS } from '../engine/mascotEngine';
-import { ranking as rankingApi, authHeaders, simulacoes as simulacoesApi, usuarios as usuariosApi } from '../api';
+import { ranking as rankingApi, authHeaders, simulacoes as simulacoesApi, usuarios as usuariosApi, configuracoes as configuracoesApi } from '../api';
+
 const BASE = process.env.REACT_APP_API_URL || 'https://phisys-production.up.railway.app';
 async function req(path, options = {}) {
   const { headers: optHeaders, ...restOptions } = options;
@@ -48,24 +49,18 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
   const [simForm, setSimForm] = useState(null);
   const [ativandoId, setAtivandoId] = useState(null);
   const [lastUpdate, setLastUpdate] = useState(null);
-  const [weights, setWeights] = useState(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem('phisys_pesos') || '{}');
-      return {
-        score:         saved.score         ?? DEFAULT_WEIGHTS.score * 100,
-        survival:      saved.survival      ?? DEFAULT_WEIGHTS.survival * 100,
-        challenges:    saved.challenges    ?? DEFAULT_WEIGHTS.challenges * 100,
-        response_time: saved.response_time ?? DEFAULT_WEIGHTS.response_time * 100,
-      };
-    } catch {
-      return {
-        score:         DEFAULT_WEIGHTS.score * 100,
-        survival:      DEFAULT_WEIGHTS.survival * 100,
-        challenges:    DEFAULT_WEIGHTS.challenges * 100,
-        response_time: DEFAULT_WEIGHTS.response_time * 100,
-      };
-    }
+  const [weights, setWeights] = useState({
+    score:         DEFAULT_WEIGHTS.score * 100,
+    survival:      DEFAULT_WEIGHTS.survival * 100,
+    challenges:    DEFAULT_WEIGHTS.challenges * 100,
+    response_time: DEFAULT_WEIGHTS.response_time * 100,
   });
+
+  useEffect(() => {
+    configuracoesApi.getPesos()
+      .then(data => setWeights(data))
+      .catch(() => {});
+  }, []);
   const [manualGrades, setManualGrades] = useState({});
   const [sessaoFoco, setSessaoFoco] = useState(() => {
     try {
@@ -834,7 +829,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
                   onChange={e => {
                     const newWeights = { ...weights, [w.key]: Number(e.target.value) };
                     setWeights(newWeights);
-                    localStorage.setItem('phisys_pesos', JSON.stringify(newWeights));
+                    configuracoesApi.setPesos(newWeights).catch(() => {});
                   }}
                   style={styles.weightSlider}/>
                 <div style={styles.weightVal}>{weights[w.key]}%</div>

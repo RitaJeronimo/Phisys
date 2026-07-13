@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { calculateFinalGrade } from '../engine/mascotEngine';
+import { configuracoes as configuracoesApi } from '../api';
 
 const GRADIENT = 'linear-gradient(160deg, #1B4FCC 0%, #7B2FBE 50%, #CC1B1B 100%)';
 
@@ -13,9 +14,14 @@ function FinalScreen({ user, score, saude, seconds, solvedChallenges, totalChall
     return `${m.toString().padStart(2,'0')}min ${sec.toString().padStart(2,'0')}s`;
   };
 
-  const savedWeights = (() => {
-    try { return JSON.parse(localStorage.getItem('phisys_pesos') || '{}'); } catch { return {}; }
-  })();
+  const [savedWeights, setSavedWeights] = useState(null);
+
+  useEffect(() => {
+    configuracoesApi.getPesos()
+      .then(data => setSavedWeights(data))
+      .catch(() => setSavedWeights({}));
+  }, []);
+
   const notaCalculada = calculateFinalGrade({
     totalChallenges,
     solvedChallenges,
@@ -23,7 +29,8 @@ function FinalScreen({ user, score, saude, seconds, solvedChallenges, totalChall
     errors,
     finalScore: score,
     finalHealth: saude,
-  }, savedWeights);const saudeColor = saude >= 75 ? '#32C878' : saude >= 40 ? '#EF9F27' : '#E24B4A';
+  }, savedWeights || {});
+  const saudeColor = saude >= 75 ? '#32C878' : saude >= 40 ? '#EF9F27' : '#E24B4A';
   const saudeLabel = saude >= 75 ? '😊 Saudável' : saude >= 40 ? '😰 Debilitado' : '😵 Crítico';
 
   const acertos = totalChallenges > 0 ? Math.round((solvedChallenges / totalChallenges) * 100) : 0;
