@@ -52,4 +52,6 @@ export const sessoes = {
 export const configuracoes = {
   getPesos: ()     => req('/api/configuracoes/pesos', { headers: authHeaders() }),
   setPesos: (data) => req('/api/configuracoes/pesos', { method: 'PUT', headers: authHeaders(), body: JSON.stringify(data) }),
+  getRecuperacao: ()     => req('/api/configuracoes/recuperacao', { headers: authHeaders() }),
+  setRecuperacao: (data) => req('/api/configuracoes/recuperacao', { method: 'PUT', headers: authHeaders(), body: JSON.stringify(data) }),
 };

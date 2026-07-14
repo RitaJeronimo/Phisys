@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { PARAMS, getDefaultValues, getMascotStatus, applyPenalty, applyBonus, calculateFinalGrade, STATUS, calcularSaude } from '../engine/mascotEngine';
-import { ranking as rankingApi, animal as animalApi, getToken, desafios as desafiosApi } from '../api';
+import { PARAMS, getDefaultValues, getMascotStatus, applyPenalty, applyBonus, calculateFinalGrade, STATUS, calcularSaude, getAgeRecoveryPenalty, aplicarDeltaComFreio, getAgeStage, getAgePANormal } from '../engine/mascotEngine';
+import { ranking as rankingApi, animal as animalApi, getToken, desafios as desafiosApi, configuracoes as configuracoesApi } from '../api';
 
 const MOCK_CHALLENGES = [
   {
@@ -132,6 +132,15 @@ function GameScreen({ user, mode, values: initialValues, score: initialScore, on
   const [responseTimes, setResponseTimes] = useState([]);
   const [questionStart, setQuestionStart] = useState(Date.now());
   const [finished, setFinished] = useState(false);
+  const [recuperacaoConfig, setRecuperacaoConfig] = useState({ multiplicador: 1, desafios_extras: 0 });
+  const [voltasExtrasUsadas, setVoltasExtrasUsadas] = useState(0);
+
+  useEffect(() => {
+    configuracoesApi.getRecuperacao()
+      .then(data => setRecuperacaoConfig(data))
+      .catch(() => {});
+  }, []);
+  
   const [myRank, setMyRank] = useState('-');
   const [challenges, setChallenges] = useState([]);
   const [loadingChallenges, setLoadingChallenges] = useState(true);
@@ -241,6 +250,24 @@ function GameScreen({ user, mode, values: initialValues, score: initialScore, on
       setScore(newScore);
       setSolvedCount(s => s + 1);
       const da = challenge.delta_acerto || {};
+      const ageDaysAtual = values.age_days || 90;
+      // Multiplicador configurado pelo professor + penalidade automatica por
+      // fase de vida (decisao da equipe: fase de vida e automatica, sem
+      // controle manual adicional).
+      const fatorRecuperacao = (recuperacaoConfig.multiplicador || 1) * getAgeRecoveryPenalty(ageDaysAtual);
+      const paNormalAtual = getAgePANormal(ageDaysAtual);
+      const fcNormalAtual = getAgeStage(ageDaysAtual).fcNormal;
+      const hidNormalAtual = PARAMS.find(p => p.id === 'hidratacao').normal;
+
+      // Aplica o delta de acerto multiplicado pelo fator de recuperacao, com
+      // freio para nao ultrapassar o centro da faixa normal (risco identificado
+      // pela Samela: evita o animal ir de "critico alto" direto para "critico baixo").
+      function deltaAcertoComFreio(deltaOriginal, valorBase, faixaNormal, min, max) {
+        if (deltaOriginal === undefined) return valorBase;
+        const deltaAjustado = deltaOriginal * fatorRecuperacao;
+        return aplicarDeltaComFreio(valorBase, deltaAjustado, faixaNormal, min, max);
+      }
+
       let novosValores;
       if (mode === 'sessao') {
         // CORRECAO (decisao: professor tem controle total): antes, quando o
@@ -254,12 +281,12 @@ function GameScreen({ user, mode, values: initialValues, score: initialScore, on
         // permanece como estava.
         novosValores = {
           ...values,
-          hidratacao: da.hidratacao !== undefined ? Math.min(100, (values.hidratacao || 70) + da.hidratacao) : values.hidratacao,
-          energia:    da.energia    !== undefined ? Math.min(100, (values.energia    || 80) + da.energia)    : values.energia,
-          pas: da.pas !== undefined ? Math.max(60,  Math.min(200, (values.pas || 110) + da.pas)) : values.pas,
-          pad: da.pad !== undefined ? Math.max(40,  Math.min(120, (values.pad || 70)  + da.pad)) : values.pad,
-          fc:  da.fc  !== undefined ? Math.max(100, Math.min(600, (values.fc  || 370) + da.fc))  : values.fc,
-          age_days: values.age_days || 90,
+          hidratacao: deltaAcertoComFreio(da.hidratacao, values.hidratacao || 70, hidNormalAtual, 0, 100),
+          energia:    da.energia !== undefined ? Math.min(100, (values.energia || 80) + da.energia) : values.energia,
+          pas: deltaAcertoComFreio(da.pas, values.pas || 110, paNormalAtual.pas, 60, 200),
+          pad: deltaAcertoComFreio(da.pad, values.pad || 70,  paNormalAtual.pad, 40, 120),
+          fc:  deltaAcertoComFreio(da.fc,  values.fc  || 370, fcNormalAtual,     100, 600),
+          age_days: ageDaysAtual,
         };
         novosValores.saude = calcularSaude(novosValores);
       } else {
@@ -270,12 +297,12 @@ function GameScreen({ user, mode, values: initialValues, score: initialScore, on
         // deltas de acerto, com saude recalculada ao final.
         novosValores = {
           ...values,
-          hidratacao: da.hidratacao !== undefined ? Math.min(100, (values.hidratacao || 70) + da.hidratacao) : values.hidratacao,
-          pas: da.pas !== undefined ? Math.max(60,  Math.min(200, (values.pas || 110) + da.pas)) : values.pas,
-          pad: da.pad !== undefined ? Math.max(40,  Math.min(120, (values.pad || 70)  + da.pad)) : values.pad,
-          fc:  da.fc  !== undefined ? Math.max(100, Math.min(600, (values.fc  || 370) + da.fc))  : values.fc,
+          hidratacao: deltaAcertoComFreio(da.hidratacao, values.hidratacao || 70, hidNormalAtual, 0, 100),
+          pas: deltaAcertoComFreio(da.pas, values.pas || 110, paNormalAtual.pas, 60, 200),
+          pad: deltaAcertoComFreio(da.pad, values.pad || 70,  paNormalAtual.pad, 40, 120),
+          fc:  deltaAcertoComFreio(da.fc,  values.fc  || 370, fcNormalAtual,     100, 600),
           energia: Math.max(0, (values.energia || 80) - 10),
-          age_days: values.age_days || 90,
+          age_days: ageDaysAtual,
         };
         novosValores.saude = calcularSaude(novosValores);
       }
@@ -355,8 +382,20 @@ function GameScreen({ user, mode, values: initialValues, score: initialScore, on
     }
 
     if (currentIdx + 1 >= challenges.length) {
-      if (onFinish) {
-        onFinish({ seconds, solvedChallenges: solvedCount, totalChallenges: challenges.length, errors: errorCount, paramHistory: updatedHistory, finalScore: score, finalValues: values });
+      // Se o professor configurou desafios extras e ainda ha voltas
+      // disponiveis, repete a lista de desafios (mesmos desafios, nova
+      // chance de recuperacao) em vez de encerrar a sessao.
+      const desafiosExtras = recuperacaoConfig.desafios_extras || 0;
+      if (voltasExtrasUsadas < desafiosExtras) {
+        setVoltasExtrasUsadas(v => v + 1);
+        setCurrentIdx(0);
+        setSelected(null);
+        setAnswered(false);
+        setAttempts(0);
+        setQuestionStart(Date.now());
+      } else if (onFinish) {
+        const totalComExtras = challenges.length * (1 + voltasExtrasUsadas);
+        onFinish({ seconds, solvedChallenges: solvedCount, totalChallenges: totalComExtras, errors: errorCount, paramHistory: updatedHistory, finalScore: score, finalValues: values });
       } else {
         setFinished(true);
       }
@@ -392,9 +431,14 @@ function GameScreen({ user, mode, values: initialValues, score: initialScore, on
     const savedWeights = (() => {
       try { return JSON.parse(localStorage.getItem('phisys_pesos') || '{}'); } catch { return {}; }
     })();
+    // CORRECAO: antes usava MOCK_CHALLENGES.length fixo, que ficava errado
+    // sempre que os desafios reais do banco eram usados (numero diferente de 3)
+    // e ainda mais errado com voltas extras de recuperacao (que multiplicam
+    // o total real de desafios respondidos).
+    const totalRespondidos = challenges.length * (1 + voltasExtrasUsadas);
     const grade = calculateFinalGrade({
       finalScore: score,
-      totalChallenges: MOCK_CHALLENGES.length,
+      totalChallenges: totalRespondidos,
       solvedChallenges: solvedCount,
       avgResponseTime,
       errors: errorCount,
@@ -406,7 +450,7 @@ function GameScreen({ user, mode, values: initialValues, score: initialScore, on
           <ChibiMascot status={STATUS.SAUDAVEL} size={90}/>
           <div style={{ fontSize:'22px', fontWeight:'700', color:'white', textAlign:'center' }}>Sessão concluída!</div>
           <div style={{ display:'flex', gap:'12px', width:'100%' }}>
-            {[{ val: Math.round(score), lbl: 'Pontos' }, { val: grade, lbl: 'Nota' }, { val: `${solvedCount}/${MOCK_CHALLENGES.length}`, lbl: 'Acertos' }].map(item => (
+            {[{ val: Math.round(score), lbl: 'Pontos' }, { val: grade, lbl: 'Nota' }, { val: `${solvedCount}/${totalRespondidos}`, lbl: 'Acertos' }].map(item => (
               <div key={item.lbl} style={{ flex:1, background:'rgba(255,255,255,0.15)', borderRadius:'12px', padding:'1rem', textAlign:'center' }}>
                 <div style={{ fontSize:'24px', fontWeight:'700', color:'white' }}>{item.val}</div>
                 <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.6)', textTransform:'uppercase', letterSpacing:'0.05em' }}>{item.lbl}</div>
@@ -438,7 +482,10 @@ function GameScreen({ user, mode, values: initialValues, score: initialScore, on
       <div style={styles.statusBar}>
         {[
           { val: statusEmoji[status], lbl: statusLabel[status] },
-          { val: `${currentIdx + 1}/${challenges.length}`, lbl: 'Desafios' },
+          // Quando o aluno esta numa volta extra de recuperacao, mostra
+          // "Volta X" em vez de "Desafios", para deixar claro que a lista
+          // esta se repetindo (nao e um erro/travamento).
+          { val: `${currentIdx + 1}/${challenges.length}`, lbl: voltasExtrasUsadas > 0 ? `Volta ${voltasExtrasUsadas + 1}` : 'Desafios' },
           { val: errorCount, lbl: 'Erros' },
           { val: myRank, lbl: 'Ranking' },
         ].map(item => (

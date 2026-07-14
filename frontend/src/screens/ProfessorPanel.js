@@ -62,6 +62,14 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
       .catch(() => {});
   }, []);
   const [manualGrades, setManualGrades] = useState({});
+  const [recuperacaoConfig, setRecuperacaoConfig] = useState({ multiplicador: 1, desafios_extras: 0 });
+
+  useEffect(() => {
+    configuracoesApi.getRecuperacao()
+      .then(data => setRecuperacaoConfig(data))
+      .catch(() => {});
+  }, []);
+
   const [sessaoFoco, setSessaoFoco] = useState(() => {
     try {
       const cfg = JSON.parse(localStorage.getItem('phisys_sessao_config') || '{}');
@@ -585,6 +593,42 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
               {challenges.filter(c => c.active && (sessaoFoco === 'todos' || c.focus === sessaoFoco)).length} desafio(s) ativo(s) neste foco
             </div>
           </div>
+
+          <div style={{ margin:'0 1rem .75rem', background:'rgba(239,159,39,.15)', border:'1px solid rgba(239,159,39,.3)', borderRadius:'14px', padding:'1rem' }}>
+            <div style={{ fontSize:'12px', fontWeight:'700', color:'white', marginBottom:'8px' }}>🩺 Recuperação do Animal</div>
+            <div style={{ fontSize:'11px', color:'rgba(255,255,255,.65)', marginBottom:'12px', lineHeight:'1.4' }}>
+              Ajuste a intensidade e a quantidade de chances que o aluno tem para recuperar o animal de um estado crítico.
+            </div>
+
+            <div style={{ marginBottom:'14px' }}>
+              <div style={{ display:'flex', justifyContent:'space-between', fontSize:'11px', color:'rgba(255,255,255,.8)', marginBottom:'4px' }}>
+                <span>Multiplicador de recuperação</span>
+                <span style={{ fontWeight:'700', color:'white' }}>{recuperacaoConfig.multiplicador}x</span>
+              </div>
+              <input type="range" min="1" max="3" step="0.5" value={recuperacaoConfig.multiplicador}
+                onChange={e => {
+                  const newConfig = { ...recuperacaoConfig, multiplicador: Number(e.target.value) };
+                  setRecuperacaoConfig(newConfig);
+                  configuracoesApi.setRecuperacao(newConfig).catch(() => {});
+                }}
+                style={{ width:'100%', accentColor:'white' }}/>
+            </div>
+
+            <div>
+              <div style={{ display:'flex', justifyContent:'space-between', fontSize:'11px', color:'rgba(255,255,255,.8)', marginBottom:'4px' }}>
+                <span>Voltas extras de desafios</span>
+                <span style={{ fontWeight:'700', color:'white' }}>{recuperacaoConfig.desafios_extras}</span>
+              </div>
+              <input type="range" min="0" max="5" step="1" value={recuperacaoConfig.desafios_extras}
+                onChange={e => {
+                  const newConfig = { ...recuperacaoConfig, desafios_extras: Number(e.target.value) };
+                  setRecuperacaoConfig(newConfig);
+                  configuracoesApi.setRecuperacao(newConfig).catch(() => {});
+                }}
+                style={{ width:'100%', accentColor:'white' }}/>
+            </div>
+          </div>
+
           <div style={styles.challengeHeader}>
             <div style={styles.sectionTitle}>desafios cadastrados ({challenges.length})</div>
             <button style={styles.newBtn} onClick={handleNewChallenge}>+ Novo</button>

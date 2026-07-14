@@ -161,6 +161,38 @@ export function getAgeSaudeModifier(days) {
   return -15;                   // Idoso: maior vulnerabilidade
 }
 
+// Penalidade de recuperação por fase — animais mais velhos recuperam mais devagar.
+// Aplicada automaticamente por cima do multiplicador configurado pelo professor
+// (decisão da equipe: sem controle manual adicional para esta parte).
+export function getAgeRecoveryPenalty(days) {
+  if (days <= 30)  return 1.0;   // Recém-nascido: recuperação normal
+  if (days <= 180) return 1.0;   // Juvenil: recuperação normal
+  if (days <= 540) return 0.85;  // Adulto: recupera 15% mais devagar
+  return 0.65;                   // Idoso: recupera 35% mais devagar
+}
+
+// Aplica um delta de recuperação com "freio": impede que a correção
+// ultrapasse o centro da faixa normal do parâmetro, mesmo com multiplicador
+// alto. Evita que o animal saia de "crítico por valor alto" direto para
+// "crítico por valor baixo" (risco identificado pela Sâmela).
+export function aplicarDeltaComFreio(valorAtual, delta, faixaNormal, min, max) {
+  const centro = (faixaNormal[0] + faixaNormal[1]) / 2;
+  const bruto = valorAtual + delta;
+
+  // Se o delta empurra o valor para cima e ultrapassaria o centro
+  // vindo de baixo do centro, trava no centro.
+  if (delta > 0 && valorAtual < centro && bruto > centro) {
+    return Math.max(min, Math.min(max, centro));
+  }
+  // Se o delta empurra o valor para baixo e ultrapassaria o centro
+  // vindo de cima do centro, trava no centro.
+  if (delta < 0 && valorAtual > centro && bruto < centro) {
+    return Math.max(min, Math.min(max, centro));
+  }
+  // Caso contrário, aplica o delta normalmente dentro dos limites.
+  return Math.max(min, Math.min(max, bruto));
+}
+
 // ─── VALORES PADRÃO ───────────────────────────────────────────────────────────
 
 export function getDefaultPrimaryValues() {
