@@ -409,13 +409,13 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
           <div style={styles.fieldHint}>Clique na letra para marcar como correta</div>
 
           <div style={styles.fieldLabel}>Impacto no ACERTO (deltas)</div>
-          <div style={styles.simNotice}>✅ Defina quanto cada parâmetro melhora quando o aluno acerta.</div>
+          <div style={styles.simNotice}>✅ Defina quanto cada parâmetro muda quando o aluno acerta. Positivo aumenta, negativo diminui — escolha a direção que representa a recuperação nesse cenário (ex: numa crise de FC baixa, o acerto deve aumentar a FC).</div>
           {[
-            { id:'hidratacao', label:'💧 Hidratação', unit:'%', min:0, max:50, step:5 },
-            { id:'energia',    label:'⚡ Energia',    unit:'%', min:0, max:50, step:5 },
-            { id:'pas',        label:'🩸 PAS',        unit:'mmHg', min:-30, max:0, step:5 },
-            { id:'pad',        label:'🩸 PAD',        unit:'mmHg', min:-20, max:0, step:5 },
-            { id:'fc',         label:'❤️ FC',         unit:'bpm', min:-80, max:0, step:10 },
+            { id:'hidratacao', label:'💧 Hidratação', unit:'%', min:-30, max:30, step:5 },
+            { id:'energia',    label:'⚡ Energia',    unit:'%', min:-30, max:30, step:5 },
+            { id:'pas',        label:'🩸 PAS',        unit:'mmHg', min:-30, max:30, step:5 },
+            { id:'pad',        label:'🩸 PAD',        unit:'mmHg', min:-20, max:20, step:5 },
+            { id:'fc',         label:'❤️ FC',         unit:'bpm', min:-80, max:80, step:10 },
           ].map(p => {
             const val = (form.delta_acerto || {})[p.id] || 0;
             return (
@@ -433,13 +433,13 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
           })}
 
           <div style={styles.fieldLabel}>Impacto no ERRO (deltas)</div>
-          <div style={styles.simNotice}>❌ Defina quanto cada parâmetro piora quando o aluno erra.</div>
+          <div style={styles.simNotice}>❌ Defina quanto cada parâmetro muda quando o aluno erra. Normalmente na direção oposta ao acerto (ex: se o acerto reduz FC, o erro deveria aumentar).</div>
           {[
-            { id:'hidratacao', label:'💧 Hidratação', unit:'%', min:-50, max:0, step:5 },
-            { id:'energia',    label:'⚡ Energia',    unit:'%', min:-50, max:0, step:5 },
-            { id:'pas',        label:'🩸 PAS',        unit:'mmHg', min:0, max:30, step:5 },
-            { id:'pad',        label:'🩸 PAD',        unit:'mmHg', min:0, max:20, step:5 },
-            { id:'fc',         label:'❤️ FC',         unit:'bpm', min:0, max:80, step:10 },
+            { id:'hidratacao', label:'💧 Hidratação', unit:'%', min:-30, max:30, step:5 },
+            { id:'energia',    label:'⚡ Energia',    unit:'%', min:-30, max:30, step:5 },
+            { id:'pas',        label:'🩸 PAS',        unit:'mmHg', min:-30, max:30, step:5 },
+            { id:'pad',        label:'🩸 PAD',        unit:'mmHg', min:-20, max:20, step:5 },
+            { id:'fc',         label:'❤️ FC',         unit:'bpm', min:-80, max:80, step:10 },
           ].map(p => {
             const val = (form.delta_erro || {})[p.id] || 0;
             return (
