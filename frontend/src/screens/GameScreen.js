@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { PARAMS, getDefaultValues, getMascotStatus, applyPenalty, applyBonus, calculateFinalGrade, STATUS, calcularSaude, getAgeRecoveryPenalty, aplicarDeltaComFreio, getAgeStage, getAgePANormal } from '../engine/mascotEngine';
+import { PARAMS, getDefaultValues, getMascotStatus, applyPenalty, applyBonus, calculateFinalGrade, STATUS, calcularSaude, getAgeRecoveryPenalty, aplicarDeltaComFreio, getAgeStage, getAgePANormal, embaralharArray } from '../engine/mascotEngine';
 import { ranking as rankingApi, animal as animalApi, getToken, desafios as desafiosApi, configuracoes as configuracoesApi } from '../api';
 
 const MOCK_CHALLENGES = [
@@ -142,8 +142,11 @@ function GameScreen({ user, mode, values: initialValues, score: initialScore, on
   }, []);
   
   const [myRank, setMyRank] = useState('-');
-  const [challenges, setChallenges] = useState([]);
+  const [challengePool, setChallengePool] = useState([]); // pool completo, embaralhado
+  const [challenges, setChallenges] = useState([]);        // fatia atual (rodada em exibicao)
   const [loadingChallenges, setLoadingChallenges] = useState(true);
+
+  const TAMANHO_RODADA = 3; // mesmo padrao ja usado como default em totalChallenges
   const [attempts, setAttempts] = useState(0);
   const [paramHistory, setParamHistory] = useState([{
     label: 'Início',
@@ -152,6 +155,15 @@ function GameScreen({ user, mode, values: initialValues, score: initialScore, on
     fc: (initialValues || getDefaultValues()).fc,
     saude: 85,
   }]);
+
+  // CORRECAO B: define o pool completo (embaralhado) e exibe so a primeira
+  // fatia (tamanho TAMANHO_RODADA). O restante do pool fica reservado para
+  // as voltas extras de recuperacao, evitando repetir os mesmos desafios.
+  function definirPool(lista) {
+    const embaralhado = embaralharArray(lista);
+    setChallengePool(embaralhado);
+    setChallenges(embaralhado.slice(0, TAMANHO_RODADA));
+  }
 
   useEffect(() => {
     desafiosApi.get().then(data => {
@@ -196,15 +208,15 @@ function GameScreen({ user, mode, values: initialValues, score: initialScore, on
             );
             if (fallback.length === 0) fallback = MOCK_CHALLENGES; // seguranca: nunca deixar o quiz vazio
           }
-          setChallenges(sessaoChallenges.length > 0 ? sessaoChallenges : fallback);
+          definirPool(sessaoChallenges.length > 0 ? sessaoChallenges : fallback);
         } catch {
-          setChallenges(fromDB.length > 0 ? fromDB : MOCK_CHALLENGES);
+          definirPool(fromDB.length > 0 ? fromDB : MOCK_CHALLENGES);
         }
       } else {
-        setChallenges(fromDB.length > 0 ? [...MOCK_CHALLENGES, ...fromDB] : MOCK_CHALLENGES);
+        definirPool(fromDB.length > 0 ? [...MOCK_CHALLENGES, ...fromDB] : MOCK_CHALLENGES);
       }
     }).catch(() => {
-      setChallenges(MOCK_CHALLENGES);
+      definirPool(MOCK_CHALLENGES);
     }).finally(() => setLoadingChallenges(false));
   }, [mode]);
 
@@ -295,13 +307,20 @@ function GameScreen({ user, mode, values: initialValues, score: initialScore, on
         // intervencao original (a crise), travando o animal em estado critico mesmo
         // apos o aluno acertar o desafio. Removido, e PAS/PAD/FC agora recebem os
         // deltas de acerto, com saude recalculada ao final.
+        // CORRECAO: durante voltas extras de recuperacao (voltasExtrasUsadas > 0),
+        // a energia deixa de ser descontada. Essas voltas existem para corrigir
+        // uma crise causada pelo professor - descontar energia nelas fazia o
+        // animal cair em estado critico por baixa energia mesmo quando o aluno
+        // acertava tudo, o que nao tem relacao com o problema que ele esta
+        // tentando resolver. O consumo normal de energia (jogo do dia a dia,
+        // fora de voltas extras) continua igual.
         novosValores = {
           ...values,
           hidratacao: deltaAcertoComFreio(da.hidratacao, values.hidratacao || 70, hidNormalAtual, 0, 100),
           pas: deltaAcertoComFreio(da.pas, values.pas || 110, paNormalAtual.pas, 60, 200),
           pad: deltaAcertoComFreio(da.pad, values.pad || 70,  paNormalAtual.pad, 40, 120),
           fc:  deltaAcertoComFreio(da.fc,  values.fc  || 370, fcNormalAtual,     100, 600),
-          energia: Math.max(0, (values.energia || 80) - 10),
+          energia: voltasExtrasUsadas > 0 ? values.energia : Math.max(0, (values.energia || 80) - 10),
           age_days: ageDaysAtual,
         };
         novosValores.saude = calcularSaude(novosValores);
@@ -383,10 +402,23 @@ function GameScreen({ user, mode, values: initialValues, score: initialScore, on
 
     if (currentIdx + 1 >= challenges.length) {
       // Se o professor configurou desafios extras e ainda ha voltas
-      // disponiveis, repete a lista de desafios (mesmos desafios, nova
-      // chance de recuperacao) em vez de encerrar a sessao.
+      // disponiveis, avanca para a proxima fatia do pool (desafios
+      // diferentes), em vez de repetir os mesmos.
       const desafiosExtras = recuperacaoConfig.desafios_extras || 0;
       if (voltasExtrasUsadas < desafiosExtras) {
+        const proximaVolta = voltasExtrasUsadas + 1;
+        const inicioFatia = proximaVolta * TAMANHO_RODADA;
+        // Se o pool nao tem desafios suficientes para uma fatia nova sem
+        // repetir, reembaralha o pool inteiro e recomeca do zero (repeticao
+        // so acontece nesse caso extremo, apos esgotar todo o conteudo
+        // cadastrado pelo professor).
+        if (inicioFatia + TAMANHO_RODADA > challengePool.length) {
+          const poolReembaralhado = embaralharArray(challengePool);
+          setChallengePool(poolReembaralhado);
+          setChallenges(poolReembaralhado.slice(0, TAMANHO_RODADA));
+        } else {
+          setChallenges(challengePool.slice(inicioFatia, inicioFatia + TAMANHO_RODADA));
+        }
         setVoltasExtrasUsadas(v => v + 1);
         setCurrentIdx(0);
         setSelected(null);

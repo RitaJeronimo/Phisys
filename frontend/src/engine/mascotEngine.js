@@ -193,6 +193,17 @@ export function aplicarDeltaComFreio(valorAtual, delta, faixaNormal, min, max) {
   return Math.max(min, Math.min(max, bruto));
 }
 
+// Embaralha um array sem alterar o original (Fisher-Yates).
+// Usado para distribuir desafios diferentes em cada volta extra de recuperacao.
+export function embaralharArray(lista) {
+  const copia = [...lista];
+  for (let i = copia.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copia[i], copia[j]] = [copia[j], copia[i]];
+  }
+  return copia;
+}
+
 // ─── VALORES PADRÃO ───────────────────────────────────────────────────────────
 
 export function getDefaultPrimaryValues() {

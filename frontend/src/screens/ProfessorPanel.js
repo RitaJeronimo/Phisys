@@ -594,40 +594,60 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
             </div>
           </div>
 
-          <div style={{ margin:'0 1rem .75rem', background:'rgba(239,159,39,.15)', border:'1px solid rgba(239,159,39,.3)', borderRadius:'14px', padding:'1rem' }}>
-            <div style={{ fontSize:'12px', fontWeight:'700', color:'white', marginBottom:'8px' }}>🩺 Recuperação do Animal</div>
-            <div style={{ fontSize:'11px', color:'rgba(255,255,255,.65)', marginBottom:'12px', lineHeight:'1.4' }}>
-              Ajuste a intensidade e a quantidade de chances que o aluno tem para recuperar o animal de um estado crítico.
-            </div>
+          {(() => {
+            const TAMANHO_RODADA = 3; // mesmo padrao usado no GameScreen.js
+            const desafiosDisponiveis = challenges.filter(c => c.active && (sessaoFoco === 'todos' || c.focus === sessaoFoco)).length;
+            const voltasMaxSemRepetir = Math.max(0, Math.floor(desafiosDisponiveis / TAMANHO_RODADA) - 1);
+            const faltamDesafios = desafiosDisponiveis < TAMANHO_RODADA;
 
-            <div style={{ marginBottom:'14px' }}>
-              <div style={{ display:'flex', justifyContent:'space-between', fontSize:'11px', color:'rgba(255,255,255,.8)', marginBottom:'4px' }}>
-                <span>Multiplicador de recuperação</span>
-                <span style={{ fontWeight:'700', color:'white' }}>{recuperacaoConfig.multiplicador}x</span>
-              </div>
-              <input type="range" min="1" max="3" step="0.5" value={recuperacaoConfig.multiplicador}
-                onChange={e => {
-                  const newConfig = { ...recuperacaoConfig, multiplicador: Number(e.target.value) };
-                  setRecuperacaoConfig(newConfig);
-                  configuracoesApi.setRecuperacao(newConfig).catch(() => {});
-                }}
-                style={{ width:'100%', accentColor:'white' }}/>
-            </div>
+            return (
+              <div style={{ margin:'0 1rem .75rem', background:'rgba(239,159,39,.15)', border:'1px solid rgba(239,159,39,.3)', borderRadius:'14px', padding:'1rem' }}>
+                <div style={{ fontSize:'12px', fontWeight:'700', color:'white', marginBottom:'8px' }}>🩺 Recuperação do Animal</div>
+                <div style={{ fontSize:'11px', color:'rgba(255,255,255,.65)', marginBottom:'12px', lineHeight:'1.4' }}>
+                  Ajuste a intensidade e a quantidade de chances que o aluno tem para recuperar o animal de um estado crítico.
+                </div>
 
-            <div>
-              <div style={{ display:'flex', justifyContent:'space-between', fontSize:'11px', color:'rgba(255,255,255,.8)', marginBottom:'4px' }}>
-                <span>Voltas extras de desafios</span>
-                <span style={{ fontWeight:'700', color:'white' }}>{recuperacaoConfig.desafios_extras}</span>
+                {faltamDesafios && (
+                  <div style={{ background:'rgba(220,60,60,.2)', border:'1px solid rgba(220,60,60,.4)', borderRadius:'10px', padding:'.6rem .75rem', marginBottom:'12px', fontSize:'11px', color:'white', lineHeight:'1.4' }}>
+                    ⚠️ São necessários pelo menos {TAMANHO_RODADA} desafios ativos neste foco para uma sessão completa funcionar. Atualmente: {desafiosDisponiveis}.
+                  </div>
+                )}
+
+                <div style={{ marginBottom:'14px' }}>
+                  <div style={{ display:'flex', justifyContent:'space-between', fontSize:'11px', color:'rgba(255,255,255,.8)', marginBottom:'4px' }}>
+                    <span>Multiplicador de recuperação</span>
+                    <span style={{ fontWeight:'700', color:'white' }}>{recuperacaoConfig.multiplicador}x</span>
+                  </div>
+                  <input type="range" min="1" max="3" step="0.5" value={recuperacaoConfig.multiplicador}
+                    onChange={e => {
+                      const newConfig = { ...recuperacaoConfig, multiplicador: Number(e.target.value) };
+                      setRecuperacaoConfig(newConfig);
+                      configuracoesApi.setRecuperacao(newConfig).catch(() => {});
+                    }}
+                    style={{ width:'100%', accentColor:'white' }}/>
+                </div>
+
+                <div>
+                  <div style={{ display:'flex', justifyContent:'space-between', fontSize:'11px', color:'rgba(255,255,255,.8)', marginBottom:'4px' }}>
+                    <span>Voltas extras de desafios</span>
+                    <span style={{ fontWeight:'700', color:'white' }}>{recuperacaoConfig.desafios_extras}</span>
+                  </div>
+                  <input type="range" min="0" max={Math.max(voltasMaxSemRepetir, 5)} step="1" value={recuperacaoConfig.desafios_extras}
+                    onChange={e => {
+                      const newConfig = { ...recuperacaoConfig, desafios_extras: Number(e.target.value) };
+                      setRecuperacaoConfig(newConfig);
+                      configuracoesApi.setRecuperacao(newConfig).catch(() => {});
+                    }}
+                    style={{ width:'100%', accentColor:'white' }}/>
+                  <div style={{ fontSize:'10px', color:'rgba(255,255,255,.5)', marginTop:'4px' }}>
+                    {voltasMaxSemRepetir > 0
+                      ? `Máximo sem repetir desafios: ${voltasMaxSemRepetir} volta(s), com ${desafiosDisponiveis} desafios cadastrados.`
+                      : `Com ${desafiosDisponiveis} desafio(s) cadastrado(s), qualquer volta extra vai repetir os mesmos desafios.`}
+                  </div>
+                </div>
               </div>
-              <input type="range" min="0" max="5" step="1" value={recuperacaoConfig.desafios_extras}
-                onChange={e => {
-                  const newConfig = { ...recuperacaoConfig, desafios_extras: Number(e.target.value) };
-                  setRecuperacaoConfig(newConfig);
-                  configuracoesApi.setRecuperacao(newConfig).catch(() => {});
-                }}
-                style={{ width:'100%', accentColor:'white' }}/>
-            </div>
-          </div>
+            );
+          })()}
 
           <div style={styles.challengeHeader}>
             <div style={styles.sectionTitle}>desafios cadastrados ({challenges.length})</div>
