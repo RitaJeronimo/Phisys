@@ -175,9 +175,25 @@ export function getAgeRecoveryPenalty(days) {
 // ultrapasse o centro da faixa normal do parâmetro, mesmo com multiplicador
 // alto. Evita que o animal saia de "crítico por valor alto" direto para
 // "crítico por valor baixo" (risco identificado pela Sâmela).
+// CORRECAO: o freio original só travava na PRIMEIRA vez que a correção
+// cruzava o centro. Depois disso, o valor ja estava "dentro" da faixa e
+// a trava deixava de valer, permitindo que acertos seguintes empurrassem
+// o parametro indefinidamente para o lado oposto (ex: FC subindo de 180
+// ate 580, saindo de critico-baixo para critico-alto). Agora, uma vez que
+// o valor esta DENTRO da faixa normal, qualquer novo delta fica travado
+// dentro dos limites dessa mesma faixa - nao escapa mais para o lado
+// oposto, nao importa quantos acertos a mais aconteçam.
 export function aplicarDeltaComFreio(valorAtual, delta, faixaNormal, min, max) {
-  const centro = (faixaNormal[0] + faixaNormal[1]) / 2;
+  const dentroDaFaixaAtual = valorAtual >= faixaNormal[0] && valorAtual <= faixaNormal[1];
   const bruto = valorAtual + delta;
+
+  if (dentroDaFaixaAtual) {
+    // Ja esta na faixa normal: qualquer correcao adicional fica presa
+    // dentro dos limites da propria faixa, sem escapar para o lado oposto.
+    return Math.max(faixaNormal[0], Math.min(faixaNormal[1], bruto));
+  }
+
+  const centro = (faixaNormal[0] + faixaNormal[1]) / 2;
 
   // Se o delta empurra o valor para cima e ultrapassaria o centro
   // vindo de baixo do centro, trava no centro.

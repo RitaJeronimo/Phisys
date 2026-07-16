@@ -228,7 +228,13 @@ useEffect(() => {
           definirPool(fromDBCoerente.length > 0 ? fromDBCoerente : MOCK_CHALLENGES);
         }
       } else {
-        definirPool(fromDBCoerente.length > 0 ? [...MOCK_CHALLENGES, ...fromDBCoerente] : MOCK_CHALLENGES);
+        // CORRECAO: antes, o Modo Livre sempre misturava MOCK_CHALLENGES junto
+        // com os desafios reais do banco. Isso quebrava a garantia de coerencia
+        // (decisao de Marcia e Samela, Opcao B) porque os mocks nao tem o campo
+        // intervencao, entao "vazavam" no pool mesmo quando uma simulacao
+        // especifica estava ativa. Agora os mocks so sao usados como ultimo
+        // recurso, quando NAO ha nenhum desafio real cadastrado no banco.
+        definirPool(fromDBCoerente.length > 0 ? fromDBCoerente : MOCK_CHALLENGES);
       }
     }).catch(() => {
       definirPool(MOCK_CHALLENGES);
