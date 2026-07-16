@@ -34,6 +34,7 @@ const EMPTY_SIMULATION = {
   title:'', focus:'cardiovascular', active:true, description:'',
   params: getDefaultSimParams(),
   cuidadosPorSessao: 3,
+  intervencao: 'desidratacao',
 };
 
 const MEDAL = ['🥇','🥈','🥉'];
@@ -148,6 +149,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
             description: d.descricao || '',
             params: typeof d.params === 'string' ? JSON.parse(d.params) : d.params,
             cuidadosPorSessao: d.cuidados_por_sessao ?? 3,
+            intervencao: d.intervencao || 'desidratacao',
           }));
           setSimulations(formatted);
         } else {
@@ -334,6 +336,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
             foco: simForm.focus,
             params: simForm.params,
             cuidados_por_sessao: simForm.cuidadosPorSessao,
+            intervencao: simForm.intervencao,
           }),
         });
         setSimulations(prev => [...prev, { ...simForm, id: created.id }]);
@@ -348,6 +351,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
             params: simForm.params,
             ativo: simForm.active,
             cuidados_por_sessao: simForm.cuidadosPorSessao,
+            intervencao: simForm.intervencao,
           }),
         });
         setSimulations(prev => prev.map(s => s.id === editing ? { ...simForm, id:s.id } : s));
@@ -491,6 +495,13 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
               🫗 Renal
             </div>
           </div>
+          <div style={styles.fieldLabel}>Cenário fisiológico (crise representada)</div>
+          <div style={styles.simNotice}>
+            🎯 Define qual crise esta simulação representa. Só desafios com o mesmo cenário serão mostrados ao aluno durante a recuperação, garantindo coerência entre o problema e as perguntas.
+          </div>
+          <select style={styles.input} value={simForm.intervencao} onChange={e=>setSimForm(f=>({...f,intervencao:e.target.value}))}>
+            {Object.entries(INTERVENTIONS).map(([k,v])=>(<option key={k} value={k}>{v.label}</option>))}
+          </select>
           <div style={styles.fieldLabel}>Descrição para o aluno</div>
           <textarea style={{...styles.input, minHeight:'60px', resize:'vertical'}} value={simForm.description} onChange={e=>setSimForm(f=>({...f,description:e.target.value}))} placeholder="Descreva o quadro clínico que o aluno deverá reverter..."/>
           <div style={styles.fieldLabel}>Cuidados diários liberados nesta sessão</div>
@@ -701,6 +712,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
               </div>
               <div style={styles.challengeMeta}>
                 <span style={styles.metaTag}>{focusLabel[sim.focus]}</span>
+                {sim.intervencao && <span style={styles.metaTag}>{INTERVENTIONS[sim.intervencao]?.label}</span>}
               </div>
               {sim.description && <div style={styles.challengeQ}>{sim.description}</div>}
               <div style={styles.simParamsPreview}>

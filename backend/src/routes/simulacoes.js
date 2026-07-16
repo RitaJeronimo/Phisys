@@ -29,14 +29,13 @@ router.get('/', auth, async (req, res) => {
 // POST /api/simulacoes – cria nova simulação (professor only)
 router.post('/', auth, async (req, res) => {
   if (req.usuario.modo !== 'professor') return res.status(403).json({ erro: 'Acesso negado.' });
-  const { titulo, descricao, foco, params, cuidados_por_sessao } = req.body;
+  const { titulo, descricao, foco, params, cuidados_por_sessao, intervencao } = req.body;
   try {
     const result = await pool.query(
-      `INSERT INTO simulacoes (titulo, descricao, foco, params, cuidados_por_sessao)
-       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [titulo, descricao, foco, JSON.stringify(params), cuidados_por_sessao ?? 3]
-    );
-    res.status(201).json(result.rows[0]);
+      `INSERT INTO simulacoes (titulo, descricao, foco, params, cuidados_por_sessao, intervencao)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [titulo, descricao, foco, JSON.stringify(params), cuidados_por_sessao ?? 3, intervencao || null]
+    );    res.status(201).json(result.rows[0]);
   } catch (err) {
     res.status(500).json({ erro: 'Erro interno.' });
   }
@@ -106,7 +105,7 @@ router.put('/:id/ativar', auth, async (req, res) => {
 router.put('/:id', auth, async (req, res) => {
   if (req.usuario.modo !== 'professor') return res.status(403).json({ erro: 'Acesso negado.' });
   const { id } = req.params;
-  const { titulo, descricao, foco, params, ativo, cuidados_por_sessao } = req.body;
+  const { titulo, descricao, foco, params, ativo, cuidados_por_sessao, intervencao } = req.body;
   try {
     const result = await pool.query(
       `UPDATE simulacoes SET
@@ -115,9 +114,10 @@ router.put('/:id', auth, async (req, res) => {
         foco                 = COALESCE($3, foco),
         params               = COALESCE($4, params),
         ativo                = COALESCE($5, ativo),
-        cuidados_por_sessao  = COALESCE($6, cuidados_por_sessao)
-       WHERE id = $7 RETURNING *`,
-      [titulo, descricao, foco, params ? JSON.stringify(params) : null, ativo, cuidados_por_sessao, id]
+        cuidados_por_sessao  = COALESCE($6, cuidados_por_sessao),
+        intervencao          = COALESCE($7, intervencao)
+       WHERE id = $8 RETURNING *`,
+      [titulo, descricao, foco, params ? JSON.stringify(params) : null, ativo, cuidados_por_sessao, intervencao, id]
     );
     res.json(result.rows[0]);
   } catch (err) {

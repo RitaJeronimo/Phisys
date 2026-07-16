@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { PARAMS, getDefaultValues, getMascotStatus, applyPenalty, applyBonus, calculateFinalGrade, STATUS, calcularSaude, getAgeRecoveryPenalty, aplicarDeltaComFreio, getAgeStage, getAgePANormal, embaralharArray } from '../engine/mascotEngine';
-import { ranking as rankingApi, animal as animalApi, getToken, desafios as desafiosApi, configuracoes as configuracoesApi } from '../api';
+import { ranking as rankingApi, animal as animalApi, getToken, desafios as desafiosApi, configuracoes as configuracoesApi, simulacoes as simulacoesApi } from '../api';
 
 const MOCK_CHALLENGES = [
   {
@@ -165,13 +165,17 @@ function GameScreen({ user, mode, values: initialValues, score: initialScore, on
     setChallenges(embaralhado.slice(0, TAMANHO_RODADA));
   }
 
-  useEffect(() => {
-    desafiosApi.get().then(data => {
+useEffect(() => {
+    Promise.all([
+      desafiosApi.get(),
+      simulacoesApi.getAtiva().catch(() => null),
+    ]).then(([data, simAtiva]) => {
       const fromDB = Array.isArray(data) && data.length > 0
         ? data.map(d => ({
             id: d.id,
             tag: `Desafio #${d.id}`,
             focus: d.foco || 'renal',
+            intervencao: d.intervencao || null,
             text: d.pergunta,
             options: (Array.isArray(d.opcoes) ? d.opcoes : JSON.parse(d.opcoes)).map((opt, i) => ({
               letter: String.fromCharCode(65 + i),
@@ -185,11 +189,22 @@ function GameScreen({ user, mode, values: initialValues, score: initialScore, on
           }))
         : [];
 
+      // CORRECAO (decisao de Marcia e Samela, 16/07/2026 - Opcao B): se houver
+      // uma simulacao ativa com intervencao definida, os desafios mostrados ao
+      // aluno devem SEMPRE ser coerentes com essa crise especifica, sem
+      // excecao. Isso evita que o aluno acerte um desafio de outro tema e
+      // acabe piorando o parametro que a crise real do animal exige corrigir.
+      const intervencaoAtiva = simAtiva?.intervencao || null;
+      let fromDBCoerente = fromDB;
+      if (intervencaoAtiva) {
+        fromDBCoerente = fromDB.filter(c => c.intervencao === intervencaoAtiva);
+      }
+
       if (mode === 'sessao') {
         try {
           const cfg = JSON.parse(localStorage.getItem('phisys_sessao_config') || '{}');
           const foco = cfg.foco || 'todos';
-          let sessaoChallenges = fromDB.filter(c => c.active !== false);
+          let sessaoChallenges = fromDBCoerente.filter(c => c.active !== false);
           if (foco !== 'todos') {
             sessaoChallenges = sessaoChallenges.filter(c =>
               c.focus?.toLowerCase().includes(foco.toLowerCase())
@@ -210,10 +225,10 @@ function GameScreen({ user, mode, values: initialValues, score: initialScore, on
           }
           definirPool(sessaoChallenges.length > 0 ? sessaoChallenges : fallback);
         } catch {
-          definirPool(fromDB.length > 0 ? fromDB : MOCK_CHALLENGES);
+          definirPool(fromDBCoerente.length > 0 ? fromDBCoerente : MOCK_CHALLENGES);
         }
       } else {
-        definirPool(fromDB.length > 0 ? [...MOCK_CHALLENGES, ...fromDB] : MOCK_CHALLENGES);
+        definirPool(fromDBCoerente.length > 0 ? [...MOCK_CHALLENGES, ...fromDBCoerente] : MOCK_CHALLENGES);
       }
     }).catch(() => {
       definirPool(MOCK_CHALLENGES);

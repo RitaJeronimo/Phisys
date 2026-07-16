@@ -162,6 +162,15 @@ async function adicionarColunas() {
     // simulacao especifica.
     await pool.query(`ALTER TABLE simulacoes ADD COLUMN IF NOT EXISTS cuidados_por_sessao INTEGER DEFAULT 3`);
 
+    // Identifica qual crise/intervencao especifica a simulacao representa
+    // (mesmo vocabulario usado em desafios.intervencao: desidratacao,
+    // hipertensao, bradicardia, etc.). Usado para filtrar os desafios
+    // mostrados ao aluno, garantindo coerencia com a crise ativa - decisao
+    // da Marcia e da Samela (16/07/2026): priorizar coerencia em vez de
+    // variedade, para nao desestimular o aluno com desafios incoerentes
+    // com o estado atual do animal.
+    await pool.query(`ALTER TABLE simulacoes ADD COLUMN IF NOT EXISTS intervencao VARCHAR(50)`);
+
     // Contador exato de usos por aluno + simulacao + cuidado, no Modo Sessao.
     // Substitui o calculo por comparacao de horario (usado_em >= inicio_sessao),
     // que se mostrou fragil (varios bugs de fuso horario ja encontrados nessa
