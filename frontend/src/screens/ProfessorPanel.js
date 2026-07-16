@@ -122,6 +122,12 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
             options: Array.isArray(d.opcoes) ? d.opcoes : JSON.parse(d.opcoes),
             correct: d.correta,
             active: d.ativo,
+            // CORRECAO CRITICA: esses dois campos estavam faltando aqui, fazendo
+            // o formulario de edicao sempre cair no padrao {0,0,0,0,0} apos
+            // qualquer F5/reload - e se o professor salvasse sem notar,
+            // isso APAGAVA os valores reais de impacto no banco de dados.
+            delta_acerto: typeof d.delta_acerto === 'string' ? JSON.parse(d.delta_acerto) : (d.delta_acerto || {}),
+            delta_erro:   typeof d.delta_erro   === 'string' ? JSON.parse(d.delta_erro)   : (d.delta_erro   || {}),
           }));
           setChallenges(formatted);
         } else {
