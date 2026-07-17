@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { PARAMS, getDefaultValues, getMascotStatus, applyPenalty, applyBonus, calculateFinalGrade, STATUS, calcularSaude, getAgeRecoveryPenalty, aplicarDeltaComFreio, getAgeStage, getAgePANormal, embaralharArray } from '../engine/mascotEngine';
+import { PARAMS, getDefaultValues, getMascotStatus, applyPenalty, applyBonus, calculateFinalGrade, STATUS, calcularSaude, getAgeRecoveryPenalty, aplicarDeltaComFreio, getAgeStage, getAgePANormal, embaralharArray, calcularEnergiaModulada } from '../engine/mascotEngine';
 import { ranking as rankingApi, animal as animalApi, getToken, desafios as desafiosApi, configuracoes as configuracoesApi, simulacoes as simulacoesApi } from '../api';
 
 const MOCK_CHALLENGES = [
@@ -528,7 +528,18 @@ useEffect(() => {
       <div style={styles.mascotSection}>
         <ChibiMascot status={status} size={72}/>
         <div style={styles.paramsPanel}>
-          {PARAMS.map(p => (<ParamBar key={p.id} param={p} value={values[p.id]}/>))}
+          {/* CORRECAO: a energia exibida aqui era o valor bruto (values.energia),
+              enquanto a HomeScreen ja aplicava calcularEnergiaModulada (reduz a
+              energia exibida quando saude/hidratacao estao baixas). Isso fazia
+              a mesma energia real aparecer diferente em cada tela (ex: 80% aqui,
+              60% na Home). Agora as duas telas usam a mesma formula. */}
+          {PARAMS.map(p => (
+            <ParamBar
+              key={p.id}
+              param={p}
+              value={p.id === 'energia' ? calcularEnergiaModulada(values, calcularSaude(values)) : values[p.id]}
+            />
+          ))}
         </div>
       </div>
 
