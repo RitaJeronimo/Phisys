@@ -259,7 +259,11 @@ useEffect(() => {
     if (answered || finished) return;
     const interval = setInterval(() => {
       setSeconds(s => s + 1);
-      setScore(s => applyPenalty(s, status));
+      // CORRECAO: removida a penalidade de pontos por segundo (applyPenalty
+      // rodando a cada tick do timer). Isso descontava pontos so pelo tempo
+      // passar com o animal em status Debilitado/Critico, mesmo sem o aluno
+      // ter errado nada - nao era uma regra pedagogica intencional, so um
+      // resto de uma versao anterior do sistema de pontuacao.
     }, 1000);
     return () => clearInterval(interval);
   }, [status, answered, finished]);
