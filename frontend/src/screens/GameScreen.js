@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { PARAMS, getDefaultValues, getMascotStatus, applyPenalty, applyBonus, calculateFinalGrade, STATUS, calcularSaude, getAgeRecoveryPenalty, aplicarDeltaComFreio, getAgeStage, getAgePANormal, embaralharArray, calcularEnergiaModulada } from '../engine/mascotEngine';
+import { PARAMS, getDefaultValues, getMascotStatus, applyBonus, calculateFinalGrade, STATUS, calcularSaude, calcularEnergiaModulada, getAgeRecoveryPenalty, aplicarDeltaComFreio, getAgeStage, getAgePANormal, embaralharArray } from '../engine/mascotEngine';
 import { ranking as rankingApi, animal as animalApi, getToken, desafios as desafiosApi, configuracoes as configuracoesApi, simulacoes as simulacoesApi } from '../api';
 
 const MOCK_CHALLENGES = [
