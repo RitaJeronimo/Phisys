@@ -194,7 +194,7 @@ function FinalScreen({ user, score, saude, seconds, solvedChallenges, totalChall
 }
 
 const styles = {
-  screen:       { width:'100%', maxWidth:'400px', minHeight:'100vh', display:'flex', flexDirection:'column', background:GRADIENT, margin:'0 auto', overflowX:'hidden' },
+  screen:       { width:'100%', minHeight:'100vh', display:'flex', flexDirection:'column', background:GRADIENT, margin:'0 auto', overflowX:'hidden' },
   topbar:       { padding:'1.5rem 1rem 1rem', display:'flex', justifyContent:'center' },
   title:        { fontSize:'20px', fontWeight:'700', color:'white' },
   msgCard:      { margin:'0 1rem .75rem', background:'rgba(255,255,255,.15)', border:'1px solid rgba(255,255,255,.3)', borderRadius:'14px', padding:'1rem' },

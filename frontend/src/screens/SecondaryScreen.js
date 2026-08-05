@@ -251,7 +251,7 @@ function SecondaryScreen({ values, onBack }) {
 }
 
 const styles = {
-  screen:           { width:'100%', maxWidth:'400px', minHeight:'100vh', display:'flex', flexDirection:'column', background:GRADIENT, margin:'0 auto', overflowY:'auto' },
+  screen:           { width:'100%', minHeight:'100vh', display:'flex', flexDirection:'column', background:GRADIENT, margin:'0 auto', overflowY:'auto' },
   topbar:           { padding:'1rem', display:'flex', alignItems:'center', justifyContent:'space-between' },
   backBtn:          { background:'rgba(255,255,255,.15)', border:'1px solid rgba(255,255,255,.3)', borderRadius:'20px', padding:'6px 14px', color:'white', fontSize:'12px', cursor:'pointer', fontFamily:'inherit' },
   title:            { fontSize:'14px', fontWeight:'700', color:'white' },

@@ -1038,7 +1038,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
 }
 
 const styles = {
-  screen:           { width:'100%', maxWidth:'420px', minHeight:'100vh', display:'flex', flexDirection:'column', background:GRADIENT, margin:'0 auto', paddingBottom:'2rem', overflowX:'hidden' },
+  screen:           { width:'100%', minHeight:'100vh', display:'flex', flexDirection:'column', background:GRADIENT, margin:'0 auto', paddingBottom:'2rem', overflowX:'hidden' },
   topbar:           { padding:'1.25rem 1rem .75rem', display:'flex', alignItems:'center', justifyContent:'space-between' },
   backBtn:          { fontSize:'20px', cursor:'pointer', background:'none', border:'none', color:'white' },
   title:            { fontSize:'16px', fontWeight:'700', color:'white' },

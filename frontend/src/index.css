@@ -63,3 +63,24 @@ input, select, textarea {
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
 }
+
+.app-screen {
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+}
+.app-screen--wide {
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+@media (min-width: 700px) {
+  .app-screen { max-width: 640px; }
+  .app-screen--wide { max-width: 680px; }
+}
+
+@media (min-width: 1100px) {
+  .app-screen { max-width: 860px; }
+  .app-screen--wide { max-width: 920px; }
+}

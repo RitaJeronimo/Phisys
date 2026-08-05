@@ -38,7 +38,7 @@ function RankingScreen({ user, onBack }) {
   const GRADIENT = 'linear-gradient(160deg, #1B4FCC 0%, #7B2FBE 50%, #CC1B1B 100%)';
 
   return (
-    <div style={{ width:'100%', maxWidth:'400px', minHeight:'100vh', display:'flex', flexDirection:'column', background:GRADIENT, margin:'0 auto', paddingBottom:'2rem' }}>
+    <div className="app-screen" style={{ width:'100%', minHeight:'100vh', display:'flex', flexDirection:'column', background:GRADIENT, margin:'0 auto', paddingBottom:'2rem' }}>
 
       <div style={{ padding:'1.25rem 1.5rem 0.75rem', display:'flex', alignItems:'center', gap:'1rem' }}>
         <button style={{ fontSize:'20px', cursor:'pointer', background:'none', border:'none', color:'white' }} onClick={onBack}>←</button>

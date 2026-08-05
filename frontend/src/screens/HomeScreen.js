@@ -421,7 +421,7 @@ function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, on
 }
 
 const styles = {
-  screen:           { width:'100%', maxWidth:'400px', minHeight:'100vh', display:'flex', flexDirection:'column', background:GRADIENT, margin:'0 auto', paddingBottom:'1rem', overflowX:'hidden' },
+  screen:           { width:'100%', minHeight:'100vh', display:'flex', flexDirection:'column', background:GRADIENT, margin:'0 auto', paddingBottom:'1rem', overflowX:'hidden' },
   topbar:           { padding:'1rem 1rem .5rem', display:'flex', justifyContent:'space-between', alignItems:'center' },
   userName:         { fontSize:'16px', fontWeight:'700', color:'white' },
   userSub:          { fontSize:'11px', color:'rgba(255,255,255,.6)' },

@@ -615,7 +615,7 @@ useEffect(() => {
 const GRADIENT = 'linear-gradient(160deg, #1B4FCC 0%, #7B2FBE 50%, #CC1B1B 100%)';
 
 const styles = {
-  screen:             { width:'100%', maxWidth:'400px', minHeight:'100vh', display:'flex', flexDirection:'column', background:GRADIENT, margin:'0 auto' },
+  screen:             { width:'100%', minHeight:'100vh', display:'flex', flexDirection:'column', background:GRADIENT, margin:'0 auto' },
   topbar:             { padding:'1.25rem 1.5rem 0.75rem', display:'flex', justifyContent:'space-between', alignItems:'center' },
   backBtn:            { fontSize:'20px', cursor:'pointer', background:'none', border:'none', color:'white' },
   scoreBadge:         { background:'rgba(255,255,255,0.15)', border:'1px solid rgba(255,255,255,0.25)', borderRadius:'20px', padding:'4px 14px', fontSize:'12px', color:'white', fontWeight:'600' },
@@ -623,11 +623,11 @@ const styles = {
   mascotSection:      { padding:'0.5rem 1.5rem 0', display:'flex', alignItems:'center', gap:'1rem' },
   paramsPanel:        { flex:1, display:'flex', flexDirection:'column', gap:'6px' },
   paramItem:          { display:'flex', alignItems:'center', gap:'8px' },
-  paramLabel:         { fontSize:'10px', color:'rgba(255,255,255,0.65)', width:'55px' },
+  paramLabel:         { fontSize:'13px', color:'rgba(255,255,255,0.75)', width:'65px' },
   paramTrack:         { flex:1, height:'6px', background:'rgba(255,255,255,0.15)', borderRadius:'3px', overflow:'hidden', position:'relative' },
   paramNormal:        { position:'absolute', height:'100%', background:'rgba(255,255,255,0.2)', borderRadius:'3px' },
   paramFill:          { position:'absolute', height:'100%', borderRadius:'3px', transition:'width 0.3s' },
-  paramVal:           { fontSize:'10px', color:'white', fontWeight:'600', width:'36px', textAlign:'right' },
+  paramVal:           { fontSize:'13px', color:'white', fontWeight:'600', width:'40px', textAlign:'right' },
   statusBar:          { margin:'0.75rem 1.5rem', display:'flex', gap:'8px' },
   statusPill:         { flex:1, background:'rgba(255,255,255,0.1)', border:'1px solid rgba(255,255,255,0.15)', borderRadius:'10px', padding:'8px', textAlign:'center' },
   statusPillVal:      { fontSize:'14px', fontWeight:'700', color:'white' },
