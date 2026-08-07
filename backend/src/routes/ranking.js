@@ -3,19 +3,32 @@ const router = express.Router();
 const pool = require('../db/connection');
 const auth = require('../middleware/auth');
 
-// GET /api/ranking – ranking geral da turma
+// GET /api/ranking – ranking da turma (aluno ve a propria turma; professor pode filtrar via query)
 router.get('/', auth, async (req, res) => {
   try {
-    const result = await pool.query(
-      `SELECT u.id, u.nome, u.matricula,
-       r.xp_total, r.sessoes, r.media_saude, r.nota_final,
-       RANK() OVER (ORDER BY r.xp_total DESC) AS posicao
-       FROM usuarios u
-       JOIN ranking r ON r.usuario_id = u.id
-       WHERE u.modo = 'aluno'
-       ORDER BY r.xp_total DESC
-       LIMIT 50`
-    );
+    const isProfessor = req.usuario.modo === 'professor';
+    const turma_id = isProfessor ? req.query.turma_id : req.usuario.turma_id;
+
+    const query = turma_id
+      ? `SELECT u.id, u.nome, u.matricula,
+         r.xp_total, r.sessoes, r.media_saude, r.nota_final,
+         RANK() OVER (ORDER BY r.xp_total DESC) AS posicao
+         FROM usuarios u
+         JOIN ranking r ON r.usuario_id = u.id
+         WHERE u.modo = 'aluno' AND u.turma_id = $1
+         ORDER BY r.xp_total DESC
+         LIMIT 50`
+      : `SELECT u.id, u.nome, u.matricula,
+         r.xp_total, r.sessoes, r.media_saude, r.nota_final,
+         RANK() OVER (ORDER BY r.xp_total DESC) AS posicao
+         FROM usuarios u
+         JOIN ranking r ON r.usuario_id = u.id
+         WHERE u.modo = 'aluno'
+         ORDER BY r.xp_total DESC
+         LIMIT 50`;
+    const params = turma_id ? [turma_id] : [];
+
+    const result = await pool.query(query, params);
     res.json(result.rows);
   } catch (err) {
     console.error('Erro ao buscar ranking:', err.message);
@@ -64,16 +77,19 @@ router.put('/:id/nota', auth, async (req, res) => {
   }
 });
 
-// POST /api/ranking/reset – professor zera turma (ranking + sessões + animais)
+// POST /api/ranking/reset – professor zera uma turma especifica (ranking + sessões + animais)
 router.post('/reset', auth, async (req, res) => {
   if (req.usuario.modo !== 'professor') {
     return res.status(403).json({ erro: 'Acesso negado.' });
   }
+  const { turma_id } = req.body;
+  if (!turma_id) {
+    return res.status(400).json({ erro: 'turma_id e obrigatorio.' });
+  }
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-
-    // 1. Zera ranking de todos os alunos
+    // 1. Zera ranking dos alunos da turma
     await client.query(`
       UPDATE ranking SET
         xp_total      = 0,
@@ -81,16 +97,14 @@ router.post('/reset', auth, async (req, res) => {
         media_saude   = 0,
         nota_final    = NULL,
         atualizado_em = NOW()
-      WHERE usuario_id IN (SELECT id FROM usuarios WHERE modo = 'aluno')
-    `);
-
-    // 2. Deleta sessões de todos os alunos
+      WHERE usuario_id IN (SELECT id FROM usuarios WHERE modo = 'aluno' AND turma_id = $1)
+    `, [turma_id]);
+    // 2. Deleta sessões dos alunos da turma
     await client.query(`
       DELETE FROM sessoes
-      WHERE usuario_id IN (SELECT id FROM usuarios WHERE modo = 'aluno')
-    `);
-
-    // 3. Reseta animais para os valores padrão
+      WHERE usuario_id IN (SELECT id FROM usuarios WHERE modo = 'aluno' AND turma_id = $1)
+    `, [turma_id]);
+    // 3. Reseta animais dos alunos da turma para os valores padrão
     await client.query(`
       UPDATE animal SET
         energia       = 80,
@@ -101,9 +115,8 @@ router.post('/reset', auth, async (req, res) => {
         peso          = 300,
         saude         = 85,
         atualizado_em = NOW()
-      WHERE usuario_id IN (SELECT id FROM usuarios WHERE modo = 'aluno')
-    `);
-
+      WHERE usuario_id IN (SELECT id FROM usuarios WHERE modo = 'aluno' AND turma_id = $1)
+    `, [turma_id]);
     await client.query('COMMIT');
     res.json({ ok: true, mensagem: 'Turma zerada com sucesso.' });
   } catch (err) {

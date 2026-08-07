@@ -19,6 +19,7 @@ app.use('/api/sessoes', require('./routes/sessoes'));
 app.use('/api/simulacoes', require('./routes/simulacoes'));
 app.use('/api/mensagens', require('./routes/mensagens'));
 app.use('/api/configuracoes', require('./routes/configuracoes'));
+app.use('/api/turmas', require('./routes/turmas'));
 
 app.get('/', (req, res) => {
   res.json({ status: 'Phisys API rodando!', version: '1.0.0' });

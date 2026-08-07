@@ -30,7 +30,7 @@ router.post('/login', async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: usuario.id, nome: usuario.nome, matricula: usuario.matricula, modo: usuario.modo },
+      { id: usuario.id, nome: usuario.nome, matricula: usuario.matricula, modo: usuario.modo, turma_id: usuario.turma_id },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN }
     );
@@ -42,6 +42,7 @@ router.post('/login', async (req, res) => {
         nome: usuario.nome,
         matricula: usuario.matricula,
         modo: usuario.modo,
+        turma_id: usuario.turma_id,
       }
     });
 
@@ -53,10 +54,15 @@ router.post('/login', async (req, res) => {
 
 // POST /api/auth/registro
 router.post('/registro', async (req, res) => {
-  const { nome, matricula, senha, modo } = req.body;
+  const { nome, matricula, senha, modo, codigo_turma } = req.body;
 
   if (!nome || !matricula || !senha || !modo) {
     return res.status(400).json({ erro: 'Todos os campos sao obrigatorios.' });
+  }
+
+  // Codigo de turma obrigatorio apenas para alunos
+  if (modo === 'aluno' && !codigo_turma) {
+    return res.status(400).json({ erro: 'Codigo de turma e obrigatorio.' });
   }
 
   try {
@@ -69,11 +75,23 @@ router.post('/registro', async (req, res) => {
       return res.status(409).json({ erro: 'Matricula ja cadastrada.' });
     }
 
+    let turma_id = null;
+    if (modo === 'aluno') {
+      const turma = await pool.query(
+        'SELECT id FROM turmas WHERE codigo = $1 AND ativa = true',
+        [codigo_turma]
+      );
+      if (turma.rows.length === 0) {
+        return res.status(400).json({ erro: 'Codigo de turma invalido ou turma inativa.' });
+      }
+      turma_id = turma.rows[0].id;
+    }
+
     const senha_hash = await bcrypt.hash(senha, 10);
 
     const result = await pool.query(
-      'INSERT INTO usuarios (nome, matricula, senha_hash, modo) VALUES ($1, $2, $3, $4) RETURNING id, nome, matricula, modo',
-      [nome, matricula, senha_hash, modo]
+      'INSERT INTO usuarios (nome, matricula, senha_hash, modo, turma_id) VALUES ($1, $2, $3, $4, $5) RETURNING id, nome, matricula, modo, turma_id',
+      [nome, matricula, senha_hash, modo, turma_id]
     );
 
     const usuario = result.rows[0];
@@ -91,7 +109,7 @@ router.post('/registro', async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: usuario.id, nome: usuario.nome, matricula: usuario.matricula, modo: usuario.modo },
+      { id: usuario.id, nome: usuario.nome, matricula: usuario.matricula, modo: usuario.modo, turma_id: usuario.turma_id },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN }
     );
@@ -103,6 +121,7 @@ router.post('/registro', async (req, res) => {
         nome: usuario.nome,
         matricula: usuario.matricula,
         modo: usuario.modo,
+        turma_id: usuario.turma_id,
       }
     });
 

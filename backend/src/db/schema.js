@@ -13,7 +13,16 @@ async function criarTabelas() {
         criado_em   TIMESTAMP DEFAULT NOW()
       );
 
-      -- ANIMAL (estado fisiológico por aluno)
+      -- TURMAS
+      CREATE TABLE IF NOT EXISTS turmas (
+        id          SERIAL PRIMARY KEY,
+        nome        VARCHAR(255) NOT NULL,
+        codigo      VARCHAR(50)  UNIQUE NOT NULL,
+        ativa       BOOLEAN DEFAULT TRUE,
+        criado_em   TIMESTAMP DEFAULT NOW()
+      );
+
+      -- ANIMAL (estado fisiolÃ³gico por aluno)
       CREATE TABLE IF NOT EXISTS animal (
         id            SERIAL PRIMARY KEY,
         usuario_id    INTEGER REFERENCES usuarios(id) ON DELETE CASCADE,
@@ -99,6 +108,13 @@ async function criarTabelas() {
 
 async function adicionarColunas() {
   try {
+    // Sistema de turmas (pedido da Márcia, 04/08/2026): 5+ turmas com ranking,
+    // simulações e desafios isolados entre si. O professor cadastra/gerencia
+    // as turmas pelo próprio Painel do Professor (aba Turmas), sem depender
+    // de alteração manual no banco a cada turma nova.
+    await pool.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS turma_id INTEGER REFERENCES turmas(id) ON DELETE SET NULL`);
+    await pool.query(`ALTER TABLE desafios ADD COLUMN IF NOT EXISTS turma_id INTEGER REFERENCES turmas(id) ON DELETE CASCADE`);
+    await pool.query(`ALTER TABLE simulacoes ADD COLUMN IF NOT EXISTS turma_id INTEGER REFERENCES turmas(id) ON DELETE CASCADE`);
     await pool.query(`ALTER TABLE ranking ADD COLUMN IF NOT EXISTS nota_final NUMERIC DEFAULT NULL`);
     await pool.query(`ALTER TABLE animal ADD COLUMN IF NOT EXISTS age_days INTEGER DEFAULT 90`);
     await pool.query(`UPDATE animal SET fc = 370 WHERE fc = 75`);
