@@ -16,8 +16,8 @@ export function authHeaders() { return { Authorization: `Bearer ${getToken()}` }
 export const auth = {
   login: (matricula, senha, modo) =>
     req('/api/auth/login', { method: 'POST', body: JSON.stringify({ matricula, senha, modo }) }),
-  registro: (nome, matricula, senha, modo) =>
-    req('/api/auth/registro', { method: 'POST', body: JSON.stringify({ nome, matricula, senha, modo }) }),
+  registro: (nome, matricula, senha, modo, codigo_turma) =>
+    req('/api/auth/registro', { method: 'POST', body: JSON.stringify({ nome, matricula, senha, modo, codigo_turma }) }),
 };
 export const animal = {
   get:     ()     => req('/api/animal', { headers: authHeaders() }),
@@ -54,4 +54,10 @@ export const configuracoes = {
   setPesos: (data) => req('/api/configuracoes/pesos', { method: 'PUT', headers: authHeaders(), body: JSON.stringify(data) }),
   getRecuperacao: ()     => req('/api/configuracoes/recuperacao', { headers: authHeaders() }),
   setRecuperacao: (data) => req('/api/configuracoes/recuperacao', { method: 'PUT', headers: authHeaders(), body: JSON.stringify(data) }),
+};
+export const turmas = {
+  listar:  (turmaId)      => req(turmaId ? `/api/turmas?turma_id=${turmaId}` : '/api/turmas', { headers: authHeaders() }),
+  criar:   (data)         => req('/api/turmas', { method: 'POST', headers: authHeaders(), body: JSON.stringify(data) }),
+  editar:  (id, data)     => req(`/api/turmas/${id}`, { method: 'PUT', headers: authHeaders(), body: JSON.stringify(data) }),
+  validar: (codigo)       => req(`/api/turmas/validar/${codigo}`),
 };

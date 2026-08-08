@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { DEFAULT_MOTIVATION_MESSAGES } from './MotivationScreen';
 import { DEFAULT_WEIGHTS, INTERVENTIONS, PRIMARY_PARAMS } from '../engine/mascotEngine';
-import { ranking as rankingApi, authHeaders, simulacoes as simulacoesApi, usuarios as usuariosApi, configuracoes as configuracoesApi } from '../api';
+import { ranking as rankingApi, authHeaders, simulacoes as simulacoesApi, usuarios as usuariosApi, configuracoes as configuracoesApi, turmas as turmasApi } from '../api';
 
 const BASE = process.env.REACT_APP_API_URL || 'https://phisys-production.up.railway.app';
 async function req(path, options = {}) {
@@ -78,6 +78,19 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
     } catch { return 'todos'; }
   });
   const [students, setStudents] = useState([]);
+  const [turmasList, setTurmasList] = useState([]);
+  const [turmaForm, setTurmaForm] = useState(null);
+  const [editingTurma, setEditingTurma] = useState(null);
+
+  const fetchTurmas = useCallback(() => {
+    turmasApi.listar()
+      .then(data => { if (Array.isArray(data)) setTurmasList(data); })
+      .catch(() => setTurmasList([]));
+  }, []);
+
+  useEffect(() => {
+    fetchTurmas();
+  }, [fetchTurmas]);
 
   const fetchStudents = useCallback(() => {
     rankingApi.get()
@@ -227,6 +240,33 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
       URL.revokeObjectURL(url);
     } catch(e) {
       alert('Erro ao exportar dados.');
+    }
+  }
+
+  // ── TURMAS ──
+  function handleNewTurma() { setEditingTurma('new'); setTurmaForm({ nome:'', codigo:'', ativa:true }); }
+  function handleEditTurma(t) { setEditingTurma(t.id); setTurmaForm({ ...t }); }
+  async function handleSaveTurma() {
+    if (!turmaForm.nome || !turmaForm.codigo) return;
+    try {
+      if (editingTurma === 'new') {
+        const created = await turmasApi.criar({ nome: turmaForm.nome, codigo: turmaForm.codigo });
+        setTurmasList(prev => [created, ...prev]);
+      } else {
+        const updated = await turmasApi.editar(editingTurma, { nome: turmaForm.nome, codigo: turmaForm.codigo });
+        setTurmasList(prev => prev.map(t => t.id === editingTurma ? updated : t));
+      }
+      setEditingTurma(null); setTurmaForm(null);
+    } catch(e) {
+      alert('Erro ao salvar turma: ' + e.message);
+    }
+  }
+  async function handleToggleTurma(t) {
+    try {
+      const updated = await turmasApi.editar(t.id, { ativa: !t.ativa });
+      setTurmasList(prev => prev.map(x => x.id === t.id ? updated : x));
+    } catch(e) {
+      alert('Erro: ' + e.message);
     }
   }
 
@@ -558,6 +598,27 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
     );
   }
 
+  // ── FORMULÁRIO TURMA ──
+  if (editingTurma && turmaForm) {
+    return (
+      <div style={styles.screen}>
+        <div style={styles.topbar}>
+          <button style={styles.backBtn} onClick={()=>{setEditingTurma(null);setTurmaForm(null);}}>← Cancelar</button>
+          <div style={styles.title}>{editingTurma==='new'?'Nova Turma':'Editar Turma'}</div>
+          <button style={styles.saveBtn} onClick={handleSaveTurma}>Salvar</button>
+        </div>
+        <div style={styles.formScroll}>
+          <div style={styles.fieldLabel}>Nome da turma</div>
+          <input style={styles.input} value={turmaForm.nome} onChange={e=>setTurmaForm(f=>({...f,nome:e.target.value}))} placeholder="Ex: Enfermagem 2026.1"/>
+          <div style={styles.fieldLabel}>Código de acesso</div>
+          <input style={styles.input} value={turmaForm.codigo} onChange={e=>setTurmaForm(f=>({...f,codigo:e.target.value.toUpperCase()}))} placeholder="Ex: TURMA2026A"/>
+          <div style={styles.fieldHint}>Alunos e professores usarão este código para entrar nesta turma.</div>
+          <div style={{height:'2rem'}}/>
+        </div>
+      </div>
+    );
+  }
+
   // ── PAINEL PRINCIPAL ──
   return (
     <div style={styles.screen}>
@@ -570,10 +631,45 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
       </div>
 
       <div style={styles.tabs}>
-        {[['desafios','🎯 Desafios'],['simulacoes','🔬 Simulações'],['alunos','👥 Alunos'],['notas','📝 Notas'],['pesos','⚖️ Pesos'],['mensagens','💬 Mensagens'],['crescimento','🐭 Crescimento']].map(([id,label])=>(
+        {[['turmas','🏫 Turmas'],['desafios','🎯 Desafios'],['simulacoes','🔬 Simulações'],['alunos','👥 Alunos'],['notas','📝 Notas'],['pesos','⚖️ Pesos'],['mensagens','💬 Mensagens'],['crescimento','🐭 Crescimento']].map(([id,label])=>(
           <div key={id} style={{...styles.tab,...(tab===id?styles.tabActive:{})}} onClick={()=>setTab(id)}>{label}</div>
         ))}
       </div>
+
+      {/* ── TAB TURMAS ── */}
+      {tab==='turmas' && (
+        <>
+          <div style={styles.challengeHeader}>
+            <div style={styles.sectionTitle}>turmas cadastradas ({turmasList.length})</div>
+            <button style={styles.newBtn} onClick={handleNewTurma}>+ Nova</button>
+          </div>
+          <div style={styles.simInfo}>
+            🏫 Cada turma tem seu próprio código de acesso, usado por alunos e professores no login. Desafios, simulações e ranking ficam isolados por turma.
+          </div>
+          {turmasList.length === 0 ? (
+            <div style={{ margin:'0 1rem', background:'rgba(255,255,255,.08)', borderRadius:'14px', padding:'2rem', textAlign:'center', color:'rgba(255,255,255,.4)', fontSize:'13px' }}>
+              Nenhuma turma cadastrada ainda.
+            </div>
+          ) : (
+            turmasList.map(t=>(
+              <div key={t.id} style={{...styles.challengeCard,...(!t.ativa?{opacity:.5}:{})}}>
+                <div style={styles.challengeTop}>
+                  <div style={styles.challengeTitle}>🏫 {t.nome}</div>
+                  <span style={{...styles.metaTag, color: t.ativa?'#32C878':'rgba(255,255,255,.4)'}}>{t.ativa?'● Ativa':'○ Inativa'}</span>
+                </div>
+                <div style={styles.challengeMeta}>
+                  <span style={styles.metaTag}>Código: {t.codigo}</span>
+                </div>
+                <div style={styles.challengeActions}>
+                  <button style={styles.editBtn} onClick={()=>handleEditTurma(t)}>✏️ Editar</button>
+                  <button style={styles.toggleBtn} onClick={()=>handleToggleTurma(t)}>{t.ativa?'Desativar':'Ativar'}</button>
+                </div>
+              </div>
+            ))
+          )}
+          <div style={{height:'1rem'}}/>
+        </>
+      )}
 
       {/* ── TAB DESAFIOS ── */}
       {tab==='desafios' && (

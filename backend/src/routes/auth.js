@@ -60,8 +60,8 @@ router.post('/registro', async (req, res) => {
     return res.status(400).json({ erro: 'Todos os campos sao obrigatorios.' });
   }
 
-  // Codigo de turma obrigatorio apenas para alunos
-  if (modo === 'aluno' && !codigo_turma) {
+  // Codigo de turma obrigatorio para alunos e professores
+  if (!codigo_turma) {
     return res.status(400).json({ erro: 'Codigo de turma e obrigatorio.' });
   }
 
@@ -75,17 +75,14 @@ router.post('/registro', async (req, res) => {
       return res.status(409).json({ erro: 'Matricula ja cadastrada.' });
     }
 
-    let turma_id = null;
-    if (modo === 'aluno') {
-      const turma = await pool.query(
-        'SELECT id FROM turmas WHERE codigo = $1 AND ativa = true',
-        [codigo_turma]
-      );
-      if (turma.rows.length === 0) {
-        return res.status(400).json({ erro: 'Codigo de turma invalido ou turma inativa.' });
-      }
-      turma_id = turma.rows[0].id;
+    const turma = await pool.query(
+      'SELECT id FROM turmas WHERE codigo = $1 AND ativa = true',
+      [codigo_turma]
+    );
+    if (turma.rows.length === 0) {
+      return res.status(400).json({ erro: 'Codigo de turma invalido ou turma inativa.' });
     }
+    const turma_id = turma.rows[0].id;
 
     const senha_hash = await bcrypt.hash(senha, 10);
 

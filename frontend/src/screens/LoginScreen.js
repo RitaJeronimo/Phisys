@@ -1,7 +1,5 @@
 import React, { useState } from "react";
-import { auth, setToken } from "../api";
-
-const PROFESSOR_CODE = "PROF2026";
+import { auth, setToken, turmas } from "../api";
 
 function ChibiMascot({ size = 76 }) {
   return (
@@ -35,33 +33,44 @@ function LoginScreen({ onLogin }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState('');
   const [credential, setCredential] = useState("");
+  const [codigoTurma, setCodigoTurma] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit() {
     if (!name.trim()) { setError("Por favor, informe seu nome completo."); return; }
     if (name.trim().split(/\s+/).length < 2) { setError("Por favor, digite seu nome completo (nome e sobrenome)."); return; }
-    if (!credential.trim()) { setError(mode === "aluno" ? "Por favor, informe sua matricula." : "Por favor, informe o codigo de acesso."); return; }
-if (mode === "aluno" && !/^\d{6,}$/.test(credential.trim())) {
-  setError("Matricula invalida. Use apenas numeros com no minimo 6 digitos.");
-  return;
-}
-    if (mode === "professor" && credential.trim() !== PROFESSOR_CODE) {
-      setError("Codigo de professor invalido.");
+    if (!credential.trim()) { setError(mode === "aluno" ? "Por favor, informe sua matricula." : "Por favor, informe sua senha."); return; }
+    if (mode === "aluno" && !/^\d{6,}$/.test(credential.trim())) {
+      setError("Matricula invalida. Use apenas numeros com no minimo 6 digitos.");
+      return;
+    }
+    if (!codigoTurma.trim()) {
+      setError("Por favor, informe o codigo da turma.");
       return;
     }
     setError("");
     setLoading(true);
+
+    let turmaValidada;
+    try {
+      turmaValidada = await turmas.validar(codigoTurma.trim());
+    } catch (err) {
+      setError("Codigo de turma invalido ou turma inativa.");
+      setLoading(false);
+      return;
+    }
+
     const matricula = mode === "aluno"
       ? credential.trim()
       : "prof_" + name.trim().toLowerCase().replace(/[^a-z0-9]/g, "_");
-    const senha = mode === "aluno" ? credential.trim() + "_phisys" : PROFESSOR_CODE;
+    const senha = mode === "aluno" ? credential.trim() + "_phisys" : credential.trim();
     try {
       let data;
       try { data = await auth.login(matricula, senha, mode); }
-      catch { data = await auth.registro(name.trim(), matricula, senha, mode); }
+      catch { data = await auth.registro(name.trim(), matricula, senha, mode, codigoTurma.trim()); }
       setToken(data.token);
-      onLogin({ ...data.usuario });
+      onLogin({ ...data.usuario, turma_nome: turmaValidada.nome });
     } catch (err) {
       setError(err.message || "Erro ao entrar. Tente novamente.");
     } finally {
@@ -108,9 +117,14 @@ if (mode === "aluno" && !/^\d{6,}$/.test(credential.trim())) {
   <input style={s.input} type="email" placeholder="Ex: ana@email.com" value={email} onChange={e=>{setEmail(e.target.value);setError('');}}/>
 </div>
         <div style={s.formGroup}>
-          <label style={s.label}>{mode==="aluno"?"matricula":"codigo de acesso"}</label>
-          <input style={s.input} type={mode==="professor"?"password":"text"} placeholder={mode==="aluno"?"Ex: 2024001234":"Codigo fornecido pela instituicao"} value={credential} onChange={e=>{setCredential(e.target.value);setError("");}}/>
+          <label style={s.label}>{mode==="aluno"?"matricula":"senha"}</label>
+          <input style={s.input} type={mode==="professor"?"password":"text"} placeholder={mode==="aluno"?"Ex: 2024001234":"Sua senha de professor"} value={credential} onChange={e=>{setCredential(e.target.value);setError("");}}/>
         </div>
+        <div style={s.formGroup}>
+          <label style={s.label}>codigo da turma</label>
+          <input style={s.input} type="text" placeholder="Codigo fornecido pelo professor" value={codigoTurma} onChange={e=>{setCodigoTurma(e.target.value);setError("");}}/>
+        </div>
+        {error?<div style={s.error}>{error}</div>:null}
         {error?<div style={s.error}>{error}</div>:null}
         <button style={{...s.submitBtn,opacity:loading?0.7:1}} onClick={handleSubmit} disabled={loading}>{loading?"Entrando...":"Entrar no Phisys"}</button>
         <div style={{ fontSize:'11px', color:'rgba(255,255,255,.6)', cursor:'pointer', textDecoration:'underline' }} onClick={() => alert('Entre em contato com seu professor para redefinir o acesso.')}>Esqueceu a senha?</div>
