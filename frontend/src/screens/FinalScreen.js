@@ -79,7 +79,7 @@ function FinalScreen({ user, score, saude, seconds, solvedChallenges, totalChall
     : 'Sua dedicacao importa! Na proxima sessao voce vai se sair ainda melhor.';
 
   return (
-    <div style={styles.screen}>
+    <div className="app-screen" style={styles.screen}>
       <div style={styles.topbar}>
         <div style={styles.title}>Sessao Finalizada!</div>
       </div>

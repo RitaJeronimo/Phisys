@@ -144,7 +144,7 @@ function SecondaryScreen({ values, onBack }) {
   };
 
   return (
-    <div style={styles.screen}>
+    <div className="app-screen" style={styles.screen}>
       <div style={styles.topbar}>
         <button style={styles.backBtn} onClick={onBack}>← Voltar</button>
         <div style={styles.title}>Parâmetros Secundários</div>

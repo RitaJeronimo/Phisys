@@ -415,7 +415,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
   // ── FORMULÁRIO DESAFIO ──
   if (editingType === 'challenge' && form) {
     return (
-      <div style={styles.screen}>
+      <div className="app-screen" style={styles.screen}>
         <div style={styles.topbar}>
           <button style={styles.backBtn} onClick={()=>{setEditing(null);setForm(null);setEditingType(null);}}>← Cancelar</button>
           <div style={styles.title}>{editing==='new'?'Novo Desafio':'Editar Desafio'}</div>
@@ -521,7 +521,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
   // ── FORMULÁRIO SIMULAÇÃO ──
   if (editingType === 'simulation' && simForm) {
     return (
-      <div style={styles.screen}>
+      <div className="app-screen" style={styles.screen}>
         <div style={styles.topbar}>
           <button style={styles.backBtn} onClick={()=>{setEditing(null);setSimForm(null);setEditingType(null);}}>← Cancelar</button>
           <div style={styles.title}>{editing==='new'?'Nova Simulação':'Editar Simulação'}</div>
@@ -601,7 +601,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
   // ── FORMULÁRIO TURMA ──
   if (editingTurma && turmaForm) {
     return (
-      <div style={styles.screen}>
+      <div className="app-screen" style={styles.screen}>
         <div style={styles.topbar}>
           <button style={styles.backBtn} onClick={()=>{setEditingTurma(null);setTurmaForm(null);}}>← Cancelar</button>
           <div style={styles.title}>{editingTurma==='new'?'Nova Turma':'Editar Turma'}</div>
@@ -621,7 +621,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
 
   // ── PAINEL PRINCIPAL ──
   return (
-    <div style={styles.screen}>
+    <div className="app-screen" style={styles.screen}>
       <div style={styles.topbar}>
         <button style={styles.backBtn} onClick={onBack}>←</button>
         <div style={styles.title}>Painel do Professor</div>

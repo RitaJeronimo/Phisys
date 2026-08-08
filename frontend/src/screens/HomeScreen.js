@@ -315,7 +315,7 @@ function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, on
   }
 
   return (
-    <div style={styles.screen}>
+    <div className="app-screen" style={styles.screen}>
       {activeParam && (<ParamModal paramId={activeParam} onClose={() => setActiveParam(null)}/>)}
       {showModes && (
         <div style={styles.modalOverlay}>

@@ -502,7 +502,7 @@ useEffect(() => {
       finalHealth: calcularSaude(values),
     }, savedWeights);
     return (
-      <div style={styles.screen}>
+      <div className="app-screen" style={styles.screen}>
         <div style={{ padding:'3rem 1.5rem', display:'flex', flexDirection:'column', alignItems:'center', gap:'1.5rem' }}>
           <ChibiMascot status={STATUS.SAUDAVEL} size={90}/>
           <div style={{ fontSize:'22px', fontWeight:'700', color:'white', textAlign:'center' }}>Sessão concluída!</div>
@@ -521,7 +521,7 @@ useEffect(() => {
   }
 
   return (
-    <div style={styles.screen}>
+    <div className="app-screen" style={styles.screen}>
       <div style={styles.topbar}>
         <button style={styles.backBtn} onClick={onBack}>←</button>
         <div style={styles.modeBadge}>{mode === 'sessao' ? '📋 Sessão' : '🎯 Livre'}</div>
