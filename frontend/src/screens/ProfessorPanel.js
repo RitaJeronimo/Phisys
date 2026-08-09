@@ -20,6 +20,7 @@ const GRADIENT = 'linear-gradient(160deg, #1B4FCC 0%, #7B2FBE 50%, #CC1B1B 100%)
 const EMPTY_CHALLENGE = {
   title:'', intervencao:'desidratacao', focus:'renal', difficulty:'facil',
   question:'', options:['','','',''], correct:0, active:true,
+  turma_id:'',
   delta_acerto: { hidratacao:0, energia:0, pas:0, pad:0, fc:0 },
   delta_erro:   { hidratacao:0, energia:0, pas:0, pad:0, fc:0 },
 };
@@ -32,6 +33,7 @@ function getDefaultSimParams() {
 
 const EMPTY_SIMULATION = {
   title:'', focus:'cardiovascular', active:true, description:'',
+  turma_id:'',
   params: getDefaultSimParams(),
   cuidadosPorSessao: 3,
   intervencao: 'desidratacao',
@@ -135,6 +137,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
             options: Array.isArray(d.opcoes) ? d.opcoes : JSON.parse(d.opcoes),
             correct: d.correta,
             active: d.ativo,
+            turma_id: d.turma_id,
             // CORRECAO CRITICA: esses dois campos estavam faltando aqui, fazendo
             // o formulario de edicao sempre cair no padrao {0,0,0,0,0} apos
             // qualquer F5/reload - e se o professor salvasse sem notar,
@@ -166,6 +169,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
             focus: d.foco || 'cardiovascular',
             active: d.ativo,
             description: d.descricao || '',
+            turma_id: d.turma_id,
             params: typeof d.params === 'string' ? JSON.parse(d.params) : d.params,
             cuidadosPorSessao: d.cuidados_por_sessao ?? 3,
             intervencao: d.intervencao || 'desidratacao',
@@ -306,7 +310,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
     }
   }
   async function handleSaveChallenge() {
-    if (!form.title || !form.question || form.options.some(o=>!o)) return;
+    if (!form.title || !form.question || form.options.some(o=>!o) || !form.turma_id) return;
     try {
       if (editing === 'new') {
         const created = await req('/api/desafios', {
@@ -322,6 +326,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
             intervencao: form.intervencao,
             delta_acerto: form.delta_acerto || {},
             delta_erro:   form.delta_erro   || {},
+            turma_id: form.turma_id,
           }),
         });
         setChallenges(prev => [...prev, { ...form, id: created.id }]);
@@ -340,6 +345,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
             ativo: form.active,
             delta_acerto: form.delta_acerto || {},
             delta_erro:   form.delta_erro   || {},
+            turma_id: form.turma_id,
           }),
         });
       }
@@ -380,7 +386,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
     setSimForm(f => ({ ...f, params:{ ...f.params, [id]: Number(val) } }));
   }
   async function handleSaveSimulation() {
-    if (!simForm.title) return;
+    if (!simForm.title || !simForm.turma_id) return;
     try {
       if (editing === 'new') {
         const created = await req('/api/simulacoes', {
@@ -393,6 +399,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
             params: simForm.params,
             cuidados_por_sessao: simForm.cuidadosPorSessao,
             intervencao: simForm.intervencao,
+            turma_id: simForm.turma_id,
           }),
         });
         setSimulations(prev => [...prev, { ...simForm, id: created.id }]);
@@ -408,6 +415,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
             ativo: simForm.active,
             cuidados_por_sessao: simForm.cuidadosPorSessao,
             intervencao: simForm.intervencao,
+            turma_id: simForm.turma_id,
           }),
         });
         setSimulations(prev => prev.map(s => s.id === editing ? { ...simForm, id:s.id } : s));
@@ -421,6 +429,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
   const diffColor = { facil:'#32C878', medio:'#EF9F27', dificil:'#E24B4A' };
   const diffLabel = { facil:'Fácil', medio:'Médio', dificil:'Difícil' };
   const focusLabel = { renal:'🫗 Renal', cardiovascular:'❤️ Cardiovascular' };
+  const nomeTurma = (turmaId) => turmasList.find(t => t.id === turmaId)?.nome || '—';
 
   // ── FORMULÁRIO DESAFIO ──
   if (editingType === 'challenge' && form) {
@@ -432,6 +441,11 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
           <button style={styles.saveBtn} onClick={handleSaveChallenge}>Salvar</button>
         </div>
         <div style={styles.formScroll}>
+          <div style={styles.fieldLabel}>Turma</div>
+          <select style={styles.input} value={form.turma_id || ''} onChange={e=>setForm(f=>({...f,turma_id:Number(e.target.value) || ''}))}>
+            <option value="">Selecione a turma...</option>
+            {turmasList.map(t => (<option key={t.id} value={t.id}>{t.nome}{!t.ativa ? ' (inativa)' : ''}</option>))}
+          </select>
           <div style={styles.fieldLabel}>Título do desafio</div>
           <input style={styles.input} value={form.title} onChange={e=>setForm(f=>({...f,title:e.target.value}))} placeholder="Ex: Desidratação Aguda"/>
           <div style={styles.fieldLabel}>Cenário fisiológico</div>
@@ -538,6 +552,11 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
           <button style={styles.saveBtn} onClick={handleSaveSimulation}>Salvar</button>
         </div>
         <div style={styles.formScroll}>
+          <div style={styles.fieldLabel}>Turma</div>
+          <select style={styles.input} value={simForm.turma_id || ''} onChange={e=>setSimForm(f=>({...f,turma_id:Number(e.target.value) || ''}))}>
+            <option value="">Selecione a turma...</option>
+            {turmasList.map(t => (<option key={t.id} value={t.id}>{t.nome}{!t.ativa ? ' (inativa)' : ''}</option>))}
+          </select>
           <div style={styles.fieldLabel}>Título da simulação</div>
           <input style={styles.input} value={simForm.title} onChange={e=>setSimForm(f=>({...f,title:e.target.value}))} placeholder="Ex: Insuficiência Cardíaca"/>
           <div style={styles.fieldLabel}>Foco</div>
@@ -789,6 +808,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
                 <div style={{...styles.diffBadge, background:diffColor[ch.difficulty]+'33', color:diffColor[ch.difficulty]}}>{diffLabel[ch.difficulty]}</div>
               </div>
               <div style={styles.challengeMeta}>
+                <span style={styles.metaTag}>🏫 {nomeTurma(ch.turma_id)}</span>
                 <span style={styles.metaTag}>{focusLabel[ch.focus]}</span>
                 <span style={styles.metaTag}>{INTERVENTIONS[ch.intervencao]?.label}</span>
                 <span style={{...styles.metaTag, color: ch.active?'#32C878':'rgba(255,255,255,.4)'}}>{ch.active?'● Ativo':'○ Inativo'}</span>
@@ -829,6 +849,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
                 <span style={{...styles.metaTag, color: sim.active?'#FFD700':'rgba(255,255,255,.4)', fontWeight:'700'}}>{sim.active?'● ATIVA':'○ Inativa'}</span>
               </div>
               <div style={styles.challengeMeta}>
+                <span style={styles.metaTag}>🏫 {nomeTurma(sim.turma_id)}</span>
                 <span style={styles.metaTag}>{focusLabel[sim.focus]}</span>
                 {sim.intervencao && <span style={styles.metaTag}>{INTERVENTIONS[sim.intervencao]?.label}</span>}
               </div>
