@@ -33,6 +33,7 @@ function LoginScreen({ onLogin }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState('');
   const [credential, setCredential] = useState("");
+  const [alunoSenha, setAlunoSenha] = useState("");
   const [codigoTurma, setCodigoTurma] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -44,6 +45,10 @@ function LoginScreen({ onLogin }) {
     if (mode === "aluno" && !/^\d{6,}$/.test(credential.trim())) {
       setError("Matricula invalida. Use apenas numeros com no minimo 6 digitos.");
       return;
+    }
+    if (mode === "aluno") {
+      if (!alunoSenha.trim()) { setError("Por favor, informe sua senha."); return; }
+      if (alunoSenha.trim().length < 4) { setError("A senha deve ter pelo menos 4 caracteres."); return; }
     }
     if (!codigoTurma.trim()) {
       setError(mode === "professor" ? "Por favor, informe o codigo de professor." : "Por favor, informe o codigo da turma.");
@@ -64,7 +69,7 @@ function LoginScreen({ onLogin }) {
     const matricula = mode === "aluno"
       ? credential.trim()
       : "prof_" + name.trim().toLowerCase().replace(/[^a-z0-9]/g, "_");
-    const senha = mode === "aluno" ? credential.trim() + "_phisys" : credential.trim();
+    const senha = mode === "aluno" ? alunoSenha.trim() : credential.trim();
     try {
       let data;
       try { data = await auth.login(matricula, senha, mode); }
@@ -105,8 +110,8 @@ function LoginScreen({ onLogin }) {
         <div style={s.brandSub}>Simulador Cardiorrenal Interativo</div>
         <div style={s.divider}/>
         <div style={s.modeToggle}>
-          <button style={{...s.modeBtn,...(mode==="aluno"?s.modeBtnActive:s.modeBtnInactive)}} onClick={()=>{setMode("aluno");setCredential("");setError("");}}>Sou aluno</button>
-          <button style={{...s.modeBtn,...(mode==="professor"?s.modeBtnActive:s.modeBtnInactive)}} onClick={()=>{setMode("professor");setCredential("");setError("");}}>Sou professor</button>
+          <button style={{...s.modeBtn,...(mode==="aluno"?s.modeBtnActive:s.modeBtnInactive)}} onClick={()=>{setMode("aluno");setCredential("");setAlunoSenha("");setError("");}}>Sou aluno</button>
+          <button style={{...s.modeBtn,...(mode==="professor"?s.modeBtnActive:s.modeBtnInactive)}} onClick={()=>{setMode("professor");setCredential("");setAlunoSenha("");setError("");}}>Sou professor</button>
         </div>
         <div style={s.formGroup}>
   <label style={s.label}>nome completo</label>
@@ -120,6 +125,12 @@ function LoginScreen({ onLogin }) {
           <label style={s.label}>{mode==="aluno"?"matricula":"senha"}</label>
           <input style={s.input} type={mode==="professor"?"password":"text"} placeholder={mode==="aluno"?"Ex: 2024001234":"Sua senha de professor"} value={credential} onChange={e=>{setCredential(e.target.value);setError("");}}/>
         </div>
+        {mode==="aluno" && (
+          <div style={s.formGroup}>
+            <label style={s.label}>senha</label>
+            <input style={s.input} type="password" placeholder="Sua senha (defina uma na primeira vez)" value={alunoSenha} onChange={e=>{setAlunoSenha(e.target.value);setError("");}}/>
+          </div>
+        )}
         <div style={s.formGroup}>
           <label style={s.label}>{mode==="professor" ? "codigo de professor" : "codigo da turma"}</label>
           <input style={s.input} type="text" placeholder={mode==="professor" ? "Codigo de professor da turma" : "Codigo fornecido pelo professor"} value={codigoTurma} onChange={e=>{setCodigoTurma(e.target.value);setError("");}}/>

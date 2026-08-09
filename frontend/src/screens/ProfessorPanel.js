@@ -188,6 +188,16 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
 
   const avgXP = students.length > 0 ? (students.reduce((a,s)=>a+Number(s.xp_total||0),0)/students.length).toFixed(0) : '0';
 
+  async function handleResetarSenhaAluno(id, nome) {
+    if (!window.confirm(`Invalidar a senha atual de ${nome}? Ele vai precisar definir uma senha nova na próxima vez que tentar entrar (matrícula continua a mesma).`)) return;
+    try {
+      await usuariosApi.resetarSenha(id);
+      alert(`✅ Senha de ${nome} foi invalidada. Avise o aluno para logar normalmente e criar uma senha nova.`);
+    } catch(e) {
+      alert('Erro ao resetar senha: ' + e.message);
+    }
+  }
+
   async function handleDeletarAluno(id, nome) {
     if (!window.confirm(`Remover ${nome} permanentemente? Isso apaga o cadastro e todos os dados do aluno.`)) return;
     try {
@@ -927,6 +937,11 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
                         } catch(err) {}
                       }}/>
                   </div>
+                  <button
+                    onClick={() => handleResetarSenhaAluno(student.id, student.nome)}
+                    style={{ background:'rgba(100,149,237,.2)', border:'1px solid rgba(100,149,237,.3)', color:'#85B7EB', borderRadius:'8px', padding:'4px 8px', cursor:'pointer', fontSize:'12px', fontFamily:'inherit' }}
+                    title="Resetar senha"
+                  >🔑</button>
                   <button
                     onClick={() => handleDeletarAluno(student.id, student.nome)}
                     style={{ background:'rgba(220,60,60,.2)', border:'1px solid rgba(220,60,60,.3)', color:'#FF8080', borderRadius:'8px', padding:'4px 8px', cursor:'pointer', fontSize:'12px', fontFamily:'inherit' }}

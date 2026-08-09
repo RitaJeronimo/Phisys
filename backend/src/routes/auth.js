@@ -67,12 +67,44 @@ router.post('/registro', async (req, res) => {
 
   try {
     const existe = await pool.query(
-      'SELECT id FROM usuarios WHERE matricula = $1',
+      'SELECT id, modo, senha_definida_pelo_aluno FROM usuarios WHERE matricula = $1',
       [matricula]
     );
 
     if (existe.rows.length > 0) {
-      return res.status(409).json({ erro: 'Matricula ja cadastrada.' });
+      const existente = existe.rows[0];
+      // Conta de aluno criada antes de existir senha real: a "senha" era so um
+      // valor calculado a partir da matricula, entao o aluno nunca escolheu nada.
+      // Deixa reivindicar a conta pela matricula (unico dado que ja existia) e
+      // definir uma senha de verdade agora. So funciona enquanto a flag estiver
+      // false - depois disso (ou apos um reset do professor) exige a senha certa.
+      if (modo === 'aluno' && existente.modo === 'aluno' && existente.senha_definida_pelo_aluno === false) {
+        const senha_hash = await bcrypt.hash(senha, 10);
+        const atualizado = await pool.query(
+          `UPDATE usuarios SET senha_hash = $1, senha_definida_pelo_aluno = true
+           WHERE id = $2 RETURNING id, nome, matricula, modo, turma_id`,
+          [senha_hash, existente.id]
+        );
+        const usuario = atualizado.rows[0];
+        const token = jwt.sign(
+          { id: usuario.id, nome: usuario.nome, matricula: usuario.matricula, modo: usuario.modo, turma_id: usuario.turma_id },
+          process.env.JWT_SECRET,
+          { expiresIn: process.env.JWT_EXPIRES_IN }
+        );
+        return res.status(200).json({
+          token,
+          usuario: {
+            id: usuario.id,
+            nome: usuario.nome,
+            matricula: usuario.matricula,
+            modo: usuario.modo,
+            turma_id: usuario.turma_id,
+          }
+        });
+      }
+      return res.status(409).json({
+        erro: modo === 'aluno' ? 'Matricula ja cadastrada. Verifique sua senha.' : 'Matricula ja cadastrada.'
+      });
     }
 
     // Alunos usam o codigo publico da turma; professores usam um codigo
@@ -96,7 +128,7 @@ router.post('/registro', async (req, res) => {
     const senha_hash = await bcrypt.hash(senha, 10);
 
     const result = await pool.query(
-      'INSERT INTO usuarios (nome, matricula, senha_hash, modo, turma_id) VALUES ($1, $2, $3, $4, $5) RETURNING id, nome, matricula, modo, turma_id',
+      'INSERT INTO usuarios (nome, matricula, senha_hash, modo, turma_id, senha_definida_pelo_aluno) VALUES ($1, $2, $3, $4, $5, true) RETURNING id, nome, matricula, modo, turma_id',
       [nome, matricula, senha_hash, modo, turma_id]
     );
 

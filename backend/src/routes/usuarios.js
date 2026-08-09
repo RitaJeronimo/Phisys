@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db/connection');
 const auth = require('../middleware/auth');
+const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 
 // GET /api/usuarios – lista todos os alunos (professor only)
 router.get('/', auth, async (req, res) => {
@@ -42,6 +44,32 @@ router.get('/:id', auth, async (req, res) => {
     res.json(result.rows[0]);
   } catch (err) {
     console.error('Erro ao buscar usuario:', err.message);
+    res.status(500).json({ erro: 'Erro interno do servidor.' });
+  }
+});
+
+// PUT /api/usuarios/:id/resetar-senha – professor invalida a senha atual do
+// aluno; ele passa a poder definir uma nova na proxima tentativa de entrar
+// com a propria matricula (mesmo mecanismo de POST /api/auth/registro).
+router.put('/:id/resetar-senha', auth, async (req, res) => {
+  if (req.usuario.modo !== 'professor') {
+    return res.status(403).json({ erro: 'Acesso negado.' });
+  }
+  const { id } = req.params;
+  try {
+    const senhaTemporaria = crypto.randomBytes(24).toString('hex');
+    const senha_hash = await bcrypt.hash(senhaTemporaria, 10);
+    const result = await pool.query(
+      `UPDATE usuarios SET senha_hash = $1, senha_definida_pelo_aluno = false
+       WHERE id = $2 AND modo = 'aluno' RETURNING id, nome, matricula`,
+      [senha_hash, id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ erro: 'Aluno nao encontrado.' });
+    }
+    res.json({ ok: true, mensagem: 'Senha invalidada. O aluno podera definir uma nova senha na proxima vez que tentar entrar.' });
+  } catch (err) {
+    console.error('Erro ao resetar senha do aluno:', err.message);
     res.status(500).json({ erro: 'Erro interno do servidor.' });
   }
 });

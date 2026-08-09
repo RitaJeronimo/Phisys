@@ -121,6 +121,13 @@ async function adicionarColunas() {
     // ficam com codigo_professor NULL ate o professor definir um pelo Painel.
     await pool.query(`ALTER TABLE turmas ADD COLUMN IF NOT EXISTS codigo_professor VARCHAR(50) UNIQUE`);
     await pool.query(`ALTER TABLE ranking ADD COLUMN IF NOT EXISTS nota_final NUMERIC DEFAULT NULL`);
+    // Senha real do aluno (item 2 da auditoria de seguranca, 09/08/2026): antes a
+    // "senha" era so matricula + "_phisys", calculavel por qualquer um que soubesse
+    // a matricula. Contas ja existentes ficam com esta flag em FALSE (o valor padrao
+    // do ALTER TABLE se aplica a todas as linhas ja existentes), o que libera, so na
+    // proxima tentativa de login de cada uma, a definicao de uma senha real via
+    // POST /api/auth/registro (ver comentario la). Contas novas ja nascem com TRUE.
+    await pool.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS senha_definida_pelo_aluno BOOLEAN DEFAULT false`);
     await pool.query(`ALTER TABLE animal ADD COLUMN IF NOT EXISTS age_days INTEGER DEFAULT 90`);
     await pool.query(`UPDATE animal SET fc = 370 WHERE fc = 75`);
     await pool.query(`ALTER TABLE desafios ADD COLUMN IF NOT EXISTS delta_acerto JSONB DEFAULT '{}'`);
