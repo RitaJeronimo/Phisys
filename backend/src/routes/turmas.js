@@ -10,7 +10,7 @@ router.get('/', auth, async (req, res) => {
   }
   try {
     const result = await pool.query(
-      'SELECT id, nome, codigo, ativa, criado_em FROM turmas ORDER BY criado_em DESC'
+      'SELECT id, nome, codigo, codigo_professor, ativa, criado_em FROM turmas ORDER BY criado_em DESC'
     );
     res.json(result.rows);
   } catch (err) {
@@ -24,7 +24,7 @@ router.post('/', auth, async (req, res) => {
   if (req.usuario.modo !== 'professor') {
     return res.status(403).json({ erro: 'Acesso negado.' });
   }
-  const { nome, codigo } = req.body;
+  const { nome, codigo, codigo_professor } = req.body;
   if (!nome || !codigo) {
     return res.status(400).json({ erro: 'Nome e codigo sao obrigatorios.' });
   }
@@ -33,9 +33,15 @@ router.post('/', auth, async (req, res) => {
     if (existe.rows.length > 0) {
       return res.status(409).json({ erro: 'Ja existe uma turma com esse codigo.' });
     }
+    if (codigo_professor) {
+      const existeProf = await pool.query('SELECT id FROM turmas WHERE codigo_professor = $1', [codigo_professor]);
+      if (existeProf.rows.length > 0) {
+        return res.status(409).json({ erro: 'Ja existe uma turma com esse codigo de professor.' });
+      }
+    }
     const result = await pool.query(
-      'INSERT INTO turmas (nome, codigo, ativa) VALUES ($1, $2, true) RETURNING id, nome, codigo, ativa, criado_em',
-      [nome, codigo]
+      'INSERT INTO turmas (nome, codigo, codigo_professor, ativa) VALUES ($1, $2, $3, true) RETURNING id, nome, codigo, codigo_professor, ativa, criado_em',
+      [nome, codigo, codigo_professor || null]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -50,7 +56,7 @@ router.put('/:id', auth, async (req, res) => {
     return res.status(403).json({ erro: 'Acesso negado.' });
   }
   const { id } = req.params;
-  const { nome, codigo, ativa } = req.body;
+  const { nome, codigo, codigo_professor, ativa } = req.body;
 
   try {
     if (codigo !== undefined) {
@@ -62,15 +68,25 @@ router.put('/:id', auth, async (req, res) => {
         return res.status(409).json({ erro: 'Ja existe uma turma com esse codigo.' });
       }
     }
+    if (codigo_professor) {
+      const existeProf = await pool.query(
+        'SELECT id FROM turmas WHERE codigo_professor = $1 AND id != $2',
+        [codigo_professor, id]
+      );
+      if (existeProf.rows.length > 0) {
+        return res.status(409).json({ erro: 'Ja existe uma turma com esse codigo de professor.' });
+      }
+    }
 
     const result = await pool.query(
       `UPDATE turmas SET
          nome = COALESCE($1, nome),
          codigo = COALESCE($2, codigo),
-         ativa = COALESCE($3, ativa)
-       WHERE id = $4
-       RETURNING id, nome, codigo, ativa, criado_em`,
-      [nome, codigo, ativa, id]
+         codigo_professor = COALESCE($3, codigo_professor),
+         ativa = COALESCE($4, ativa)
+       WHERE id = $5
+       RETURNING id, nome, codigo, codigo_professor, ativa, criado_em`,
+      [nome, codigo, codigo_professor, ativa, id]
     );
 
     if (result.rows.length === 0) {
@@ -86,9 +102,10 @@ router.put('/:id', auth, async (req, res) => {
 // GET /api/turmas/validar/:codigo – valida um codigo de turma (sem auth, usado no login/cadastro)
 router.get('/validar/:codigo', async (req, res) => {
   const { codigo } = req.params;
+  const campoCodigo = req.query.modo === 'professor' ? 'codigo_professor' : 'codigo';
   try {
     const result = await pool.query(
-      'SELECT id, nome FROM turmas WHERE codigo = $1 AND ativa = true',
+      `SELECT id, nome FROM turmas WHERE ${campoCodigo} = $1 AND ativa = true`,
       [codigo]
     );
     if (result.rows.length === 0) {

@@ -46,7 +46,7 @@ function LoginScreen({ onLogin }) {
       return;
     }
     if (!codigoTurma.trim()) {
-      setError("Por favor, informe o codigo da turma.");
+      setError(mode === "professor" ? "Por favor, informe o codigo de professor." : "Por favor, informe o codigo da turma.");
       return;
     }
     setError("");
@@ -54,9 +54,9 @@ function LoginScreen({ onLogin }) {
 
     let turmaValidada;
     try {
-      turmaValidada = await turmas.validar(codigoTurma.trim());
+      turmaValidada = await turmas.validar(codigoTurma.trim(), mode);
     } catch (err) {
-      setError("Codigo de turma invalido ou turma inativa.");
+      setError(mode === "professor" ? "Codigo de professor invalido ou turma inativa." : "Codigo de turma invalido ou turma inativa.");
       setLoading(false);
       return;
     }
@@ -121,8 +121,8 @@ function LoginScreen({ onLogin }) {
           <input style={s.input} type={mode==="professor"?"password":"text"} placeholder={mode==="aluno"?"Ex: 2024001234":"Sua senha de professor"} value={credential} onChange={e=>{setCredential(e.target.value);setError("");}}/>
         </div>
         <div style={s.formGroup}>
-          <label style={s.label}>codigo da turma</label>
-          <input style={s.input} type="text" placeholder="Codigo fornecido pelo professor" value={codigoTurma} onChange={e=>{setCodigoTurma(e.target.value);setError("");}}/>
+          <label style={s.label}>{mode==="professor" ? "codigo de professor" : "codigo da turma"}</label>
+          <input style={s.input} type="text" placeholder={mode==="professor" ? "Codigo de professor da turma" : "Codigo fornecido pelo professor"} value={codigoTurma} onChange={e=>{setCodigoTurma(e.target.value);setError("");}}/>
         </div>
         {error?<div style={s.error}>{error}</div>:null}
         {error?<div style={s.error}>{error}</div>:null}

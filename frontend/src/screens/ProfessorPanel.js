@@ -244,16 +244,16 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
   }
 
   // ── TURMAS ──
-  function handleNewTurma() { setEditingTurma('new'); setTurmaForm({ nome:'', codigo:'', ativa:true }); }
+  function handleNewTurma() { setEditingTurma('new'); setTurmaForm({ nome:'', codigo:'', codigo_professor:'', ativa:true }); }
   function handleEditTurma(t) { setEditingTurma(t.id); setTurmaForm({ ...t }); }
   async function handleSaveTurma() {
     if (!turmaForm.nome || !turmaForm.codigo) return;
     try {
       if (editingTurma === 'new') {
-        const created = await turmasApi.criar({ nome: turmaForm.nome, codigo: turmaForm.codigo });
+        const created = await turmasApi.criar({ nome: turmaForm.nome, codigo: turmaForm.codigo, codigo_professor: turmaForm.codigo_professor || null });
         setTurmasList(prev => [created, ...prev]);
       } else {
-        const updated = await turmasApi.editar(editingTurma, { nome: turmaForm.nome, codigo: turmaForm.codigo });
+        const updated = await turmasApi.editar(editingTurma, { nome: turmaForm.nome, codigo: turmaForm.codigo, codigo_professor: turmaForm.codigo_professor || null });
         setTurmasList(prev => prev.map(t => t.id === editingTurma ? updated : t));
       }
       setEditingTurma(null); setTurmaForm(null);
@@ -610,9 +610,12 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
         <div style={styles.formScroll}>
           <div style={styles.fieldLabel}>Nome da turma</div>
           <input style={styles.input} value={turmaForm.nome} onChange={e=>setTurmaForm(f=>({...f,nome:e.target.value}))} placeholder="Ex: Enfermagem 2026.1"/>
-          <div style={styles.fieldLabel}>Código de acesso</div>
+          <div style={styles.fieldLabel}>Código de acesso (alunos)</div>
           <input style={styles.input} value={turmaForm.codigo} onChange={e=>setTurmaForm(f=>({...f,codigo:e.target.value.toUpperCase()}))} placeholder="Ex: TURMA2026A"/>
-          <div style={styles.fieldHint}>Alunos e professores usarão este código para entrar nesta turma.</div>
+          <div style={styles.fieldHint}>Alunos usarão este código para entrar nesta turma.</div>
+          <div style={styles.fieldLabel}>Código de professor</div>
+          <input style={styles.input} value={turmaForm.codigo_professor || ''} onChange={e=>setTurmaForm(f=>({...f,codigo_professor:e.target.value.toUpperCase()}))} placeholder="Ex: PROF2026A"/>
+          <div style={styles.fieldHint}>Compartilhe apenas com outros professores desta turma. Quem souber só o código de alunos não consegue mais se cadastrar como professor.</div>
           <div style={{height:'2rem'}}/>
         </div>
       </div>
@@ -644,7 +647,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
             <button style={styles.newBtn} onClick={handleNewTurma}>+ Nova</button>
           </div>
           <div style={styles.simInfo}>
-            🏫 Cada turma tem seu próprio código de acesso, usado por alunos e professores no login. Desafios, simulações e ranking ficam isolados por turma.
+            🏫 Cada turma tem um código de acesso para alunos e um código separado para professores. Só quem tiver o código de professor consegue se cadastrar como professor dessa turma. Desafios, simulações e ranking ficam isolados por turma.
           </div>
           {turmasList.length === 0 ? (
             <div style={{ margin:'0 1rem', background:'rgba(255,255,255,.08)', borderRadius:'14px', padding:'2rem', textAlign:'center', color:'rgba(255,255,255,.4)', fontSize:'13px' }}>
@@ -658,7 +661,10 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
                   <span style={{...styles.metaTag, color: t.ativa?'#32C878':'rgba(255,255,255,.4)'}}>{t.ativa?'● Ativa':'○ Inativa'}</span>
                 </div>
                 <div style={styles.challengeMeta}>
-                  <span style={styles.metaTag}>Código: {t.codigo}</span>
+                  <span style={styles.metaTag}>Código alunos: {t.codigo}</span>
+                  {t.codigo_professor
+                    ? <span style={styles.metaTag}>Código professor: {t.codigo_professor}</span>
+                    : <span style={{...styles.metaTag, color:'#E24B4A'}}>⚠️ Sem código de professor</span>}
                 </div>
                 <div style={styles.challengeActions}>
                   <button style={styles.editBtn} onClick={()=>handleEditTurma(t)}>✏️ Editar</button>

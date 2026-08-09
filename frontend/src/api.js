@@ -59,5 +59,5 @@ export const turmas = {
   listar:  (turmaId)      => req(turmaId ? `/api/turmas?turma_id=${turmaId}` : '/api/turmas', { headers: authHeaders() }),
   criar:   (data)         => req('/api/turmas', { method: 'POST', headers: authHeaders(), body: JSON.stringify(data) }),
   editar:  (id, data)     => req(`/api/turmas/${id}`, { method: 'PUT', headers: authHeaders(), body: JSON.stringify(data) }),
-  validar: (codigo)       => req(`/api/turmas/validar/${codigo}`),
+  validar: (codigo, modo) => req(`/api/turmas/validar/${codigo}${modo ? `?modo=${modo}` : ''}`),
 };

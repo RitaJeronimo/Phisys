@@ -115,6 +115,11 @@ async function adicionarColunas() {
     await pool.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS turma_id INTEGER REFERENCES turmas(id) ON DELETE SET NULL`);
     await pool.query(`ALTER TABLE desafios ADD COLUMN IF NOT EXISTS turma_id INTEGER REFERENCES turmas(id) ON DELETE CASCADE`);
     await pool.query(`ALTER TABLE simulacoes ADD COLUMN IF NOT EXISTS turma_id INTEGER REFERENCES turmas(id) ON DELETE CASCADE`);
+    // Codigo separado para registro de professor (item 1 da auditoria de seguranca,
+    // 09/08/2026): antes, professor se registrava com o MESMO codigo publico dado
+    // aos alunos, permitindo que qualquer aluno virasse professor. Turmas existentes
+    // ficam com codigo_professor NULL ate o professor definir um pelo Painel.
+    await pool.query(`ALTER TABLE turmas ADD COLUMN IF NOT EXISTS codigo_professor VARCHAR(50) UNIQUE`);
     await pool.query(`ALTER TABLE ranking ADD COLUMN IF NOT EXISTS nota_final NUMERIC DEFAULT NULL`);
     await pool.query(`ALTER TABLE animal ADD COLUMN IF NOT EXISTS age_days INTEGER DEFAULT 90`);
     await pool.query(`UPDATE animal SET fc = 370 WHERE fc = 75`);

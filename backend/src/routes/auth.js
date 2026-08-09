@@ -75,12 +75,21 @@ router.post('/registro', async (req, res) => {
       return res.status(409).json({ erro: 'Matricula ja cadastrada.' });
     }
 
+    // Alunos usam o codigo publico da turma; professores usam um codigo
+    // separado (codigo_professor), conhecido apenas pelos professores da
+    // turma - evita que qualquer aluno vire professor com o mesmo codigo
+    // que a turma inteira recebe.
+    const campoCodigo = modo === 'professor' ? 'codigo_professor' : 'codigo';
     const turma = await pool.query(
-      'SELECT id FROM turmas WHERE codigo = $1 AND ativa = true',
+      `SELECT id FROM turmas WHERE ${campoCodigo} = $1 AND ativa = true`,
       [codigo_turma]
     );
     if (turma.rows.length === 0) {
-      return res.status(400).json({ erro: 'Codigo de turma invalido ou turma inativa.' });
+      return res.status(400).json({
+        erro: modo === 'professor'
+          ? 'Codigo de professor invalido ou turma inativa.'
+          : 'Codigo de turma invalido ou turma inativa.'
+      });
     }
     const turma_id = turma.rows[0].id;
 
