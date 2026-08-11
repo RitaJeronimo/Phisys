@@ -26,9 +26,9 @@ export const animal = {
   cuidadoStatus: () => req('/api/animal/cuidado/status', { headers: authHeaders() }),
 };
 export const ranking = {
-  get:    ()     => req('/api/ranking', { headers: authHeaders() }),
-  update: (data) => req('/api/ranking', { method: 'PUT', headers: authHeaders(), body: JSON.stringify(data) }),
-  reset:  ()     => req('/api/ranking/reset', { method: 'POST', headers: authHeaders() }),
+  get:    ()          => req('/api/ranking', { headers: authHeaders() }),
+  update: (data)       => req('/api/ranking', { method: 'PUT', headers: authHeaders(), body: JSON.stringify(data) }),
+  reset:  (turma_id)  => req('/api/ranking/reset', { method: 'POST', headers: authHeaders(), body: JSON.stringify({ turma_id }) }),
 };
 export const usuarios = {
   deletar:      (id) => req(`/api/usuarios/${id}`, { method: 'DELETE', headers: authHeaders() }),

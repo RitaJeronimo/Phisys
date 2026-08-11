@@ -83,6 +83,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
   const [turmasList, setTurmasList] = useState([]);
   const [turmaForm, setTurmaForm] = useState(null);
   const [editingTurma, setEditingTurma] = useState(null);
+  const [resetTurmaId, setResetTurmaId] = useState('');
 
   const fetchTurmas = useCallback(() => {
     turmasApi.listar()
@@ -226,13 +227,17 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
   }
   
   async function handleZerarTurma() {
-    if (!window.confirm('⚠️ ATENÇÃO: Isso vai zerar o ranking, sessões e animais de TODOS os alunos. Essa ação não pode ser desfeita. Confirma?')) return;
+    if (!resetTurmaId) {
+      alert('Selecione a turma que deseja zerar antes de continuar.');
+      return;
+    }
+    const turma = turmasList.find(t => t.id === resetTurmaId);
+    if (!window.confirm(`⚠️ ATENÇÃO: Isso vai zerar o ranking, sessões e animais de TODOS os alunos da turma "${turma?.nome || resetTurmaId}". Essa ação não pode ser desfeita. Confirma?`)) return;
     if (!window.confirm('Tem certeza absoluta? Todos os dados de desempenho serão perdidos.')) return;
     try {
-      await rankingApi.reset();
-      setStudents([]);
-      setManualGrades({});
-      alert('✅ Turma zerada com sucesso! Todos os alunos foram resetados.');
+      await rankingApi.reset(resetTurmaId);
+      fetchStudents();
+      alert(`✅ Turma "${turma?.nome || ''}" zerada com sucesso!`);
     } catch(e) {
       alert('Erro ao zerar turma: ' + e.message);
     }
@@ -885,6 +890,13 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
       {/* ── TAB ALUNOS — RANKING EM TEMPO REAL ── */}
       {tab==='alunos' && (
         <>
+          <div style={{ margin:'0 1rem .75rem' }}>
+            <div style={styles.fieldLabel}>Turma para zerar XP</div>
+            <select style={styles.input} value={resetTurmaId} onChange={e=>setResetTurmaId(Number(e.target.value) || '')}>
+              <option value="">Selecione a turma...</option>
+              {turmasList.map(t => (<option key={t.id} value={t.id}>{t.nome}{!t.ativa ? ' (inativa)' : ''}</option>))}
+            </select>
+          </div>
           {/* Cabeçalho com resumo e atualização */}
           <div style={{ margin:'0 1rem .5rem', display:'flex', gap:'8px' }}>
             <div style={styles.summaryCard}>
