@@ -234,11 +234,15 @@ router.put('/age', auth, async (req, res) => {
   if (req.usuario.modo !== 'professor') {
     return res.status(403).json({ erro: 'Acesso negado.' });
   }
-  const { age_days } = req.body;
+  const { age_days, turma_id } = req.body;
+  if (!turma_id) {
+    return res.status(400).json({ erro: 'turma_id e obrigatorio.' });
+  }
   try {
     await pool.query(
-      `UPDATE animal SET age_days = $1, atualizado_em = NOW()`,
-      [age_days]
+      `UPDATE animal SET age_days = $1, atualizado_em = NOW()
+       WHERE usuario_id IN (SELECT id FROM usuarios WHERE modo = 'aluno' AND turma_id = $2)`,
+      [age_days, turma_id]
     );
     res.json({ ok: true });
   } catch (err) {

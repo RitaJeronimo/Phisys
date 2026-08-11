@@ -84,6 +84,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
   const [turmaForm, setTurmaForm] = useState(null);
   const [editingTurma, setEditingTurma] = useState(null);
   const [resetTurmaId, setResetTurmaId] = useState('');
+  const [growthTurmaId, setGrowthTurmaId] = useState('');
 
   const fetchTurmas = useCallback(() => {
     turmasApi.listar()
@@ -1123,6 +1124,13 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
       {/* ── TAB CRESCIMENTO ── */}
       {tab==='crescimento' && (
         <>
+          <div style={{ margin:'0 1rem .75rem' }}>
+            <div style={styles.fieldLabel}>Turma</div>
+            <select style={styles.input} value={growthTurmaId} onChange={e=>setGrowthTurmaId(Number(e.target.value) || '')}>
+              <option value="">Selecione a turma...</option>
+              {turmasList.map(t => (<option key={t.id} value={t.id}>{t.nome}{!t.ativa ? ' (inativa)' : ''}</option>))}
+            </select>
+          </div>
           <div style={styles.sectionTitle}>fases de crescimento do animal</div>
           <div style={styles.simInfo}>
             🐭 Configure quantos dias dura cada fase do animal.
@@ -1130,12 +1138,13 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
           <div style={styles.challengeCard}>
             <div style={{ fontSize:'13px', fontWeight:'700', color:'white', marginBottom:'12px' }}>📅 Idade atual do animal</div>
             <div style={{ display:'flex', alignItems:'center', gap:'12px', marginBottom:'8px' }}>
-              <input type="range" min="0" max="365" step="1" value={ageDays || 90}
+              <input type="range" min="0" max="365" step="1" value={ageDays || 90} disabled={!growthTurmaId}
                 onChange={async e => {
+                  if (!growthTurmaId) return;
                   const newAge = Number(e.target.value);
                   if (setAgeDays) setAgeDays(newAge);
                   try {
-                    await req('/api/animal/age', { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ age_days: newAge }) });
+                    await req('/api/animal/age', { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ age_days: newAge, turma_id: growthTurmaId }) });
                   } catch(e) {}
                 }}
                 style={{ flex:1, accentColor:'white' }}
@@ -1152,9 +1161,10 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
                 <div key={preset.days}
                   style={{ flex:1, background:`${preset.color}22`, border:`1px solid ${preset.color}55`, borderRadius:'8px', padding:'6px 4px', textAlign:'center', cursor:'pointer', fontSize:'10px', color:'white' }}
                   onClick={async () => {
+                    if (!growthTurmaId) { alert('Selecione a turma antes de ajustar a idade.'); return; }
                     if (setAgeDays) setAgeDays(preset.days);
                     try {
-                      await req('/api/animal/age', { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ age_days: preset.days }) });
+                      await req('/api/animal/age', { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ age_days: preset.days, turma_id: growthTurmaId }) });
                     } catch(e) {}
                   }}
                 >
