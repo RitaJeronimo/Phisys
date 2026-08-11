@@ -3,9 +3,20 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const pool = require('../db/connection');
+const rateLimit = require('express-rate-limit');
+
+// Limita tentativas de login/registro por IP, para dificultar forca bruta
+// de senha (nenhuma rota de auth tinha throttling ate agora).
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { erro: 'Muitas tentativas. Tente novamente em alguns minutos.' },
+});
 
 // POST /api/auth/login
-router.post('/login', async (req, res) => {
+router.post('/login', authLimiter, async (req, res) => {
   const { matricula, senha, modo } = req.body;
 
   if (!matricula || !senha || !modo) {
@@ -53,7 +64,7 @@ router.post('/login', async (req, res) => {
 });
 
 // POST /api/auth/registro
-router.post('/registro', async (req, res) => {
+router.post('/registro', authLimiter, async (req, res) => {
   const { nome, matricula, senha, modo, codigo_turma } = req.body;
 
   if (!nome || !matricula || !senha || !modo) {

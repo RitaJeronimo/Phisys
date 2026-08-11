@@ -7,6 +7,10 @@ require('./db/schema');
 
 const app = express();
 
+// Necessario para o express-rate-limit identificar o IP real do cliente por
+// tras do proxy reverso do Render (sem isso, todo mundo cai no mesmo balde).
+app.set('trust proxy', 1);
+
 app.use(cors());
 app.use(express.json());
 
