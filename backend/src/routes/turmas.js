@@ -2,15 +2,14 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db/connection');
 const auth = require('../middleware/auth');
+const { requireProfessor, mesmaTurmaDoRecurso } = require('../middleware/turmaOwnership');
 
-// GET /api/turmas – lista todas as turmas (apenas professor)
-router.get('/', auth, async (req, res) => {
-  if (req.usuario.modo !== 'professor') {
-    return res.status(403).json({ erro: 'Acesso negado.' });
-  }
+// GET /api/turmas – retorna a propria turma do professor logado
+router.get('/', auth, requireProfessor, async (req, res) => {
   try {
     const result = await pool.query(
-      'SELECT id, nome, codigo, codigo_professor, ativa, criado_em FROM turmas ORDER BY criado_em DESC'
+      'SELECT id, nome, codigo, codigo_professor, ativa, criado_em FROM turmas WHERE id = $1',
+      [req.usuario.turma_id]
     );
     res.json(result.rows);
   } catch (err) {
@@ -19,11 +18,10 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
-// POST /api/turmas – cria uma nova turma (apenas professor)
-router.post('/', auth, async (req, res) => {
-  if (req.usuario.modo !== 'professor') {
-    return res.status(403).json({ erro: 'Acesso negado.' });
-  }
+// POST /api/turmas – cria uma nova turma (apenas professor; escopo separado do
+// item C1 - ver M2 na auditoria: quem PODE criar turmas e uma decisao de
+// politica distinta de "acessar so a propria turma", nao resolvida aqui)
+router.post('/', auth, requireProfessor, async (req, res) => {
   const { nome, codigo, codigo_professor } = req.body;
   if (!nome || !codigo) {
     return res.status(400).json({ erro: 'Nome e codigo sao obrigatorios.' });
@@ -50,11 +48,8 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
-// PUT /api/turmas/:id – edita nome, codigo ou status ativa de uma turma (apenas professor)
-router.put('/:id', auth, async (req, res) => {
-  if (req.usuario.modo !== 'professor') {
-    return res.status(403).json({ erro: 'Acesso negado.' });
-  }
+// PUT /api/turmas/:id – edita nome, codigo ou status ativa da propria turma
+router.put('/:id', auth, requireProfessor, mesmaTurmaDoRecurso('turmas', 'id'), async (req, res) => {
   const { id } = req.params;
   const { nome, codigo, codigo_professor, ativa } = req.body;
 

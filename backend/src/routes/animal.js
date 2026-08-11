@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db/connection');
 const auth = require('../middleware/auth');
+const { requireProfessor } = require('../middleware/turmaOwnership');
 
 const COOLDOWN_HORAS_MODO_LIVRE = 2;
 
@@ -61,7 +62,8 @@ router.put('/', auth, async (req, res) => {
 router.get('/cuidado/status', auth, async (req, res) => {
   try {
     const simAtiva = await pool.query(
-      'SELECT * FROM simulacoes WHERE ativo = TRUE ORDER BY criado_em DESC LIMIT 1'
+      'SELECT * FROM simulacoes WHERE ativo = TRUE AND turma_id = $1 ORDER BY criado_em DESC LIMIT 1',
+      [req.usuario.turma_id]
     );
     const emSessao = simAtiva.rows.length > 0;
     const cuidadoIds = ['hidratacao', 'racao', 'maravalha'];
@@ -131,9 +133,10 @@ router.post('/cuidado', auth, async (req, res) => {
   }
 
   try {
-    // Verifica se existe sessao/simulacao ativa do professor
+    // Verifica se existe sessao/simulacao ativa na turma do aluno
     const simAtiva = await pool.query(
-      'SELECT * FROM simulacoes WHERE ativo = TRUE ORDER BY criado_em DESC LIMIT 1'
+      'SELECT * FROM simulacoes WHERE ativo = TRUE AND turma_id = $1 ORDER BY criado_em DESC LIMIT 1',
+      [req.usuario.turma_id]
     );
     const emSessao = simAtiva.rows.length > 0;
 
@@ -229,20 +232,14 @@ router.post('/cuidado', auth, async (req, res) => {
   }
 });
 
-// PUT /api/animal/age — professor atualiza idade de todos os alunos
-router.put('/age', auth, async (req, res) => {
-  if (req.usuario.modo !== 'professor') {
-    return res.status(403).json({ erro: 'Acesso negado.' });
-  }
-  const { age_days, turma_id } = req.body;
-  if (!turma_id) {
-    return res.status(400).json({ erro: 'turma_id e obrigatorio.' });
-  }
+// PUT /api/animal/age — professor atualiza idade de todos os alunos da propria turma
+router.put('/age', auth, requireProfessor, async (req, res) => {
+  const { age_days } = req.body;
   try {
     await pool.query(
       `UPDATE animal SET age_days = $1, atualizado_em = NOW()
        WHERE usuario_id IN (SELECT id FROM usuarios WHERE modo = 'aluno' AND turma_id = $2)`,
-      [age_days, turma_id]
+      [age_days, req.usuario.turma_id]
     );
     res.json({ ok: true });
   } catch (err) {

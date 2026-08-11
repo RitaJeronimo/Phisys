@@ -2,33 +2,22 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db/connection');
 const auth = require('../middleware/auth');
+const { requireProfessor, mesmaTurmaDoRecurso } = require('../middleware/turmaOwnership');
 
-// GET /api/ranking – ranking da turma (aluno ve a propria turma; professor pode filtrar via query)
+// GET /api/ranking – ranking da turma do usuario logado (aluno ou professor)
 router.get('/', auth, async (req, res) => {
   try {
-    const isProfessor = req.usuario.modo === 'professor';
-    const turma_id = isProfessor ? req.query.turma_id : req.usuario.turma_id;
-
-    const query = turma_id
-      ? `SELECT u.id, u.nome, u.matricula,
-         r.xp_total, r.sessoes, r.media_saude, r.nota_final,
-         RANK() OVER (ORDER BY r.xp_total DESC) AS posicao
-         FROM usuarios u
-         JOIN ranking r ON r.usuario_id = u.id
-         WHERE u.modo = 'aluno' AND u.turma_id = $1
-         ORDER BY r.xp_total DESC
-         LIMIT 50`
-      : `SELECT u.id, u.nome, u.matricula,
-         r.xp_total, r.sessoes, r.media_saude, r.nota_final,
-         RANK() OVER (ORDER BY r.xp_total DESC) AS posicao
-         FROM usuarios u
-         JOIN ranking r ON r.usuario_id = u.id
-         WHERE u.modo = 'aluno'
-         ORDER BY r.xp_total DESC
-         LIMIT 50`;
-    const params = turma_id ? [turma_id] : [];
-
-    const result = await pool.query(query, params);
+    const result = await pool.query(
+      `SELECT u.id, u.nome, u.matricula,
+       r.xp_total, r.sessoes, r.media_saude, r.nota_final,
+       RANK() OVER (ORDER BY r.xp_total DESC) AS posicao
+       FROM usuarios u
+       JOIN ranking r ON r.usuario_id = u.id
+       WHERE u.modo = 'aluno' AND u.turma_id = $1
+       ORDER BY r.xp_total DESC
+       LIMIT 50`,
+      [req.usuario.turma_id]
+    );
     res.json(result.rows);
   } catch (err) {
     console.error('Erro ao buscar ranking:', err.message);
@@ -57,11 +46,8 @@ router.put('/', auth, async (req, res) => {
   }
 });
 
-// PUT /api/ranking/:id/nota – professor salva nota do aluno
-router.put('/:id/nota', auth, async (req, res) => {
-  if (req.usuario.modo !== 'professor') {
-    return res.status(403).json({ erro: 'Acesso negado.' });
-  }
+// PUT /api/ranking/:id/nota – professor salva nota do aluno (so aluno da propria turma)
+router.put('/:id/nota', auth, requireProfessor, mesmaTurmaDoRecurso('usuarios'), async (req, res) => {
   const { id } = req.params;
   const { nota_final } = req.body;
   try {
@@ -77,15 +63,9 @@ router.put('/:id/nota', auth, async (req, res) => {
   }
 });
 
-// POST /api/ranking/reset – professor zera uma turma especifica (ranking + sessões + animais)
-router.post('/reset', auth, async (req, res) => {
-  if (req.usuario.modo !== 'professor') {
-    return res.status(403).json({ erro: 'Acesso negado.' });
-  }
-  const { turma_id } = req.body;
-  if (!turma_id) {
-    return res.status(400).json({ erro: 'turma_id e obrigatorio.' });
-  }
+// POST /api/ranking/reset – professor zera a propria turma (ranking + sessões + animais)
+router.post('/reset', auth, requireProfessor, async (req, res) => {
+  const turma_id = req.usuario.turma_id;
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
