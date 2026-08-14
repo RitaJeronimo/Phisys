@@ -15,6 +15,13 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
   message: { erro: 'Muitas tentativas. Tente novamente em alguns minutos.' },
   store: new PostgresStore(pool),
+  // Render as vezes repassa X-Forwarded-For sem o IP real do cliente (so o do
+  // proprio load balancer deles), o que fazia trust-proxy resolver um IP
+  // diferente por conexao. CF-Connecting-IP e setado direto na borda da
+  // Cloudflare (que fica na frente do Render mesmo no dominio padrao
+  // *.onrender.com) e nao e alteravel pelo cliente - mais confiavel que
+  // contar hops. req.ip fica so como fallback (ex: dev local sem Cloudflare).
+  keyGenerator: (req) => req.headers['cf-connecting-ip'] || req.ip,
 });
 
 // POST /api/auth/login
