@@ -225,7 +225,21 @@ router.post('/cuidado', auth, async (req, res) => {
       );
     }
 
-    res.json(result.rows[0]);
+    // Credita XP pelo cuidado aqui mesmo, em vez de deixar o frontend calcular
+    // e mandar via PUT /api/ranking (o que permitia mandar qualquer xp_total).
+    const XP_CUIDADO = 5;
+    const rankingResult = await pool.query(
+      `INSERT INTO ranking (usuario_id, xp_total, sessoes, media_saude)
+       VALUES ($1, $2, 0, $3)
+       ON CONFLICT (usuario_id) DO UPDATE SET
+         xp_total      = ranking.xp_total + $2,
+         media_saude   = ($3 + ranking.media_saude) / 2,
+         atualizado_em = NOW()
+       RETURNING *`,
+      [req.usuario.id, XP_CUIDADO, novaSaude]
+    );
+
+    res.json({ animal: result.rows[0], ranking: rankingResult.rows[0] });
   } catch (err) {
     console.error('Erro ao aplicar cuidado:', err.message);
     res.status(500).json({ erro: 'Erro interno do servidor.' });

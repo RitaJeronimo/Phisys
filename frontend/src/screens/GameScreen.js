@@ -134,6 +134,7 @@ function GameScreen({ user, mode, values: initialValues, score: initialScore, on
   const [finished, setFinished] = useState(false);
   const [recuperacaoConfig, setRecuperacaoConfig] = useState({ multiplicador: 1, desafios_extras: 0 });
   const [voltasExtrasUsadas, setVoltasExtrasUsadas] = useState(0);
+  const [correctIndex, setCorrectIndex] = useState(null);
 
   useEffect(() => {
     configuracoesApi.getRecuperacao()
@@ -177,10 +178,13 @@ useEffect(() => {
             focus: d.foco || 'renal',
             intervencao: d.intervencao || null,
             text: d.pergunta,
+            fromDB: true,
+            // "correct" nao vem mais do backend para alunos (item A1-bis da
+            // auditoria de seguranca) - a checagem agora e feita chamando
+            // desafiosApi.checar() em handleAnswer, na hora da resposta.
             options: (Array.isArray(d.opcoes) ? d.opcoes : JSON.parse(d.opcoes)).map((opt, i) => ({
               letter: String.fromCharCode(65 + i),
               text: opt,
-              correct: i === d.correta,
             })),
             delta_acerto: typeof d.delta_acerto === 'string' ? JSON.parse(d.delta_acerto) : (d.delta_acerto || {}),
             delta_erro:   typeof d.delta_erro   === 'string' ? JSON.parse(d.delta_erro)   : (d.delta_erro   || {}),
@@ -268,11 +272,25 @@ useEffect(() => {
     return () => clearInterval(interval);
   }, [status, answered, finished]);
 
-  async function handleAnswer(option) {
+  async function handleAnswer(option, idx) {
     if (answered) return;
     const elapsed = (Date.now() - questionStart) / 1000;
 
-    if (option.correct) {
+    let isCorrect = option.correct;
+    let opcaoCorretaIdx = challenge.options.findIndex(o => o.correct);
+    if (challenge.fromDB) {
+      try {
+        const resultado = await desafiosApi.checar(challenge.id, idx);
+        isCorrect = resultado.correta;
+        opcaoCorretaIdx = resultado.opcao_correta;
+      } catch (e) {
+        console.log('Erro ao checar resposta:', e.message);
+        return;
+      }
+    }
+    setCorrectIndex(opcaoCorretaIdx);
+
+    if (isCorrect) {
       setResponseTimes(t => [...t, elapsed]);
       setSelected(option.letter);
       setAnswered(true);
@@ -449,6 +467,7 @@ useEffect(() => {
         setSelected(null);
         setAnswered(false);
         setAttempts(0);
+        setCorrectIndex(null);
         setQuestionStart(Date.now());
       } else if (onFinish) {
         const totalComExtras = challenges.length * (1 + voltasExtrasUsadas);
@@ -461,6 +480,7 @@ useEffect(() => {
       setSelected(null);
       setAnswered(false);
       setAttempts(0);
+      setCorrectIndex(null);
       setQuestionStart(Date.now());
     }
   }
@@ -575,14 +595,15 @@ useEffect(() => {
       <div style={styles.optionsTitle}>escolha a resposta</div>
 
       <div style={styles.options}>
-        {challenge.options.map(option => {
+        {challenge.options.map((option, idx) => {
           let extra = {};
-          if (answered && option.letter === selected && option.correct) extra = styles.optionCorrect;
-          else if (answered && option.letter === selected && !option.correct) extra = styles.optionWrong;
-          else if (answered && option.correct) extra = styles.optionCorrect;
+          const isCorrectOption = idx === correctIndex;
+          if (answered && option.letter === selected && isCorrectOption) extra = styles.optionCorrect;
+          else if (answered && option.letter === selected && !isCorrectOption) extra = styles.optionWrong;
+          else if (answered && isCorrectOption) extra = styles.optionCorrect;
           return (
-            <div key={option.letter} style={{ ...styles.option, ...extra }} onClick={() => handleAnswer(option)}>
-              <div style={{ ...styles.optionLetter, ...(answered && option.correct ? styles.optionLetterCorrect : answered && option.letter === selected ? styles.optionLetterWrong : {}) }}>
+            <div key={option.letter} style={{ ...styles.option, ...extra }} onClick={() => handleAnswer(option, idx)}>
+              <div style={{ ...styles.optionLetter, ...(answered && isCorrectOption ? styles.optionLetterCorrect : answered && option.letter === selected ? styles.optionLetterWrong : {}) }}>
                 {option.letter}
               </div>
               <div style={styles.optionText}>{option.text}</div>

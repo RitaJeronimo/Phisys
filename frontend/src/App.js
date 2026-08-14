@@ -129,9 +129,8 @@ function App() {
   // API duplicadas foram removidas - elas causavam 2 requisicoes por clique
   // (uma aqui, outra no HomeScreen), o que quebrava a contagem exata de usos
   // por sessao implementada para o Modo Sessao.
-  function handleCare(careId, newValues) {
-    const newScore = score + 5;
-    setScore(newScore);
+  function handleCare(careId, newValues, newXpTotal) {
+    setScore(newXpTotal);
   }
 
   async function handleMotivation(nivel) {

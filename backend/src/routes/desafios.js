@@ -12,9 +12,39 @@ router.get('/', auth, async (req, res) => {
       ? 'SELECT * FROM desafios WHERE turma_id = $1 ORDER BY criado_em ASC'
       : 'SELECT * FROM desafios WHERE ativo = TRUE AND turma_id = $1 ORDER BY criado_em ASC';
     const result = await pool.query(query, [req.usuario.turma_id]);
-    res.json(result.rows);
+    // Alunos nao recebem a resposta certa de antemao (item A1-bis da auditoria
+    // de seguranca) - so o professor, que precisa dela para editar o desafio.
+    const linhas = isProfessor
+      ? result.rows
+      : result.rows.map(({ correta, ...resto }) => resto);
+    res.json(linhas);
   } catch (err) {
     console.error('Erro ao listar desafios:', err.message);
+    res.status(500).json({ erro: 'Erro interno do servidor.' });
+  }
+});
+
+// POST /api/desafios/:id/checar – verifica se a opcao escolhida esta correta,
+// sem expor a resposta certa de antemao (ver GET / acima). Revela qual era a
+// opcao certa a cada tentativa (nao so na tentativa final) - fecha o
+// vazamento principal (lista completa de respostas antes de jogar); resta um
+// residuo pequeno e aceito (DevTools mostra a resposta 1 tentativa mais cedo
+// do que a UI exibe visualmente).
+router.post('/:id/checar', auth, async (req, res) => {
+  const { id } = req.params;
+  const { opcao_index } = req.body;
+  try {
+    const result = await pool.query(
+      'SELECT correta FROM desafios WHERE id = $1 AND turma_id = $2',
+      [id, req.usuario.turma_id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ erro: 'Desafio nao encontrado.' });
+    }
+    const opcaoCorreta = result.rows[0].correta;
+    res.json({ correta: opcaoCorreta === opcao_index, opcao_correta: opcaoCorreta });
+  } catch (err) {
+    console.error('Erro ao checar resposta:', err.message);
     res.status(500).json({ erro: 'Erro interno do servidor.' });
   }
 });

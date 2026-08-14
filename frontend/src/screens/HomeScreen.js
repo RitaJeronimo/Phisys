@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { animal as animalApi, ranking as rankingApi } from '../api';
-import { PRIMARY_PARAMS, calcularSaude, calcularEnergiaModulada, getAgePANormal, getAgeStage, getMascotStatus, STATUS, DAILY_CARES, aplicarCuidado } from '../engine/mascotEngine';
+import { animal as animalApi } from '../api';
+import { PRIMARY_PARAMS, calcularSaude, calcularEnergiaModulada, getAgePANormal, getAgeStage, getMascotStatus, STATUS, DAILY_CARES } from '../engine/mascotEngine';
 
 
 const GRADIENT = 'linear-gradient(160deg, #1B4FCC 0%, #7B2FBE 50%, #CC1B1B 100%)';
@@ -279,10 +279,9 @@ function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, on
     pendingCaresRef.current[id] = true;
     setPendingCares(prev => ({ ...prev, [id]: true }));
 
-    const newValues = aplicarCuidado(values, id);
-
+    let resultado;
     try {
-      await animalApi.cuidado(id);
+      resultado = await animalApi.cuidado(id);
     } catch (e) {
       // 429 = bloqueado (cooldown ou limite de sessao atingido). Recarrega o
       // status real do servidor para refletir o bloqueio na tela corretamente.
@@ -294,24 +293,18 @@ function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, on
       return;
     }
 
-    setValues(newValues);
+    // Estado do animal e XP vem calculados pelo servidor - antes o frontend
+    // recalculava tudo aqui e sobrescrevia via PUT /api/animal e
+    // PUT /api/ranking com valores proprios, o que permitia mandar qualquer
+    // valor direto nessas rotas.
+    setValues(resultado.animal);
     setCareEffect(id);
     setTimeout(() => setCareEffect(null), 1500);
     fetchCuidadoStatus();
     pendingCaresRef.current[id] = false;
     setPendingCares(prev => ({ ...prev, [id]: false }));
 
-    try {
-      await animalApi.update({
-        energia: newValues.energia, hidratacao: newValues.hidratacao,
-        pas: newValues.pas, pad: newValues.pad, fc: newValues.fc, peso: newValues.peso,
-      });
-    } catch(e) { console.log('Erro:', e.message); }
-    try {
-      const newScore = (score || 100) + 5;
-      await rankingApi.update({ xp_total: newScore, media_saude: calcularSaude({ ...newValues, age_days: ageDays || 90 }) });
-      if (onCare) onCare(id, newValues);
-    } catch(e) {}
+    if (onCare) onCare(id, resultado.animal, resultado.ranking.xp_total);
   }
 
   return (
