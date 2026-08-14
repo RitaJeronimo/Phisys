@@ -3,6 +3,10 @@ const router = express.Router();
 const pool = require('../db/connection');
 const auth = require('../middleware/auth');
 const { requireProfessor, mesmaTurmaDoRecurso } = require('../middleware/turmaOwnership');
+const {
+  PRIMARY_PARAMS, getAgeStage, getAgePANormal, getAgeRecoveryPenalty,
+  aplicarDeltaComFreio, calcularSaude, applyBonus,
+} = require('../engine/mascotEngine');
 
 // GET /api/desafios – lista desafios da turma do usuario logado (aluno ou professor)
 router.get('/', auth, async (req, res) => {
@@ -32,17 +36,111 @@ router.get('/', auth, async (req, res) => {
 // do que a UI exibe visualmente).
 router.post('/:id/checar', auth, async (req, res) => {
   const { id } = req.params;
-  const { opcao_index } = req.body;
+  const { opcao_index, fechar, volta_extra } = req.body;
   try {
     const result = await pool.query(
-      'SELECT correta FROM desafios WHERE id = $1 AND turma_id = $2',
+      'SELECT correta, delta_acerto, delta_erro FROM desafios WHERE id = $1 AND turma_id = $2',
       [id, req.usuario.turma_id]
     );
     if (result.rows.length === 0) {
       return res.status(404).json({ erro: 'Desafio nao encontrado.' });
     }
-    const opcaoCorreta = result.rows[0].correta;
-    res.json({ correta: opcaoCorreta === opcao_index, opcao_correta: opcaoCorreta });
+    const desafio = result.rows[0];
+    const opcaoCorreta = desafio.correta;
+    const correta = opcaoCorreta === opcao_index;
+
+    if (!fechar) {
+      return res.json({ correta, opcao_correta: opcaoCorreta });
+    }
+
+    // fechar:true - aplica o resultado no animal/ranking do proprio aluno,
+    // usando o estado atual do BANCO (nunca o que o cliente mandar). O modo
+    // (sessao/livre) tambem e decidido aqui, do mesmo jeito que
+    // POST /api/animal/cuidado ja faz - nao confia num campo "mode" do
+    // cliente (deixaria escapar do desconto de energia do Modo Livre so
+    // se autodeclarando "sessao").
+    const animalResult = await pool.query('SELECT * FROM animal WHERE usuario_id = $1', [req.usuario.id]);
+    if (animalResult.rows.length === 0) {
+      return res.status(404).json({ erro: 'Animal nao encontrado.' });
+    }
+    const values = animalResult.rows[0];
+    const ageDaysAtual = values.age_days || 90;
+
+    const simAtiva = await pool.query(
+      'SELECT id FROM simulacoes WHERE ativo = TRUE AND turma_id = $1 ORDER BY criado_em DESC LIMIT 1',
+      [req.usuario.turma_id]
+    );
+    const modoSessao = simAtiva.rows.length > 0;
+
+    const rankingResult = await pool.query('SELECT xp_total FROM ranking WHERE usuario_id = $1', [req.usuario.id]);
+    const scoreAtual = rankingResult.rows.length > 0 ? Number(rankingResult.rows[0].xp_total) : 0;
+
+    let novosValores, newScore;
+
+    if (correta) {
+      const configResult = await pool.query(
+        `SELECT valor FROM configuracoes WHERE chave = 'recuperacao_multiplicador'`
+      );
+      const multiplicador = configResult.rows.length > 0 ? Number(configResult.rows[0].valor) : 1;
+      const fatorRecuperacao = (multiplicador || 1) * getAgeRecoveryPenalty(ageDaysAtual);
+      const paNormalAtual = getAgePANormal(ageDaysAtual);
+      const fcNormalAtual = getAgeStage(ageDaysAtual).fcNormal;
+      const hidNormalAtual = PRIMARY_PARAMS.find(p => p.id === 'hidratacao').normal;
+      const da = desafio.delta_acerto || {};
+
+      const deltaAcertoComFreio = (deltaOriginal, valorBase, faixaNormal, min, max) => {
+        if (deltaOriginal === undefined) return valorBase;
+        return aplicarDeltaComFreio(valorBase, deltaOriginal * fatorRecuperacao, faixaNormal, min, max);
+      };
+
+      novosValores = {
+        hidratacao: deltaAcertoComFreio(da.hidratacao, Number(values.hidratacao) || 70, hidNormalAtual, 0, 100),
+        pas: deltaAcertoComFreio(da.pas, Number(values.pas) || 110, paNormalAtual.pas, 60, 200),
+        pad: deltaAcertoComFreio(da.pad, Number(values.pad) || 70,  paNormalAtual.pad, 40, 120),
+        fc:  deltaAcertoComFreio(da.fc,  Number(values.fc)  || 370, fcNormalAtual,     100, 600),
+        energia: modoSessao
+          ? (da.energia !== undefined ? Math.min(100, (Number(values.energia) || 80) + da.energia) : Number(values.energia))
+          : (volta_extra ? Number(values.energia) : Math.max(0, (Number(values.energia) || 80) - 10)),
+        peso: Number(values.peso),
+        age_days: ageDaysAtual,
+      };
+      novosValores.saude = calcularSaude(novosValores);
+      newScore = applyBonus(scoreAtual, 'resposta_correta');
+    } else {
+      const de = desafio.delta_erro || {};
+      novosValores = {
+        hidratacao: de.hidratacao !== undefined ? Math.max(0, Math.min(100, (Number(values.hidratacao) || 70) + de.hidratacao)) : Number(values.hidratacao),
+        pas: de.pas !== undefined ? Math.max(60,  Math.min(200, (Number(values.pas) || 110) + de.pas)) : Number(values.pas),
+        pad: de.pad !== undefined ? Math.max(40,  Math.min(120, (Number(values.pad) || 70)  + de.pad)) : Number(values.pad),
+        fc:  de.fc  !== undefined ? Math.max(100, Math.min(600, (Number(values.fc)  || 370) + de.fc))  : Number(values.fc),
+        energia: modoSessao
+          ? (de.energia !== undefined ? Math.max(0, Math.min(100, (Number(values.energia) || 80) + de.energia)) : Number(values.energia))
+          : Math.max(0, (Number(values.energia) || 80) - 10),
+        peso: Number(values.peso),
+        age_days: ageDaysAtual,
+      };
+      novosValores.saude = calcularSaude(novosValores);
+      newScore = Math.max(0, scoreAtual - 5);
+    }
+
+    const animalAtualizado = await pool.query(
+      `UPDATE animal SET hidratacao=$1, pas=$2, pad=$3, fc=$4, energia=$5, saude=$6, atualizado_em=NOW()
+       WHERE usuario_id = $7 RETURNING *`,
+      [novosValores.hidratacao, novosValores.pas, novosValores.pad, novosValores.fc, novosValores.energia, novosValores.saude, req.usuario.id]
+    );
+    const rankingAtualizado = await pool.query(
+      `INSERT INTO ranking (usuario_id, xp_total, sessoes, media_saude)
+       VALUES ($1, $2, 0, $3)
+       ON CONFLICT (usuario_id) DO UPDATE SET xp_total = $2, media_saude = ($3 + ranking.media_saude) / 2, atualizado_em = NOW()
+       RETURNING *`,
+      [req.usuario.id, newScore, novosValores.saude]
+    );
+
+    res.json({
+      correta, opcao_correta: opcaoCorreta,
+      novosValores: animalAtualizado.rows[0],
+      newScore: rankingAtualizado.rows[0].xp_total,
+    });
   } catch (err) {
     console.error('Erro ao checar resposta:', err.message);
     res.status(500).json({ erro: 'Erro interno do servidor.' });

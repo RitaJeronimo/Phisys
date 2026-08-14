@@ -37,7 +37,7 @@ export const usuarios = {
 };
 export const desafios = {
   get: () => req('/api/desafios', { headers: authHeaders() }),
-  checar: (id, opcao_index) => req(`/api/desafios/${id}/checar`, { method: 'POST', headers: authHeaders(), body: JSON.stringify({ opcao_index }) }),
+  checar: (id, opcao_index, fechar, volta_extra) => req(`/api/desafios/${id}/checar`, { method: 'POST', headers: authHeaders(), body: JSON.stringify({ opcao_index, fechar, volta_extra }) }),
 };
 export const simulacoes = {
   getAtiva: () => req('/api/simulacoes/ativa', { headers: authHeaders() }),

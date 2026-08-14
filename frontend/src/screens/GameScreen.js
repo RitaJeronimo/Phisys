@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { PARAMS, getDefaultValues, getMascotStatus, applyBonus, calculateFinalGrade, STATUS, calcularSaude, calcularEnergiaModulada, getAgeRecoveryPenalty, aplicarDeltaComFreio, getAgeStage, getAgePANormal, embaralharArray } from '../engine/mascotEngine';
-import { ranking as rankingApi, animal as animalApi, getToken, desafios as desafiosApi, configuracoes as configuracoesApi, simulacoes as simulacoesApi } from '../api';
+import { PARAMS, getDefaultValues, getMascotStatus, calculateFinalGrade, STATUS, calcularSaude, calcularEnergiaModulada, embaralharArray } from '../engine/mascotEngine';
+import { ranking as rankingApi, getToken, desafios as desafiosApi, configuracoes as configuracoesApi, simulacoes as simulacoesApi } from '../api';
 
 const MOCK_CHALLENGES = [
   {
@@ -276,101 +276,63 @@ useEffect(() => {
     if (answered) return;
     const elapsed = (Date.now() - questionStart) / 1000;
 
-    let isCorrect = option.correct;
-    let opcaoCorretaIdx = challenge.options.findIndex(o => o.correct);
-    if (challenge.fromDB) {
-      try {
-        const resultado = await desafiosApi.checar(challenge.id, idx);
-        isCorrect = resultado.correta;
-        opcaoCorretaIdx = resultado.opcao_correta;
-      } catch (e) {
-        console.log('Erro ao checar resposta:', e.message);
-        return;
+    // MOCK_CHALLENGES (fallback so quando a turma nao tem nenhum desafio real
+    // cadastrado) nao vem do banco - nao ha como checar/persistir no servidor
+    // sem risco de colidir com um desafio real por coincidencia de id. Vira
+    // pratica/demonstracao, sem persistir XP/estado (ate o professor cadastrar
+    // desafios de verdade).
+    if (!challenge.fromDB) {
+      setCorrectIndex(challenge.options.findIndex(o => o.correct));
+      if (option.correct) {
+        setResponseTimes(t => [...t, elapsed]);
+        setSelected(option.letter);
+        setAnswered(true);
+        setAttempts(0);
+        setSolvedCount(s => s + 1);
+      } else {
+        const newAttempts = attempts + 1;
+        setAttempts(newAttempts);
+        setSelected(option.letter);
+        if (newAttempts < 2) {
+          setTimeout(() => setSelected(null), 1000);
+        } else {
+          setResponseTimes(t => [...t, elapsed]);
+          setAnswered(true);
+          setAttempts(0);
+          setErrorCount(e => e + 1);
+        }
       }
+      return;
     }
-    setCorrectIndex(opcaoCorretaIdx);
 
-    if (isCorrect) {
+    // Desafios reais: primeiro so confere (fechar:false), pra dar feedback
+    // visual instantaneo sem mexer em nada ainda - o servidor e quem decide
+    // se e certo/errado e quem calcula o novo estado do animal/XP (nao
+    // confia mais em nada calculado aqui no cliente).
+    let resultado;
+    try {
+      resultado = await desafiosApi.checar(challenge.id, idx, false);
+    } catch (e) {
+      console.log('Erro ao checar resposta:', e.message);
+      return;
+    }
+    setCorrectIndex(resultado.opcao_correta);
+
+    async function fecharResposta() {
+      try {
+        const fechamento = await desafiosApi.checar(challenge.id, idx, true, voltasExtrasUsadas > 0);
+        setScore(fechamento.newScore);
+        setValues(fechamento.novosValores);
+      } catch (e) { console.log('Erro ao fechar resposta:', e.message); }
+    }
+
+    if (resultado.correta) {
       setResponseTimes(t => [...t, elapsed]);
       setSelected(option.letter);
       setAnswered(true);
       setAttempts(0);
-      // CORRECAO CRITICA: a chamada usava a chave 'correct_answer', que nao
-      // existe em SCORE_RULES.bonus (mascotEngine.js) - a chave real e
-      // 'resposta_correta'. Como a chave nao batia, applyBonus somava 0
-      // pontos sempre, ou seja, ACERTAR UM DESAFIO NAO AUMENTAVA O XP/SCORE
-      // salvo no banco. So o timer (applyPenalty) alterava o score, e so pra
-      // baixo. Corrigido para usar a chave certa.
-      const newScore = applyBonus(score, 'resposta_correta');
-      setScore(newScore);
       setSolvedCount(s => s + 1);
-      const da = challenge.delta_acerto || {};
-      const ageDaysAtual = values.age_days || 90;
-      // Multiplicador configurado pelo professor + penalidade automatica por
-      // fase de vida (decisao da equipe: fase de vida e automatica, sem
-      // controle manual adicional).
-      const fatorRecuperacao = (recuperacaoConfig.multiplicador || 1) * getAgeRecoveryPenalty(ageDaysAtual);
-      const paNormalAtual = getAgePANormal(ageDaysAtual);
-      const fcNormalAtual = getAgeStage(ageDaysAtual).fcNormal;
-      const hidNormalAtual = PARAMS.find(p => p.id === 'hidratacao').normal;
-
-      // Aplica o delta de acerto multiplicado pelo fator de recuperacao, com
-      // freio para nao ultrapassar o centro da faixa normal (risco identificado
-      // pela Samela: evita o animal ir de "critico alto" direto para "critico baixo").
-      function deltaAcertoComFreio(deltaOriginal, valorBase, faixaNormal, min, max) {
-        if (deltaOriginal === undefined) return valorBase;
-        const deltaAjustado = deltaOriginal * fatorRecuperacao;
-        return aplicarDeltaComFreio(valorBase, deltaAjustado, faixaNormal, min, max);
-      }
-
-      let novosValores;
-      if (mode === 'sessao') {
-        // CORRECAO (decisao: professor tem controle total): antes, quando o
-        // desafio nao definia pas/pad/fc no delta_acerto, o codigo forcava a
-        // recuperacao total do animal para os valores basais (110/70/370).
-        // Isso conflitava com desafios que definem seus proprios deltas (que
-        // ai sim eram aplicados) - um comportamento inconsistente dependendo
-        // de quais campos o professor preenchia. Agora a regra e unica e
-        // igual ao Modo Livre: um parametro so muda se o professor configurou
-        // um delta para ele. Se nao configurou, o parametro simplesmente
-        // permanece como estava.
-        novosValores = {
-          ...values,
-          hidratacao: deltaAcertoComFreio(da.hidratacao, values.hidratacao || 70, hidNormalAtual, 0, 100),
-          energia:    da.energia !== undefined ? Math.min(100, (values.energia || 80) + da.energia) : values.energia,
-          pas: deltaAcertoComFreio(da.pas, values.pas || 110, paNormalAtual.pas, 60, 200),
-          pad: deltaAcertoComFreio(da.pad, values.pad || 70,  paNormalAtual.pad, 40, 120),
-          fc:  deltaAcertoComFreio(da.fc,  values.fc  || 370, fcNormalAtual,     100, 600),
-          age_days: ageDaysAtual,
-        };
-        novosValores.saude = calcularSaude(novosValores);
-      } else {
-        // Modo Livre: aplica os deltas de acerto em TODOS os parametros primarios.
-        // Antes, o spread de challenge.intervention sobrescrevia os valores com a
-        // intervencao original (a crise), travando o animal em estado critico mesmo
-        // apos o aluno acertar o desafio. Removido, e PAS/PAD/FC agora recebem os
-        // deltas de acerto, com saude recalculada ao final.
-        // CORRECAO: durante voltas extras de recuperacao (voltasExtrasUsadas > 0),
-        // a energia deixa de ser descontada. Essas voltas existem para corrigir
-        // uma crise causada pelo professor - descontar energia nelas fazia o
-        // animal cair em estado critico por baixa energia mesmo quando o aluno
-        // acertava tudo, o que nao tem relacao com o problema que ele esta
-        // tentando resolver. O consumo normal de energia (jogo do dia a dia,
-        // fora de voltas extras) continua igual.
-        novosValores = {
-          ...values,
-          hidratacao: deltaAcertoComFreio(da.hidratacao, values.hidratacao || 70, hidNormalAtual, 0, 100),
-          pas: deltaAcertoComFreio(da.pas, values.pas || 110, paNormalAtual.pas, 60, 200),
-          pad: deltaAcertoComFreio(da.pad, values.pad || 70,  paNormalAtual.pad, 40, 120),
-          fc:  deltaAcertoComFreio(da.fc,  values.fc  || 370, fcNormalAtual,     100, 600),
-          energia: voltasExtrasUsadas > 0 ? values.energia : Math.max(0, (values.energia || 80) - 10),
-          age_days: ageDaysAtual,
-        };
-        novosValores.saude = calcularSaude(novosValores);
-      }
-      setValues(novosValores);
-      try { await animalApi.update(novosValores); } catch(e) { console.log('Erro ao salvar animal (acerto):', e.message); }
-      try { await rankingApi.update({ xp_total: newScore, media_saude: calcularSaude(novosValores) }); } catch(e) {}
+      await fecharResposta();
     } else {
       const newAttempts = attempts + 1;
       setAttempts(newAttempts);
@@ -381,44 +343,8 @@ useEffect(() => {
         setResponseTimes(t => [...t, elapsed]);
         setAnswered(true);
         setAttempts(0);
-        const de = challenge.delta_erro || {};
-        let novosValoresErro;
-        if (mode === 'sessao') {
-          // CORRECAO (mesmo principio do acerto acima): removidos os
-          // valores-padrao escondidos (?? -20, ?? -15) que aplicavam uma
-          // piora fixa em hidratacao/energia mesmo quando o professor nao
-          // configurou nada para esses campos no delta_erro. Agora, assim
-          // como pas/pad/fc, hidratacao e energia so mudam se o professor
-          // configurou um delta_erro para elas.
-          novosValoresErro = {
-            ...values,
-            hidratacao: de.hidratacao !== undefined ? Math.max(0, Math.min(100, (values.hidratacao || 70) + de.hidratacao)) : values.hidratacao,
-            energia:    de.energia    !== undefined ? Math.max(0, Math.min(100, (values.energia    || 80) + de.energia))    : values.energia,
-            pas: de.pas !== undefined ? Math.max(60,  Math.min(200, (values.pas || 110) + de.pas)) : values.pas,
-            pad: de.pad !== undefined ? Math.max(40,  Math.min(120, (values.pad || 70)  + de.pad)) : values.pad,
-            fc:  de.fc  !== undefined ? Math.max(100, Math.min(600, (values.fc  || 370) + de.fc))  : values.fc,
-            age_days: values.age_days || 90,
-          };
-          novosValoresErro.saude = calcularSaude(novosValoresErro);
-        } else {
-          // Modo Livre: mesmo tratamento do acerto, so que aplicando os deltas de erro
-          novosValoresErro = {
-            ...values,
-            hidratacao: de.hidratacao !== undefined ? Math.max(0, Math.min(100, (values.hidratacao || 70) + de.hidratacao)) : values.hidratacao,
-            pas: de.pas !== undefined ? Math.max(60,  Math.min(200, (values.pas || 110) + de.pas)) : values.pas,
-            pad: de.pad !== undefined ? Math.max(40,  Math.min(120, (values.pad || 70)  + de.pad)) : values.pad,
-            fc:  de.fc  !== undefined ? Math.max(100, Math.min(600, (values.fc  || 370) + de.fc))  : values.fc,
-            energia: Math.max(0, (values.energia || 80) - 10),
-            age_days: values.age_days || 90,
-          };
-          novosValoresErro.saude = calcularSaude(novosValoresErro);
-        }
-        setValues(novosValoresErro);
-        try { await animalApi.update(novosValoresErro); } catch(e) { console.log('Erro ao salvar animal (erro):', e.message); }
-        const penaltyScore = Math.max(0, score - 5);
-        setScore(penaltyScore);
         setErrorCount(e => e + 1);
-        try { await rankingApi.update({ xp_total: penaltyScore, media_saude: calcularSaude(novosValoresErro) }); } catch(e) {}
+        await fecharResposta();
       }
     }
   }
