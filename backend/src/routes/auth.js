@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const pool = require('../db/connection');
 const rateLimit = require('express-rate-limit');
+const PostgresStore = require('../middleware/rateLimitStore');
 
 // Limita tentativas de login/registro por IP, para dificultar forca bruta
 // de senha (nenhuma rota de auth tinha throttling ate agora).
@@ -13,6 +14,7 @@ const authLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { erro: 'Muitas tentativas. Tente novamente em alguns minutos.' },
+  store: new PostgresStore(pool),
 });
 
 // POST /api/auth/login

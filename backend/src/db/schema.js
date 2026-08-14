@@ -215,6 +215,20 @@ async function adicionarColunas() {
       )
     `);
 
+    // Store compartilhado do rate limiter de login/registro (item M1 da auditoria
+    // de seguranca): o MemoryStore padrao do express-rate-limit fica isolado por
+    // processo, e testes em producao (14/08/2026) mostraram contagem inconsistente
+    // entre requisicoes do mesmo IP - evidencia de mais de um processo atendendo o
+    // backend no Render. Uma tabela compartilhada resolve isso independente de
+    // quantos processos existirem.
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS rate_limit_hits (
+        chave     VARCHAR(255) PRIMARY KEY,
+        contagem  INTEGER NOT NULL DEFAULT 0,
+        expira_em TIMESTAMPTZ NOT NULL
+      )
+    `);
+
     console.log('Colunas e tabelas adicionadas com sucesso!');
   } catch (err) {
     console.error('Erro ao adicionar colunas:', err.message);
