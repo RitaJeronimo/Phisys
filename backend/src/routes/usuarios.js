@@ -45,13 +45,17 @@ router.get('/:id', auth, requireProfessor, mesmaTurmaDoRecurso('usuarios'), asyn
 });
 
 // PUT /api/usuarios/:id/resetar-senha – professor invalida a senha atual do
-// aluno (so da propria turma); ele passa a poder definir uma nova na proxima
-// tentativa de entrar com a propria matricula (mesmo mecanismo de POST /api/auth/registro).
+// aluno (so da propria turma) e gera um codigo de 6 digitos, valido por
+// 10 min e de uso unico. O aluno usa esse codigo em POST /api/auth/resetar-senha
+// pra definir a senha nova (ver A2 da auditoria de seguranca, 15/08/2026).
 router.put('/:id/resetar-senha', auth, requireProfessor, mesmaTurmaDoRecurso('usuarios'), async (req, res) => {
   const { id } = req.params;
   try {
     const senhaTemporaria = crypto.randomBytes(24).toString('hex');
     const senha_hash = await bcrypt.hash(senhaTemporaria, 10);
+    const codigo = String(crypto.randomInt(0, 1000000)).padStart(6, '0');
+    const codigo_hash = await bcrypt.hash(codigo, 10);
+
     const result = await pool.query(
       `UPDATE usuarios SET senha_hash = $1, senha_definida_pelo_aluno = false
        WHERE id = $2 AND modo = 'aluno' RETURNING id, nome, matricula`,
@@ -60,7 +64,22 @@ router.put('/:id/resetar-senha', auth, requireProfessor, mesmaTurmaDoRecurso('us
     if (result.rows.length === 0) {
       return res.status(404).json({ erro: 'Aluno nao encontrado.' });
     }
-    res.json({ ok: true, mensagem: 'Senha invalidada. O aluno podera definir uma nova senha na proxima vez que tentar entrar.' });
+
+    // So um codigo valido por vez por aluno - gerar um novo mata qualquer
+    // codigo anterior ainda nao usado.
+    await pool.query(`DELETE FROM reset_senha_tokens WHERE usuario_id = $1 AND usado_em IS NULL`, [id]);
+    await pool.query(
+      `INSERT INTO reset_senha_tokens (usuario_id, codigo_hash, expira_em)
+       VALUES ($1, $2, NOW() + INTERVAL '10 minutes')`,
+      [id, codigo_hash]
+    );
+
+    res.json({
+      ok: true,
+      codigo,
+      expira_em_minutos: 10,
+      mensagem: 'Codigo gerado. Mostre-o ao aluno - ele tem 10 minutos para usa-lo e definir uma senha nova.',
+    });
   } catch (err) {
     console.error('Erro ao resetar senha do aluno:', err.message);
     res.status(500).json({ erro: 'Erro interno do servidor.' });

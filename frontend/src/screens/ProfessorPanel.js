@@ -85,6 +85,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
   const [editingTurma, setEditingTurma] = useState(null);
   const [resetTurmaId, setResetTurmaId] = useState('');
   const [growthTurmaId, setGrowthTurmaId] = useState('');
+  const [resetCodeInfo, setResetCodeInfo] = useState(null); // { nome, codigo, expiraEmMinutos }
 
   const fetchTurmas = useCallback(() => {
     turmasApi.listar()
@@ -195,13 +196,18 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
   const avgXP = students.length > 0 ? (students.reduce((a,s)=>a+Number(s.xp_total||0),0)/students.length).toFixed(0) : '0';
 
   async function handleResetarSenhaAluno(id, nome) {
-    if (!window.confirm(`Invalidar a senha atual de ${nome}? Ele vai precisar definir uma senha nova na próxima vez que tentar entrar (matrícula continua a mesma).`)) return;
+    if (!window.confirm(`Gerar um código de reset para ${nome}? A senha atual dele para de funcionar na hora.`)) return;
     try {
-      await usuariosApi.resetarSenha(id);
-      alert(`✅ Senha de ${nome} foi invalidada. Avise o aluno para logar normalmente e criar uma senha nova.`);
+      const data = await usuariosApi.resetarSenha(id);
+      setResetCodeInfo({ nome, codigo: data.codigo, expiraEmMinutos: data.expira_em_minutos });
     } catch(e) {
       alert('Erro ao resetar senha: ' + e.message);
     }
+  }
+
+  async function handleCopyResetCode() {
+    if (!resetCodeInfo) return;
+    try { await navigator.clipboard.writeText(resetCodeInfo.codigo); } catch {}
   }
 
   async function handleDeletarAluno(id, nome) {
@@ -667,6 +673,18 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
         {tab === 'alunos' && <button style={styles.resetTurmaBtn} onClick={handleZerarTurma}>↺ Zerar XP</button>}
         {tab === 'alunos' && <button style={styles.resetTurmaBtn} onClick={handleLimparTodosAlunos}>🗑️ Limpar</button>}
       </div>
+
+      {resetCodeInfo && (
+        <div style={styles.resetCodeCard}>
+          <div style={styles.resetCodeLabel}>🔑 Código para <b>{resetCodeInfo.nome}</b></div>
+          <div style={styles.resetCodeValue}>{resetCodeInfo.codigo}</div>
+          <div style={styles.resetCodeHint}>Válido por {resetCodeInfo.expiraEmMinutos} minutos · uso único</div>
+          <div style={styles.resetCodeActions}>
+            <button style={styles.resetCodeCopyBtn} onClick={handleCopyResetCode}>Copiar</button>
+            <button style={styles.resetCodeCloseBtn} onClick={() => setResetCodeInfo(null)}>Fechar</button>
+          </div>
+        </div>
+      )}
 
       <div style={styles.tabs}>
         {[['turmas','🏫 Turmas'],['desafios','🎯 Desafios'],['simulacoes','🔬 Simulações'],['alunos','👥 Alunos'],['notas','📝 Notas'],['pesos','⚖️ Pesos'],['mensagens','💬 Mensagens'],['crescimento','🐭 Crescimento']].map(([id,label])=>(
@@ -1204,6 +1222,13 @@ const styles = {
   title:            { fontSize:'16px', fontWeight:'700', color:'white' },
   exportBtn:        { fontSize:'11px', background:'rgba(255,255,255,.15)', border:'1px solid rgba(255,255,255,.25)', color:'white', padding:'5px 12px', borderRadius:'20px', cursor:'pointer', fontFamily:'inherit' },
   resetTurmaBtn:    { fontSize:'11px', background:'rgba(220,60,60,.25)', border:'1px solid rgba(220,60,60,.5)', color:'#FF8080', padding:'5px 12px', borderRadius:'20px', cursor:'pointer', fontFamily:'inherit', fontWeight:'700' },
+  resetCodeCard:    { position:'sticky', top:0, zIndex:20, margin:'0 1rem .75rem', background:'rgba(255,200,50,.15)', border:'1px solid rgba(255,200,50,.4)', borderRadius:'14px', padding:'1rem', textAlign:'center' },
+  resetCodeLabel:   { fontSize:'12px', color:'rgba(255,255,255,.8)', marginBottom:'4px' },
+  resetCodeValue:   { fontSize:'32px', fontWeight:'700', letterSpacing:'.15em', fontFamily:'monospace', color:'white' },
+  resetCodeHint:    { fontSize:'11px', color:'rgba(255,255,255,.65)', margin:'4px 0 10px' },
+  resetCodeActions: { display:'flex', gap:'8px', justifyContent:'center' },
+  resetCodeCopyBtn: { fontSize:'12px', fontWeight:'700', background:'white', color:'#7B2FBE', border:'none', padding:'6px 16px', borderRadius:'20px', cursor:'pointer', fontFamily:'inherit' },
+  resetCodeCloseBtn:{ fontSize:'12px', background:'rgba(255,255,255,.15)', border:'1px solid rgba(255,255,255,.25)', color:'white', padding:'6px 16px', borderRadius:'20px', cursor:'pointer', fontFamily:'inherit' },
   saveBtn:          { fontSize:'11px', background:'#32C878', border:'none', color:'white', padding:'6px 14px', borderRadius:'20px', cursor:'pointer', fontFamily:'inherit', fontWeight:'700' },
   tabs:             { margin:'0 1rem .75rem', display:'flex', gap:'4px' },
   tab:              { flex:1, padding:'7px 2px', textAlign:'center', fontSize:'10px', fontWeight:'600', color:'rgba(255,255,255,.6)', background:'rgba(255,255,255,.1)', border:'1px solid rgba(255,255,255,.15)', borderRadius:'10px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', minHeight:'36px', lineHeight:'1.2' },

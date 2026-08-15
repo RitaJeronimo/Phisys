@@ -87,41 +87,16 @@ router.post('/registro', authLimiter, async (req, res) => {
 
   try {
     const existe = await pool.query(
-      'SELECT id, modo, senha_definida_pelo_aluno FROM usuarios WHERE matricula = $1',
+      'SELECT id, modo FROM usuarios WHERE matricula = $1',
       [matricula]
     );
 
     if (existe.rows.length > 0) {
-      const existente = existe.rows[0];
-      // Conta de aluno criada antes de existir senha real: a "senha" era so um
-      // valor calculado a partir da matricula, entao o aluno nunca escolheu nada.
-      // Deixa reivindicar a conta pela matricula (unico dado que ja existia) e
-      // definir uma senha de verdade agora. So funciona enquanto a flag estiver
-      // false - depois disso (ou apos um reset do professor) exige a senha certa.
-      if (modo === 'aluno' && existente.modo === 'aluno' && existente.senha_definida_pelo_aluno === false) {
-        const senha_hash = await bcrypt.hash(senha, 10);
-        const atualizado = await pool.query(
-          `UPDATE usuarios SET senha_hash = $1, senha_definida_pelo_aluno = true
-           WHERE id = $2 RETURNING id, nome, matricula, modo, turma_id`,
-          [senha_hash, existente.id]
-        );
-        const usuario = atualizado.rows[0];
-        const token = jwt.sign(
-          { id: usuario.id, nome: usuario.nome, matricula: usuario.matricula, modo: usuario.modo, turma_id: usuario.turma_id },
-          process.env.JWT_SECRET,
-          { expiresIn: process.env.JWT_EXPIRES_IN }
-        );
-        return res.status(200).json({
-          token,
-          usuario: {
-            id: usuario.id,
-            nome: usuario.nome,
-            matricula: usuario.matricula,
-            modo: usuario.modo,
-            turma_id: usuario.turma_id,
-          }
-        });
-      }
+      // O "claim" antigo (definir senha nova so sabendo a matricula, sem
+      // aprovacao de ninguem - codigo_turma nem era validado aqui) foi
+      // removido na auditoria de seguranca (item A2, 15/08/2026). Ver
+      // POST /api/auth/resetar-senha: agora exige um codigo curto gerado
+      // por um professor da propria turma do aluno.
       return res.status(409).json({
         erro: modo === 'aluno' ? 'Matricula ja cadastrada. Verifique sua senha.' : 'Matricula ja cadastrada.'
       });
@@ -185,6 +160,91 @@ router.post('/registro', authLimiter, async (req, res) => {
 
   } catch (err) {
     console.error('Erro no registro:', err.message);
+    res.status(500).json({ erro: 'Erro interno do servidor.' });
+  }
+});
+
+// POST /api/auth/resetar-senha — aluno usa o codigo gerado pelo professor
+// (PUT /api/usuarios/:id/resetar-senha) pra definir uma senha nova. Publica
+// porque o aluno ainda nao tem credencial valida nesse momento; a seguranca
+// vem do codigo (curto, mas uso unico, expira em 10min, e rate-limited
+// abaixo), nao da matricula (que nao e segredo - ver GET /api/ranking).
+router.post('/resetar-senha', authLimiter, async (req, res) => {
+  const { matricula, codigo, nova_senha } = req.body;
+
+  if (!matricula || !codigo || !nova_senha) {
+    return res.status(400).json({ erro: 'Matricula, codigo e nova senha sao obrigatorios.' });
+  }
+  if (nova_senha.length < 4) {
+    return res.status(400).json({ erro: 'A senha deve ter pelo menos 4 caracteres.' });
+  }
+
+  const erroGenerico = { erro: 'Codigo invalido ou expirado.' };
+
+  try {
+    const usuarioResult = await pool.query(
+      `SELECT id FROM usuarios WHERE matricula = $1 AND modo = 'aluno'`,
+      [matricula]
+    );
+    if (usuarioResult.rows.length === 0) {
+      return res.status(401).json(erroGenerico);
+    }
+    const usuario_id = usuarioResult.rows[0].id;
+
+    const tokenResult = await pool.query(
+      `SELECT id, codigo_hash FROM reset_senha_tokens
+       WHERE usuario_id = $1 AND usado_em IS NULL AND expira_em > NOW()
+       ORDER BY criado_em DESC LIMIT 1`,
+      [usuario_id]
+    );
+    if (tokenResult.rows.length === 0) {
+      return res.status(401).json(erroGenerico);
+    }
+    const tokenRow = tokenResult.rows[0];
+
+    const codigoValido = await bcrypt.compare(codigo, tokenRow.codigo_hash);
+    if (!codigoValido) {
+      return res.status(401).json(erroGenerico);
+    }
+
+    // Marca o token como usado de forma atomica (WHERE usado_em IS NULL) -
+    // se duas requisicoes chegarem quase juntas com o mesmo codigo, so uma
+    // consegue mudar a linha; a outra cai no erro generico abaixo.
+    const consumido = await pool.query(
+      `UPDATE reset_senha_tokens SET usado_em = NOW()
+       WHERE id = $1 AND usado_em IS NULL RETURNING id`,
+      [tokenRow.id]
+    );
+    if (consumido.rows.length === 0) {
+      return res.status(401).json(erroGenerico);
+    }
+
+    const senha_hash = await bcrypt.hash(nova_senha, 10);
+    const atualizado = await pool.query(
+      `UPDATE usuarios SET senha_hash = $1, senha_definida_pelo_aluno = true
+       WHERE id = $2 RETURNING id, nome, matricula, modo, turma_id`,
+      [senha_hash, usuario_id]
+    );
+    const usuario = atualizado.rows[0];
+
+    const token = jwt.sign(
+      { id: usuario.id, nome: usuario.nome, matricula: usuario.matricula, modo: usuario.modo, turma_id: usuario.turma_id },
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRES_IN }
+    );
+
+    res.json({
+      token,
+      usuario: {
+        id: usuario.id,
+        nome: usuario.nome,
+        matricula: usuario.matricula,
+        modo: usuario.modo,
+        turma_id: usuario.turma_id,
+      }
+    });
+  } catch (err) {
+    console.error('Erro ao redefinir senha:', err.message);
     res.status(500).json({ erro: 'Erro interno do servidor.' });
   }
 });

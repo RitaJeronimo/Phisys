@@ -37,6 +37,12 @@ function LoginScreen({ onLogin }) {
   const [codigoTurma, setCodigoTurma] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showReset, setShowReset] = useState(false);
+  const [resetMatricula, setResetMatricula] = useState("");
+  const [resetCodigo, setResetCodigo] = useState("");
+  const [resetSenha, setResetSenha] = useState("");
+  const [resetError, setResetError] = useState("");
+  const [resetLoading, setResetLoading] = useState(false);
 
   async function handleSubmit() {
     if (!name.trim()) { setError("Por favor, informe seu nome completo."); return; }
@@ -83,6 +89,23 @@ function LoginScreen({ onLogin }) {
     }
   }
 
+  async function handleResetSubmit() {
+    if (!/^\d{6,}$/.test(resetMatricula.trim())) { setResetError("Matricula invalida. Use apenas numeros com no minimo 6 digitos."); return; }
+    if (!/^\d{6}$/.test(resetCodigo.trim())) { setResetError("O codigo tem 6 digitos."); return; }
+    if (resetSenha.trim().length < 4) { setResetError("A senha deve ter pelo menos 4 caracteres."); return; }
+    setResetError("");
+    setResetLoading(true);
+    try {
+      const data = await auth.resetarSenha(resetMatricula.trim(), resetCodigo.trim(), resetSenha.trim());
+      setToken(data.token);
+      onLogin({ ...data.usuario });
+    } catch (err) {
+      setResetError(err.message || "Codigo invalido ou expirado.");
+    } finally {
+      setResetLoading(false);
+    }
+  }
+
   const GRADIENT = "linear-gradient(135deg, #1B4FCC 0%, #7B2FBE 50%, #CC1B1B 100%)";
   const s = {
     wrap: { display:"flex", justifyContent:"center", alignItems:"center", minHeight:"100vh", background:"#f0f0f0", padding:"2rem 1rem", boxSizing:"border-box" },
@@ -109,36 +132,63 @@ function LoginScreen({ onLogin }) {
         <div style={s.brandName}>Phisys</div>
         <div style={s.brandSub}>Simulador Cardiorrenal Interativo</div>
         <div style={s.divider}/>
-        <div style={s.modeToggle}>
-          <button style={{...s.modeBtn,...(mode==="aluno"?s.modeBtnActive:s.modeBtnInactive)}} onClick={()=>{setMode("aluno");setCredential("");setAlunoSenha("");setError("");}}>Sou aluno</button>
-          <button style={{...s.modeBtn,...(mode==="professor"?s.modeBtnActive:s.modeBtnInactive)}} onClick={()=>{setMode("professor");setCredential("");setAlunoSenha("");setError("");}}>Sou professor</button>
-        </div>
-        <div style={s.formGroup}>
-  <label style={s.label}>nome completo</label>
-  <input style={s.input} type="text" placeholder="Ex: Ana Paula Silva" value={name} onChange={e=>{setName(e.target.value);setError('');}}/>
-</div>
-<div style={s.formGroup}>
-  <label style={s.label}>e-mail</label>
-  <input style={s.input} type="email" placeholder="Ex: ana@email.com" value={email} onChange={e=>{setEmail(e.target.value);setError('');}}/>
-</div>
-        <div style={s.formGroup}>
-          <label style={s.label}>{mode==="aluno"?"matricula":"senha"}</label>
-          <input style={s.input} type={mode==="professor"?"password":"text"} placeholder={mode==="aluno"?"Ex: 2024001234":"Sua senha de professor"} value={credential} onChange={e=>{setCredential(e.target.value);setError("");}}/>
-        </div>
-        {mode==="aluno" && (
-          <div style={s.formGroup}>
-            <label style={s.label}>senha</label>
-            <input style={s.input} type="password" placeholder="Sua senha (defina uma na primeira vez)" value={alunoSenha} onChange={e=>{setAlunoSenha(e.target.value);setError("");}}/>
-          </div>
+        {showReset ? (
+          <>
+            <div style={{ fontSize:'12px', color:'rgba(255,255,255,.75)', textAlign:'center', lineHeight:'1.5' }}>
+              Peça ao seu professor o código de 6 dígitos mostrado em sala e defina uma senha nova.
+            </div>
+            <div style={s.formGroup}>
+              <label style={s.label}>matricula</label>
+              <input style={s.input} type="text" placeholder="Ex: 2024001234" value={resetMatricula} onChange={e=>{setResetMatricula(e.target.value);setResetError('');}}/>
+            </div>
+            <div style={s.formGroup}>
+              <label style={s.label}>codigo (6 digitos)</label>
+              <input style={s.input} type="text" placeholder="000000" value={resetCodigo} onChange={e=>{setResetCodigo(e.target.value);setResetError('');}}/>
+            </div>
+            <div style={s.formGroup}>
+              <label style={s.label}>nova senha</label>
+              <input style={s.input} type="password" placeholder="Defina sua nova senha" value={resetSenha} onChange={e=>{setResetSenha(e.target.value);setResetError('');}}/>
+            </div>
+            {resetError?<div style={s.error}>{resetError}</div>:null}
+            <button style={{...s.submitBtn,opacity:resetLoading?0.7:1}} onClick={handleResetSubmit} disabled={resetLoading}>{resetLoading?"Enviando...":"Definir nova senha"}</button>
+            <div style={{ fontSize:'11px', color:'rgba(255,255,255,.6)', cursor:'pointer', textDecoration:'underline' }} onClick={() => { setShowReset(false); setResetError(''); }}>Voltar para o login</div>
+          </>
+        ) : (
+          <>
+            <div style={s.modeToggle}>
+              <button style={{...s.modeBtn,...(mode==="aluno"?s.modeBtnActive:s.modeBtnInactive)}} onClick={()=>{setMode("aluno");setCredential("");setAlunoSenha("");setError("");}}>Sou aluno</button>
+              <button style={{...s.modeBtn,...(mode==="professor"?s.modeBtnActive:s.modeBtnInactive)}} onClick={()=>{setMode("professor");setCredential("");setAlunoSenha("");setError("");}}>Sou professor</button>
+            </div>
+            <div style={s.formGroup}>
+      <label style={s.label}>nome completo</label>
+      <input style={s.input} type="text" placeholder="Ex: Ana Paula Silva" value={name} onChange={e=>{setName(e.target.value);setError('');}}/>
+    </div>
+    <div style={s.formGroup}>
+      <label style={s.label}>e-mail</label>
+      <input style={s.input} type="email" placeholder="Ex: ana@email.com" value={email} onChange={e=>{setEmail(e.target.value);setError('');}}/>
+    </div>
+            <div style={s.formGroup}>
+              <label style={s.label}>{mode==="aluno"?"matricula":"senha"}</label>
+              <input style={s.input} type={mode==="professor"?"password":"text"} placeholder={mode==="aluno"?"Ex: 2024001234":"Sua senha de professor"} value={credential} onChange={e=>{setCredential(e.target.value);setError("");}}/>
+            </div>
+            {mode==="aluno" && (
+              <div style={s.formGroup}>
+                <label style={s.label}>senha</label>
+                <input style={s.input} type="password" placeholder="Sua senha (defina uma na primeira vez)" value={alunoSenha} onChange={e=>{setAlunoSenha(e.target.value);setError("");}}/>
+              </div>
+            )}
+            <div style={s.formGroup}>
+              <label style={s.label}>{mode==="professor" ? "codigo de professor" : "codigo da turma"}</label>
+              <input style={s.input} type="text" placeholder={mode==="professor" ? "Codigo de professor da turma" : "Codigo fornecido pelo professor"} value={codigoTurma} onChange={e=>{setCodigoTurma(e.target.value);setError("");}}/>
+            </div>
+            {error?<div style={s.error}>{error}</div>:null}
+            {error?<div style={s.error}>{error}</div>:null}
+            <button style={{...s.submitBtn,opacity:loading?0.7:1}} onClick={handleSubmit} disabled={loading}>{loading?"Entrando...":"Entrar no Phisys"}</button>
+            {mode==="aluno" && (
+              <div style={{ fontSize:'11px', color:'rgba(255,255,255,.6)', cursor:'pointer', textDecoration:'underline' }} onClick={() => { setShowReset(true); setError(''); }}>Esqueceu a senha?</div>
+            )}
+          </>
         )}
-        <div style={s.formGroup}>
-          <label style={s.label}>{mode==="professor" ? "codigo de professor" : "codigo da turma"}</label>
-          <input style={s.input} type="text" placeholder={mode==="professor" ? "Codigo de professor da turma" : "Codigo fornecido pelo professor"} value={codigoTurma} onChange={e=>{setCodigoTurma(e.target.value);setError("");}}/>
-        </div>
-        {error?<div style={s.error}>{error}</div>:null}
-        {error?<div style={s.error}>{error}</div>:null}
-        <button style={{...s.submitBtn,opacity:loading?0.7:1}} onClick={handleSubmit} disabled={loading}>{loading?"Entrando...":"Entrar no Phisys"}</button>
-        <div style={{ fontSize:'11px', color:'rgba(255,255,255,.6)', cursor:'pointer', textDecoration:'underline' }} onClick={() => alert('Entre em contato com seu professor para redefinir o acesso.')}>Esqueceu a senha?</div>
 <div style={s.footerNote}>Seus dados sao usados apenas para registro de desempenho e nao sao compartilhados.</div>
       </div>
     </div>

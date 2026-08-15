@@ -235,6 +235,25 @@ async function adicionarColunas() {
       )
     `);
 
+    // Codigos curtos de reset de senha (item A2 da auditoria de seguranca,
+    // 15/08/2026): substitui o "claim" antigo (bastava saber a matricula e
+    // mandar qualquer coisa em codigo_turma, sem aprovacao de ninguem) por um
+    // fluxo em duas etapas - so o professor da turma pode gerar um codigo
+    // (PUT /api/usuarios/:id/resetar-senha), e so quem tiver esse codigo
+    // (mostrado em sala, valido por 10 min, uso unico) consegue definir a
+    // nova senha (POST /api/auth/resetar-senha).
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS reset_senha_tokens (
+        id          SERIAL PRIMARY KEY,
+        usuario_id  INTEGER REFERENCES usuarios(id) ON DELETE CASCADE,
+        codigo_hash VARCHAR(255) NOT NULL,
+        criado_em   TIMESTAMPTZ DEFAULT NOW(),
+        expira_em   TIMESTAMPTZ NOT NULL,
+        usado_em    TIMESTAMPTZ
+      )
+    `);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_reset_senha_tokens_usuario ON reset_senha_tokens (usuario_id)`);
+
     console.log('Colunas e tabelas adicionadas com sucesso!');
   } catch (err) {
     console.error('Erro ao adicionar colunas:', err.message);

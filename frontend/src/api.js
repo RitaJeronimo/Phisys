@@ -18,6 +18,8 @@ export const auth = {
     req('/api/auth/login', { method: 'POST', body: JSON.stringify({ matricula, senha, modo }) }),
   registro: (nome, matricula, senha, modo, codigo_turma) =>
     req('/api/auth/registro', { method: 'POST', body: JSON.stringify({ nome, matricula, senha, modo, codigo_turma }) }),
+  resetarSenha: (matricula, codigo, nova_senha) =>
+    req('/api/auth/resetar-senha', { method: 'POST', body: JSON.stringify({ matricula, codigo, nova_senha }) }),
 };
 export const animal = {
   get:     ()     => req('/api/animal', { headers: authHeaders() }),
