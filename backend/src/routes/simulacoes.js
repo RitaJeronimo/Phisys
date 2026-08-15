@@ -136,33 +136,4 @@ router.delete('/:id', auth, requireProfessor, mesmaTurmaDoRecurso('simulacoes'),
   }
 });
 
-// GET /api/simulacoes/config/cuidados-por-sessao – (legado) valor padrao generico
-router.get('/config/cuidados-por-sessao', auth, async (req, res) => {
-  try {
-    const result = await pool.query(`SELECT valor FROM configuracoes WHERE chave = 'cuidados_por_sessao'`);
-    const valor = result.rows.length > 0 ? Number(result.rows[0].valor) : 3;
-    res.json({ cuidados_por_sessao: valor });
-  } catch (err) {
-    res.status(500).json({ erro: 'Erro interno.' });
-  }
-});
-
-// PUT /api/simulacoes/config/cuidados-por-sessao – (legado) mantido por compatibilidade
-router.put('/config/cuidados-por-sessao', auth, requireProfessor, async (req, res) => {
-  const { valor } = req.body;
-  if (valor === undefined || Number(valor) < 1) {
-    return res.status(400).json({ erro: 'Valor invalido.' });
-  }
-  try {
-    await pool.query(
-      `INSERT INTO configuracoes (chave, valor) VALUES ('cuidados_por_sessao', $1)
-       ON CONFLICT (chave) DO UPDATE SET valor = $1`,
-      [String(Math.round(Number(valor)))]
-    );
-    res.json({ cuidados_por_sessao: Math.round(Number(valor)) });
-  } catch (err) {
-    res.status(500).json({ erro: 'Erro interno.' });
-  }
-});
-
 module.exports = router;

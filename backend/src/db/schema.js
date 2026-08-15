@@ -186,15 +186,38 @@ async function adicionarColunas() {
         valor VARCHAR(255) NOT NULL
       )
     `);
-    await pool.query(`
-      INSERT INTO configuracoes (chave, valor) VALUES ('cuidados_por_sessao', '3')
-      ON CONFLICT (chave) DO NOTHING
-    `);
 
     // Quantidade de cuidados diarios liberados POR SESSAO: cada simulacao tem
     // seu proprio valor, editavel pelo professor na hora de criar/editar aquela
     // simulacao especifica.
     await pool.query(`ALTER TABLE simulacoes ADD COLUMN IF NOT EXISTS cuidados_por_sessao INTEGER DEFAULT 3`);
+
+    // Escopa configuracoes por turma (item M3 da auditoria de seguranca,
+    // 15/08/2026): pesos da nota e config de recuperacao eram uma unica
+    // linha global por chave - qualquer professor de qualquer turma
+    // sobrescrevia o que TODAS as turmas liam (GameScreen/FinalScreen do
+    // aluno tambem leem isso). O antigo seed/rotas de 'cuidados_por_sessao'
+    // (legado, ja superado por simulacoes.cuidados_por_sessao) foram
+    // removidos - sem chamador no frontend, e dependiam da PK antiga (so
+    // "chave") que precisa virar composta (chave, turma_id) pra permitir
+    // uma linha por turma.
+    await pool.query(`ALTER TABLE configuracoes ADD COLUMN IF NOT EXISTS turma_id INTEGER REFERENCES turmas(id) ON DELETE CASCADE`);
+    await pool.query(`DELETE FROM configuracoes WHERE turma_id IS NULL`);
+    await pool.query(`ALTER TABLE configuracoes DROP CONSTRAINT IF EXISTS configuracoes_pkey`);
+    await pool.query(`ALTER TABLE configuracoes ALTER COLUMN turma_id SET NOT NULL`);
+    // ADD CONSTRAINT nao tem IF NOT EXISTS no Postgres - sem esse guard, a
+    // segunda execucao deste arquivo (proximo boot) quebraria aqui com
+    // "constraint already exists" e abortaria o resto de adicionarColunas().
+    await pool.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint WHERE conname = 'configuracoes_chave_turma_key'
+        ) THEN
+          ALTER TABLE configuracoes ADD CONSTRAINT configuracoes_chave_turma_key UNIQUE (chave, turma_id);
+        END IF;
+      END $$;
+    `);
 
     // Identifica qual crise/intervencao especifica a simulacao representa
     // (mesmo vocabulario usado em desafios.intervencao: desidratacao,
