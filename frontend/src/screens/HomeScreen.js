@@ -231,13 +231,15 @@ function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, on
     // dos cuidados (ex: cooldown que acabou de expirar, ou nova sessao ativada)
     const checkSim = () => {
       animalApi.get().then(a => {
-        const fc = Number(a.fc) < 100 ? 370 : Number(a.fc);
+        const fc  = Number(a.fc)  < 100 ? 370 : Number(a.fc);
+        const pas = Number(a.pas) < 60  ? 110 : Number(a.pas);
+        const pad = Number(a.pad) < 40  ? 70  : Number(a.pad);
         setValues(prev => ({
           ...prev,
           energia:    Number(a.energia),
           hidratacao: Number(a.hidratacao),
-          pas:        Number(a.pas),
-          pad:        Number(a.pad),
+          pas,
+          pad,
           fc,
           peso:       Number(a.peso),
         }));

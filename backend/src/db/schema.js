@@ -133,6 +133,12 @@ async function adicionarColunas() {
     await pool.query(`ALTER TABLE desafios ADD COLUMN IF NOT EXISTS delta_acerto JSONB DEFAULT '{}'`);
     await pool.query(`ALTER TABLE desafios ADD COLUMN IF NOT EXISTS delta_erro JSONB DEFAULT '{}'`);
     await pool.query(`UPDATE animal SET fc = 370 WHERE fc < 100`);
+    // Auto-heal analogo ao de fc acima: pas/pad so eram corrigidos client-side
+    // (App.js) e o valor corrigido era escrito de volta via PUT /api/animal -
+    // rota removida na auditoria de seguranca (A1) por permitir escrita
+    // arbitraria. Sem isso aqui, uma linha corrompida ficaria assim para sempre.
+    await pool.query(`UPDATE animal SET pas = 110 WHERE pas < 60`);
+    await pool.query(`UPDATE animal SET pad = 70 WHERE pad < 40`);
     await pool.query(`
       CREATE TABLE IF NOT EXISTS mensagens (
         id          SERIAL PRIMARY KEY,
