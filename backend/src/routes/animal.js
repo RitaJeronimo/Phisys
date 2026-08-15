@@ -25,38 +25,6 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
-// PUT /api/animal — atualiza estado do animal
-router.put('/', auth, async (req, res) => {
-  const { energia, hidratacao, pas, pad, fc, peso, saude, age_days } = req.body;
-
-  try {
-    const result = await pool.query(
-      `UPDATE animal SET
-        energia     = COALESCE($1, energia),
-        hidratacao  = COALESCE($2, hidratacao),
-        pas         = COALESCE($3, pas),
-        pad         = COALESCE($4, pad),
-        fc          = COALESCE($5, fc),
-        peso        = COALESCE($6, peso),
-        saude       = COALESCE($7, saude),
-        age_days    = COALESCE($8, age_days),
-        atualizado_em = NOW()
-       WHERE usuario_id = $9
-       RETURNING *`,
-      [energia, hidratacao, pas, pad, fc, peso, saude, age_days, req.usuario.id]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ erro: 'Animal nao encontrado.' });
-    }
-
-    res.json(result.rows[0]);
-  } catch (err) {
-    console.error('Erro ao atualizar animal:', err.message);
-    res.status(500).json({ erro: 'Erro interno do servidor.' });
-  }
-});
-
 // GET /api/animal/cuidado/status — retorna, para cada cuidado, se pode ser usado
 // agora e informacoes de contexto (modo sessao/livre, quantos restam, quando libera).
 router.get('/cuidado/status', auth, async (req, res) => {

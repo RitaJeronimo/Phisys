@@ -62,9 +62,6 @@ function App() {
       setScreen('home');
       animalApi.get().then(a => {
         const corrigido = corrigirAnimal(a);
-        if (Number(a.fc) < 100 || Number(a.pas) < 60 || Number(a.pad) < 40) {
-          animalApi.update({ fc: corrigido.fc, pas: corrigido.pas, pad: corrigido.pad }).catch(() => {});
-        }
         setValues(corrigido);
         setAgeDays(corrigido.age_days);
       }).catch(() => {});
@@ -107,9 +104,6 @@ function App() {
     try {
       const a = await animalApi.get();
       const corrigido = corrigirAnimal(a);
-      if (Number(a.fc) < 100 || Number(a.pas) < 60 || Number(a.pad) < 40) {
-        animalApi.update({ fc: corrigido.fc, pas: corrigido.pas, pad: corrigido.pad }).catch(() => {});
-      }
       setValues(corrigido);
       setAgeDays(corrigido.age_days);
     } catch(e) {
@@ -123,12 +117,9 @@ function App() {
     } catch(e) {}
   }
 
-  // NOTA: HomeScreen.handleCare ja chama animalApi.cuidado(), animalApi.update()
-  // e rankingApi.update() sozinho, e so avisa aqui via onCare(id, newValues)
-  // para o App.js atualizar seu proprio estado local de score. As chamadas de
-  // API duplicadas foram removidas - elas causavam 2 requisicoes por clique
-  // (uma aqui, outra no HomeScreen), o que quebrava a contagem exata de usos
-  // por sessao implementada para o Modo Sessao.
+  // NOTA: HomeScreen.handleCare ja chama animalApi.cuidado() sozinho e o
+  // servidor calcula animal/XP; aqui so recebemos o resultado via onCare
+  // para atualizar o estado local de score.
   function handleCare(careId, newValues, newXpTotal) {
     setScore(newXpTotal);
   }

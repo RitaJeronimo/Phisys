@@ -25,27 +25,6 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
-// PUT /api/ranking – atualiza XP do aluno
-router.put('/', auth, async (req, res) => {
-  const { xp_total, media_saude } = req.body;
-  try {
-    const result = await pool.query(
-      `INSERT INTO ranking (usuario_id, xp_total, sessoes, media_saude)
-       VALUES ($1, $2, 0, $3)
-       ON CONFLICT (usuario_id) DO UPDATE SET
-         xp_total      = $2,
-         media_saude   = ($3 + ranking.media_saude) / 2,
-         atualizado_em = NOW()
-       RETURNING *`,
-      [req.usuario.id, xp_total, media_saude]
-    );
-    res.json(result.rows[0]);
-  } catch (err) {
-    console.error('Erro ao atualizar ranking:', err.message);
-    res.status(500).json({ erro: 'Erro interno do servidor.' });
-  }
-});
-
 // PUT /api/ranking/:id/nota – professor salva nota do aluno (so aluno da propria turma)
 router.put('/:id/nota', auth, requireProfessor, mesmaTurmaDoRecurso('usuarios'), async (req, res) => {
   const { id } = req.params;
