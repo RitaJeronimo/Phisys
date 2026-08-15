@@ -4,6 +4,13 @@ const pool = require('../db/connection');
 const auth = require('../middleware/auth');
 const { requireProfessor, mesmaTurmaDoRecurso } = require('../middleware/turmaOwnership');
 
+// Limite de governanca (item M2 da auditoria de seguranca, 15/08/2026):
+// criacao de turma continua aberta a qualquer professor cadastrado (decisao
+// deliberada - o app vai ser usado por professores de varias universidades,
+// uma allowlist viraria gargalo de aprovacao manual), mas um professor
+// comprometido ou mal-intencionado nao pode gerar turmas sem limite.
+const MAX_TURMAS_POR_PROFESSOR_POR_DIA = 5;
+
 // GET /api/turmas – retorna a propria turma do professor logado
 router.get('/', auth, requireProfessor, async (req, res) => {
   try {
@@ -18,15 +25,24 @@ router.get('/', auth, requireProfessor, async (req, res) => {
   }
 });
 
-// POST /api/turmas – cria uma nova turma (apenas professor; escopo separado do
-// item C1 - ver M2 na auditoria: quem PODE criar turmas e uma decisao de
-// politica distinta de "acessar so a propria turma", nao resolvida aqui)
+// POST /api/turmas – cria uma nova turma (apenas professor; ver
+// MAX_TURMAS_POR_PROFESSOR_POR_DIA acima pro limite de governanca do M2)
 router.post('/', auth, requireProfessor, async (req, res) => {
   const { nome, codigo, codigo_professor } = req.body;
   if (!nome || !codigo) {
     return res.status(400).json({ erro: 'Nome e codigo sao obrigatorios.' });
   }
   try {
+    const criadasHoje = await pool.query(
+      `SELECT count(*) FROM turmas WHERE criado_por = $1 AND criado_em > NOW() - INTERVAL '24 hours'`,
+      [req.usuario.id]
+    );
+    if (Number(criadasHoje.rows[0].count) >= MAX_TURMAS_POR_PROFESSOR_POR_DIA) {
+      return res.status(429).json({
+        erro: `Limite de ${MAX_TURMAS_POR_PROFESSOR_POR_DIA} turmas criadas por dia atingido. Tente novamente mais tarde.`,
+      });
+    }
+
     const existe = await pool.query('SELECT id FROM turmas WHERE codigo = $1', [codigo]);
     if (existe.rows.length > 0) {
       return res.status(409).json({ erro: 'Ja existe uma turma com esse codigo.' });
@@ -38,8 +54,8 @@ router.post('/', auth, requireProfessor, async (req, res) => {
       }
     }
     const result = await pool.query(
-      'INSERT INTO turmas (nome, codigo, codigo_professor, ativa) VALUES ($1, $2, $3, true) RETURNING id, nome, codigo, codigo_professor, ativa, criado_em',
-      [nome, codigo, codigo_professor || null]
+      'INSERT INTO turmas (nome, codigo, codigo_professor, ativa, criado_por) VALUES ($1, $2, $3, true, $4) RETURNING id, nome, codigo, codigo_professor, ativa, criado_em',
+      [nome, codigo, codigo_professor || null, req.usuario.id]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {

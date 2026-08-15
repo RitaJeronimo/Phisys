@@ -205,6 +205,13 @@ async function adicionarColunas() {
     // com o estado atual do animal.
     await pool.query(`ALTER TABLE simulacoes ADD COLUMN IF NOT EXISTS intervencao VARCHAR(50)`);
 
+    // Rastreia quem criou cada turma (item M2 da auditoria de seguranca,
+    // 15/08/2026): necessario pra limitar quantas turmas cada professor pode
+    // criar por dia, sem isso nao da pra saber de quem contar. Turmas
+    // existentes ficam com criado_por NULL - nao contam contra ninguem, o que
+    // e o comportamento certo (nao sabemos quem criou).
+    await pool.query(`ALTER TABLE turmas ADD COLUMN IF NOT EXISTS criado_por INTEGER REFERENCES usuarios(id) ON DELETE SET NULL`);
+
     // Contador exato de usos por aluno + simulacao + cuidado, no Modo Sessao.
     // Substitui o calculo por comparacao de horario (usado_em >= inicio_sessao),
     // que se mostrou fragil (varios bugs de fuso horario ja encontrados nessa
