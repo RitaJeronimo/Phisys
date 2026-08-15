@@ -50,6 +50,13 @@ router.put('/:id/ativar', auth, requireProfessor, mesmaTurmaDoRecurso('simulacoe
   const { id } = req.params;
   const turma_id = req.turmaIdRecurso;
   const client = await pool.connect();
+  // Erros de conexao emitidos por um client "checked-out" (ex: Neon encerrando
+  // a conexao por administrador, plano free) nao passam pelo pool.on('error')
+  // em connection.js - esse so cobre clients ociosos DENTRO da pool. Sem este
+  // handler, o evento 'error' nao tratado derruba o processo inteiro.
+  client.on('error', (err) => {
+    console.error('Erro na conexao do client durante a transacao (ativar simulacao):', err.message);
+  });
   try {
     await client.query('BEGIN');
 
@@ -94,7 +101,11 @@ router.put('/:id/ativar', auth, requireProfessor, mesmaTurmaDoRecurso('simulacoe
     await client.query('COMMIT');
     res.json({ ok: true, simulacao: sim, alunosAtualizados: true });
   } catch (err) {
-    await client.query('ROLLBACK');
+    try {
+      await client.query('ROLLBACK');
+    } catch (rollbackErr) {
+      console.error('Erro ao tentar ROLLBACK (conexao provavelmente ja perdida):', rollbackErr.message);
+    }
     console.error('Erro ao ativar simulacao:', err.message);
     res.status(500).json({ erro: 'Erro interno.' });
   } finally {

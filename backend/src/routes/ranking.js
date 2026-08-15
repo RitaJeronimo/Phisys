@@ -46,6 +46,13 @@ router.put('/:id/nota', auth, requireProfessor, mesmaTurmaDoRecurso('usuarios'),
 router.post('/reset', auth, requireProfessor, async (req, res) => {
   const turma_id = req.usuario.turma_id;
   const client = await pool.connect();
+  // Erros de conexao emitidos por um client "checked-out" (ex: Neon encerrando
+  // a conexao por administrador, plano free) nao passam pelo pool.on('error')
+  // em connection.js - esse so cobre clients ociosos DENTRO da pool. Sem este
+  // handler, o evento 'error' nao tratado derruba o processo inteiro.
+  client.on('error', (err) => {
+    console.error('Erro na conexao do client durante a transacao (zerar turma):', err.message);
+  });
   try {
     await client.query('BEGIN');
     // 1. Zera ranking dos alunos da turma
@@ -79,7 +86,11 @@ router.post('/reset', auth, requireProfessor, async (req, res) => {
     await client.query('COMMIT');
     res.json({ ok: true, mensagem: 'Turma zerada com sucesso.' });
   } catch (err) {
-    await client.query('ROLLBACK');
+    try {
+      await client.query('ROLLBACK');
+    } catch (rollbackErr) {
+      console.error('Erro ao tentar ROLLBACK (conexao provavelmente ja perdida):', rollbackErr.message);
+    }
     console.error('Erro ao zerar turma:', err.message);
     res.status(500).json({ erro: 'Erro interno ao zerar turma.' });
   } finally {
