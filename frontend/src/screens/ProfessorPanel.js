@@ -20,7 +20,6 @@ const GRADIENT = 'linear-gradient(160deg, #1B4FCC 0%, #7B2FBE 50%, #CC1B1B 100%)
 const EMPTY_CHALLENGE = {
   title:'', intervencao:'desidratacao', focus:'renal', difficulty:'facil',
   question:'', options:['','','',''], correct:0, active:true,
-  turma_id:'',
   delta_acerto: { hidratacao:0, energia:0, pas:0, pad:0, fc:0 },
   delta_erro:   { hidratacao:0, energia:0, pas:0, pad:0, fc:0 },
 };
@@ -33,7 +32,6 @@ function getDefaultSimParams() {
 
 const EMPTY_SIMULATION = {
   title:'', focus:'cardiovascular', active:true, description:'',
-  turma_id:'',
   params: getDefaultSimParams(),
   cuidadosPorSessao: 3,
   intervencao: 'desidratacao',
@@ -83,8 +81,6 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
   const [turmasList, setTurmasList] = useState([]);
   const [turmaForm, setTurmaForm] = useState(null);
   const [editingTurma, setEditingTurma] = useState(null);
-  const [resetTurmaId, setResetTurmaId] = useState('');
-  const [growthTurmaId, setGrowthTurmaId] = useState('');
   const [resetCodeInfo, setResetCodeInfo] = useState(null); // { nome, codigo, expiraEmMinutos }
 
   const fetchTurmas = useCallback(() => {
@@ -234,17 +230,12 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
   }
   
   async function handleZerarTurma() {
-    if (!resetTurmaId) {
-      alert('Selecione a turma que deseja zerar antes de continuar.');
-      return;
-    }
-    const turma = turmasList.find(t => t.id === resetTurmaId);
-    if (!window.confirm(`⚠️ ATENÇÃO: Isso vai zerar o ranking, sessões e animais de TODOS os alunos da turma "${turma?.nome || resetTurmaId}". Essa ação não pode ser desfeita. Confirma?`)) return;
+    if (!window.confirm('⚠️ ATENÇÃO: Isso vai zerar o ranking, sessões e animais de TODOS os alunos da sua turma. Essa ação não pode ser desfeita. Confirma?')) return;
     if (!window.confirm('Tem certeza absoluta? Todos os dados de desempenho serão perdidos.')) return;
     try {
-      await rankingApi.reset(resetTurmaId);
+      await rankingApi.reset();
       fetchStudents();
-      alert(`✅ Turma "${turma?.nome || ''}" zerada com sucesso!`);
+      alert('✅ Turma zerada com sucesso!');
     } catch(e) {
       alert('Erro ao zerar turma: ' + e.message);
     }
@@ -322,7 +313,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
     }
   }
   async function handleSaveChallenge() {
-    if (!form.title || !form.question || form.options.some(o=>!o) || !form.turma_id) return;
+    if (!form.title || !form.question || form.options.some(o=>!o)) return;
     try {
       if (editing === 'new') {
         const created = await req('/api/desafios', {
@@ -338,10 +329,9 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
             intervencao: form.intervencao,
             delta_acerto: form.delta_acerto || {},
             delta_erro:   form.delta_erro   || {},
-            turma_id: form.turma_id,
           }),
         });
-        setChallenges(prev => [...prev, { ...form, id: created.id }]);
+        setChallenges(prev => [...prev, { ...form, id: created.id, turma_id: created.turma_id }]);
       } else {
         await req(`/api/desafios/${editing}`, {
           method: 'PUT',
@@ -357,12 +347,11 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
             ativo: form.active,
             delta_acerto: form.delta_acerto || {},
             delta_erro:   form.delta_erro   || {},
-            turma_id: form.turma_id,
           }),
         });
       }
       if (editing !== 'new') {
-        setChallenges(prev => prev.map(c => c.id === editing ? { ...form, id:c.id } : c));
+        setChallenges(prev => prev.map(c => c.id === editing ? { ...c, ...form, id:c.id } : c));
       }
     } catch(e) {
       alert('Erro ao salvar desafio: ' + e.message);
@@ -398,7 +387,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
     setSimForm(f => ({ ...f, params:{ ...f.params, [id]: Number(val) } }));
   }
   async function handleSaveSimulation() {
-    if (!simForm.title || !simForm.turma_id) return;
+    if (!simForm.title) return;
     try {
       if (editing === 'new') {
         const created = await req('/api/simulacoes', {
@@ -411,10 +400,9 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
             params: simForm.params,
             cuidados_por_sessao: simForm.cuidadosPorSessao,
             intervencao: simForm.intervencao,
-            turma_id: simForm.turma_id,
           }),
         });
-        setSimulations(prev => [...prev, { ...simForm, id: created.id }]);
+        setSimulations(prev => [...prev, { ...simForm, id: created.id, turma_id: created.turma_id }]);
       } else {
         await req(`/api/simulacoes/${editing}`, {
           method: 'PUT',
@@ -427,10 +415,9 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
             ativo: simForm.active,
             cuidados_por_sessao: simForm.cuidadosPorSessao,
             intervencao: simForm.intervencao,
-            turma_id: simForm.turma_id,
           }),
         });
-        setSimulations(prev => prev.map(s => s.id === editing ? { ...simForm, id:s.id } : s));
+        setSimulations(prev => prev.map(s => s.id === editing ? { ...s, ...simForm, id:s.id } : s));
       }
     } catch(e) {
       alert('Erro ao salvar simulação: ' + e.message);
@@ -453,11 +440,6 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
           <button style={styles.saveBtn} onClick={handleSaveChallenge}>Salvar</button>
         </div>
         <div style={styles.formScroll}>
-          <div style={styles.fieldLabel}>Turma</div>
-          <select style={styles.input} value={form.turma_id || ''} onChange={e=>setForm(f=>({...f,turma_id:Number(e.target.value) || ''}))}>
-            <option value="">Selecione a turma...</option>
-            {turmasList.map(t => (<option key={t.id} value={t.id}>{t.nome}{!t.ativa ? ' (inativa)' : ''}</option>))}
-          </select>
           <div style={styles.fieldLabel}>Título do desafio</div>
           <input style={styles.input} value={form.title} onChange={e=>setForm(f=>({...f,title:e.target.value}))} placeholder="Ex: Desidratação Aguda"/>
           <div style={styles.fieldLabel}>Cenário fisiológico</div>
@@ -564,11 +546,6 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
           <button style={styles.saveBtn} onClick={handleSaveSimulation}>Salvar</button>
         </div>
         <div style={styles.formScroll}>
-          <div style={styles.fieldLabel}>Turma</div>
-          <select style={styles.input} value={simForm.turma_id || ''} onChange={e=>setSimForm(f=>({...f,turma_id:Number(e.target.value) || ''}))}>
-            <option value="">Selecione a turma...</option>
-            {turmasList.map(t => (<option key={t.id} value={t.id}>{t.nome}{!t.ativa ? ' (inativa)' : ''}</option>))}
-          </select>
           <div style={styles.fieldLabel}>Título da simulação</div>
           <input style={styles.input} value={simForm.title} onChange={e=>setSimForm(f=>({...f,title:e.target.value}))} placeholder="Ex: Insuficiência Cardíaca"/>
           <div style={styles.fieldLabel}>Foco</div>
@@ -909,13 +886,6 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
       {/* ── TAB ALUNOS — RANKING EM TEMPO REAL ── */}
       {tab==='alunos' && (
         <>
-          <div style={{ margin:'0 1rem .75rem' }}>
-            <div style={styles.fieldLabel}>Turma para zerar XP</div>
-            <select style={styles.input} value={resetTurmaId} onChange={e=>setResetTurmaId(Number(e.target.value) || '')}>
-              <option value="">Selecione a turma...</option>
-              {turmasList.map(t => (<option key={t.id} value={t.id}>{t.nome}{!t.ativa ? ' (inativa)' : ''}</option>))}
-            </select>
-          </div>
           {/* Cabeçalho com resumo e atualização */}
           <div style={{ margin:'0 1rem .5rem', display:'flex', gap:'8px' }}>
             <div style={styles.summaryCard}>
@@ -1142,13 +1112,6 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
       {/* ── TAB CRESCIMENTO ── */}
       {tab==='crescimento' && (
         <>
-          <div style={{ margin:'0 1rem .75rem' }}>
-            <div style={styles.fieldLabel}>Turma</div>
-            <select style={styles.input} value={growthTurmaId} onChange={e=>setGrowthTurmaId(Number(e.target.value) || '')}>
-              <option value="">Selecione a turma...</option>
-              {turmasList.map(t => (<option key={t.id} value={t.id}>{t.nome}{!t.ativa ? ' (inativa)' : ''}</option>))}
-            </select>
-          </div>
           <div style={styles.sectionTitle}>fases de crescimento do animal</div>
           <div style={styles.simInfo}>
             🐭 Configure quantos dias dura cada fase do animal.
@@ -1156,13 +1119,12 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
           <div style={styles.challengeCard}>
             <div style={{ fontSize:'13px', fontWeight:'700', color:'white', marginBottom:'12px' }}>📅 Idade atual do animal</div>
             <div style={{ display:'flex', alignItems:'center', gap:'12px', marginBottom:'8px' }}>
-              <input type="range" min="0" max="365" step="1" value={ageDays || 90} disabled={!growthTurmaId}
+              <input type="range" min="0" max="365" step="1" value={ageDays || 90}
                 onChange={async e => {
-                  if (!growthTurmaId) return;
                   const newAge = Number(e.target.value);
                   if (setAgeDays) setAgeDays(newAge);
                   try {
-                    await req('/api/animal/age', { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ age_days: newAge, turma_id: growthTurmaId }) });
+                    await req('/api/animal/age', { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ age_days: newAge }) });
                   } catch(e) {}
                 }}
                 style={{ flex:1, accentColor:'white' }}
@@ -1179,10 +1141,9 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
                 <div key={preset.days}
                   style={{ flex:1, background:`${preset.color}22`, border:`1px solid ${preset.color}55`, borderRadius:'8px', padding:'6px 4px', textAlign:'center', cursor:'pointer', fontSize:'10px', color:'white' }}
                   onClick={async () => {
-                    if (!growthTurmaId) { alert('Selecione a turma antes de ajustar a idade.'); return; }
                     if (setAgeDays) setAgeDays(preset.days);
                     try {
-                      await req('/api/animal/age', { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ age_days: preset.days, turma_id: growthTurmaId }) });
+                      await req('/api/animal/age', { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ age_days: preset.days }) });
                     } catch(e) {}
                   }}
                 >

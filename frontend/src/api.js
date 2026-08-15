@@ -28,7 +28,7 @@ export const animal = {
 };
 export const ranking = {
   get:    ()          => req('/api/ranking', { headers: authHeaders() }),
-  reset:  (turma_id)  => req('/api/ranking/reset', { method: 'POST', headers: authHeaders(), body: JSON.stringify({ turma_id }) }),
+  reset:  ()          => req('/api/ranking/reset', { method: 'POST', headers: authHeaders() }),
 };
 export const usuarios = {
   deletar:      (id) => req(`/api/usuarios/${id}`, { method: 'DELETE', headers: authHeaders() }),
