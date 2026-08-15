@@ -11,7 +11,13 @@ const app = express();
 // tras do proxy reverso do Render (sem isso, todo mundo cai no mesmo balde).
 app.set('trust proxy', 1);
 
-app.use(cors());
+// Restringe CORS ao frontend real (item B1 da auditoria de seguranca,
+// 15/08/2026): app.use(cors()) sem opcoes libera Access-Control-Allow-Origin: *
+// pra qualquer site. Em dev, libera localhost:3000 (servidor padrao do CRA).
+const ALLOWED_ORIGINS = process.env.NODE_ENV === 'production'
+  ? ['https://phisys.vercel.app']
+  : ['http://localhost:3000'];
+app.use(cors({ origin: ALLOWED_ORIGINS }));
 app.use(express.json());
 
 app.use('/api/auth', require('./routes/auth'));
