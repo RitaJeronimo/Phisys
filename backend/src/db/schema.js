@@ -284,6 +284,43 @@ async function adicionarColunas() {
     `);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_reset_senha_tokens_usuario ON reset_senha_tokens (usuario_id)`);
 
+    // Parametros fisiologicos customizados (pedido da Marcia, 17/08/2026): cada
+    // professor pode cadastrar tipos de parametro extras, especificos da propria
+    // turma (nunca compartilhados entre turmas/professores). O valor de cada um
+    // muda a cada simulacao lancada, entao fica em tabela separada ligada a
+    // simulacao especifica, em vez de fixo na definicao do parametro. Sao so
+    // exibicao para o aluno: nunca entram em calcularSaude nem em nenhum outro
+    // calculo do motor fisiologico.
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS parametros_customizados (
+        id          SERIAL PRIMARY KEY,
+        turma_id    INTEGER REFERENCES turmas(id) ON DELETE CASCADE,
+        nome        VARCHAR(100) NOT NULL,
+        unidade     VARCHAR(20),
+        valor_min   NUMERIC,
+        valor_max   NUMERIC,
+        ativo       BOOLEAN DEFAULT TRUE,
+        criado_em   TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    // ativo=false em vez de excluir de verdade: preserva o historico de valores
+    // ja registrados em parametros_valores mesmo depois que o professor "remove"
+    // um tipo de parametro. UNIQUE(parametro_id, simulacao_id) faz relancar a
+    // mesma simulacao SOBRESCREVER o valor anterior (upsert), em vez de manter
+    // historico por tentativa - decisao deliberada da Rita (17/08/2026), pode
+    // evoluir para um conceito de "ativacao" separado se um dia for preciso
+    // comparar tentativas.
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS parametros_valores (
+        id            SERIAL PRIMARY KEY,
+        parametro_id  INTEGER REFERENCES parametros_customizados(id) ON DELETE CASCADE,
+        simulacao_id  INTEGER REFERENCES simulacoes(id) ON DELETE CASCADE,
+        valor         NUMERIC NOT NULL,
+        registrado_em TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE(parametro_id, simulacao_id)
+      )
+    `);
+
     console.log('Colunas e tabelas adicionadas com sucesso!');
   } catch (err) {
     console.error('Erro ao adicionar colunas:', err.message);

@@ -41,7 +41,7 @@ export const desafios = {
 };
 export const simulacoes = {
   getAtiva: () => req('/api/simulacoes/ativa', { headers: authHeaders() }),
-  ativar:   (id) => req(`/api/simulacoes/${id}/ativar`, { method: 'PUT', headers: authHeaders() }),
+  ativar:   (id, valoresCustom) => req(`/api/simulacoes/${id}/ativar`, { method: 'PUT', headers: authHeaders(), body: JSON.stringify(valoresCustom ? { valoresCustom } : {}) }),
 };
 export const mensagens = {
   get:  ()     => req('/api/mensagens', { headers: authHeaders() }),
@@ -62,4 +62,9 @@ export const turmas = {
   criar:   (data)         => req('/api/turmas', { method: 'POST', headers: authHeaders(), body: JSON.stringify(data) }),
   editar:  (id, data)     => req(`/api/turmas/${id}`, { method: 'PUT', headers: authHeaders(), body: JSON.stringify(data) }),
   validar: (codigo, modo) => req(`/api/turmas/validar/${codigo}${modo ? `?modo=${modo}` : ''}`),
+};
+export const parametros = {
+  listar: ()          => req('/api/parametros', { headers: authHeaders() }),
+  criar:  (data)       => req('/api/parametros', { method: 'POST', headers: authHeaders(), body: JSON.stringify(data) }),
+  editar: (id, data)   => req(`/api/parametros/${id}`, { method: 'PUT', headers: authHeaders(), body: JSON.stringify(data) }),
 };

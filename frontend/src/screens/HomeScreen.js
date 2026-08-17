@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { animal as animalApi } from '../api';
+import { animal as animalApi, simulacoes as simulacoesApi } from '../api';
 import { PRIMARY_PARAMS, calcularSaude, calcularEnergiaModulada, getAgePANormal, getAgeStage, getMascotStatus, STATUS, DAILY_CARES } from '../engine/mascotEngine';
 
 
@@ -99,6 +99,25 @@ function ParamCard({ param, value, onClick, normalOverride }) {
       <div style={styles.paramName}>{param.name}</div>
       <div style={styles.paramBar}>
         <div style={{ ...styles.paramFill, width: Math.min(pct, 100) + '%', background: color }} />
+      </div>
+    </div>
+  );
+}
+
+// Parametro fisiologico customizado (pedido da Marcia, 17/08/2026): so exibicao,
+// nao clicavel (sem modal educativo como os PRIMARY_PARAMS) e nunca alimenta
+// calcularSaude - o valor vem direto de GET /api/simulacoes/ativa.
+function CustomParamCard({ nome, unidade, valor, valorMin, valorMax }) {
+  const inRange = valor >= valorMin && valor <= valorMax;
+  const color = inRange ? '#32C878' : '#E24B4A';
+  const pct = valorMax > valorMin ? ((valor - valorMin) / (valorMax - valorMin)) * 100 : 0;
+  return (
+    <div style={styles.paramCard}>
+      <div style={styles.paramIcon}>📊</div>
+      <div style={styles.paramVal}>{valor}{unidade ? ` ${unidade}` : ''}</div>
+      <div style={styles.paramName}>{nome}</div>
+      <div style={styles.paramBar}>
+        <div style={{ ...styles.paramFill, width: Math.min(Math.max(pct, 0), 100) + '%', background: color }} />
       </div>
     </div>
   );
@@ -218,6 +237,8 @@ function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, on
   const pendingCaresRef = useRef({});
   const [, forceTick] = useState(0);
 
+  const [customParamValues, setCustomParamValues] = useState([]);
+
   const fetchCuidadoStatus = useCallback(() => {
     animalApi.cuidadoStatus().then(setCuidadoStatus).catch(() => {});
   }, []);
@@ -244,12 +265,26 @@ function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, on
           peso:       Number(a.peso),
         }));
       }).catch(() => {});
+      // Parametros customizados (pedido da Marcia, 17/08/2026): busca separada
+      // da acima de proposito - sao so exibicao, nunca entram em `values`
+      // (que alimenta calcularSaude), entao ficam num estado proprio.
+      simulacoesApi.getAtiva().then(sim => {
+        setCustomParamValues(sim && Array.isArray(sim.parametrosCustom) ? sim.parametrosCustom : []);
+      }).catch(() => setCustomParamValues([]));
       fetchCuidadoStatus();
     };
     const interval = setInterval(checkSim, 30000);
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchCuidadoStatus]);
+
+  useEffect(() => {
+    // Busca inicial dos parametros customizados (a interval acima so roda
+    // pela primeira vez apos 30s, e sem isto a tela ficaria vazia ate la).
+    simulacoesApi.getAtiva().then(sim => {
+      setCustomParamValues(sim && Array.isArray(sim.parametrosCustom) ? sim.parametrosCustom : []);
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     // Re-renderiza a cada minuto para atualizar o texto de "tempo restante"
@@ -361,6 +396,13 @@ function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, on
         ))}
         <ParamCard param={idadeParam} value={currentAge} onClick={setActiveParam}/>
       </div>
+      {customParamValues.length > 0 && (
+        <div style={styles.paramsGridBottom}>
+          {customParamValues.map(p => (
+            <CustomParamCard key={p.id} nome={p.nome} unidade={p.unidade} valor={Number(p.valor)} valorMin={Number(p.valor_min)} valorMax={Number(p.valor_max)}/>
+          ))}
+        </div>
+      )}
       <div style={styles.animalArea}><Mascot status={status} ageDays={currentAge}/></div>
       <div style={styles.actionBtns}>
         <div style={styles.actionBtn} onClick={onViewSecondary}><span style={styles.actionBtnIcon}>📊</span><span style={styles.actionBtnLabel}>Parâm. Secundários</span></div>

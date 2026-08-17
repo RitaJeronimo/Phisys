@@ -12,7 +12,21 @@ router.get('/ativa', auth, async (req, res) => {
       [req.usuario.turma_id]
     );
     if (result.rows.length === 0) return res.json(null);
-    res.json(result.rows[0]);
+    const sim = result.rows[0];
+    // Parametros customizados (pedido da Marcia, 17/08/2026): valores digitados
+    // pelo professor especificamente para esta simulacao/ativacao. So exibicao -
+    // nunca entram em nenhum calculo do animal (ver parametros_valores em
+    // schema.js). Parametros desativados (ativo=false) ficam de fora mesmo que
+    // tenham um valor historico registrado.
+    const paramsResult = await pool.query(
+      `SELECT pc.id, pc.nome, pc.unidade, pc.valor_min, pc.valor_max, pv.valor
+       FROM parametros_valores pv
+       JOIN parametros_customizados pc ON pc.id = pv.parametro_id
+       WHERE pv.simulacao_id = $1 AND pc.ativo = TRUE`,
+      [sim.id]
+    );
+    sim.parametrosCustom = paramsResult.rows;
+    res.json(sim);
   } catch (err) {
     res.status(500).json({ erro: 'Erro interno.' });
   }
@@ -96,6 +110,35 @@ router.put('/:id/ativar', auth, requireProfessor, mesmaTurmaDoRecurso('simulacoe
          WHERE usuario_id IN (SELECT id FROM usuarios WHERE modo = $${idx} AND turma_id = $${idx + 1})`,
         valores
       );
+    }
+
+    // 4. Registra os valores desta sessao para os parametros customizados da
+    //    turma (pedido da Marcia, 17/08/2026). So aceita parametro_id que
+    //    realmente pertence a esta turma e esta ativo - nunca confia no que o
+    //    client manda sem checar (mesmo padrao do C1). IDs que nao baterem sao
+    //    silenciosamente ignorados, em vez de derrubar a ativacao inteira por
+    //    causa de um id invalido/desatualizado no client.
+    const valoresCustom = req.body.valoresCustom;
+    if (valoresCustom && typeof valoresCustom === 'object') {
+      const parametroIds = Object.keys(valoresCustom).map(Number).filter(Number.isInteger);
+      if (parametroIds.length > 0) {
+        const validos = await client.query(
+          'SELECT id FROM parametros_customizados WHERE id = ANY($1) AND turma_id = $2 AND ativo = TRUE',
+          [parametroIds, turma_id]
+        );
+        const idsValidos = new Set(validos.rows.map(r => r.id));
+        for (const pid of parametroIds) {
+          if (!idsValidos.has(pid)) continue;
+          const valor = Number(valoresCustom[pid]);
+          if (Number.isNaN(valor)) continue;
+          await client.query(
+            `INSERT INTO parametros_valores (parametro_id, simulacao_id, valor)
+             VALUES ($1, $2, $3)
+             ON CONFLICT (parametro_id, simulacao_id) DO UPDATE SET valor = $3, registrado_em = NOW()`,
+            [pid, id, valor]
+          );
+        }
+      }
     }
 
     await client.query('COMMIT');

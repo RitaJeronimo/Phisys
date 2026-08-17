@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { DEFAULT_MOTIVATION_MESSAGES } from './MotivationScreen';
 import { DEFAULT_WEIGHTS, INTERVENTIONS, PRIMARY_PARAMS } from '../engine/mascotEngine';
-import { ranking as rankingApi, authHeaders, simulacoes as simulacoesApi, usuarios as usuariosApi, configuracoes as configuracoesApi, turmas as turmasApi } from '../api';
+import { ranking as rankingApi, authHeaders, simulacoes as simulacoesApi, usuarios as usuariosApi, configuracoes as configuracoesApi, turmas as turmasApi, parametros as parametrosApi } from '../api';
 
 const BASE = process.env.REACT_APP_API_URL || 'https://phisys-production.up.railway.app';
 async function req(path, options = {}) {
@@ -92,6 +92,24 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
   useEffect(() => {
     fetchTurmas();
   }, [fetchTurmas]);
+
+  const [parametrosList, setParametrosList] = useState([]);
+  const [parametroForm, setParametroForm] = useState(null);
+  const [editingParametro, setEditingParametro] = useState(null);
+  // Card de simulacao cujo formulario de "valores desta sessao" (parametros
+  // customizados) esta expandido, e os valores sendo digitados nele.
+  const [lancandoId, setLancandoId] = useState(null);
+  const [valoresLancamento, setValoresLancamento] = useState({});
+
+  const fetchParametros = useCallback(() => {
+    parametrosApi.listar()
+      .then(data => { if (Array.isArray(data)) setParametrosList(data); })
+      .catch(() => setParametrosList([]));
+  }, []);
+
+  useEffect(() => {
+    fetchParametros();
+  }, [fetchParametros]);
 
   const fetchStudents = useCallback(() => {
     rankingApi.get()
@@ -287,6 +305,39 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
     }
   }
 
+  // ── PARÂMETROS CUSTOMIZADOS ──
+  function handleNewParametro() { setEditingParametro('new'); setParametroForm({ nome:'', unidade:'', valor_min:'', valor_max:'', ativo:true }); }
+  function handleEditParametro(p) { setEditingParametro(p.id); setParametroForm({ ...p }); }
+  async function handleSaveParametro() {
+    if (!parametroForm.nome || parametroForm.valor_min === '' || parametroForm.valor_max === '') return;
+    try {
+      const payload = {
+        nome: parametroForm.nome,
+        unidade: parametroForm.unidade || null,
+        valor_min: Number(parametroForm.valor_min),
+        valor_max: Number(parametroForm.valor_max),
+      };
+      if (editingParametro === 'new') {
+        const created = await parametrosApi.criar(payload);
+        setParametrosList(prev => [created, ...prev]);
+      } else {
+        const updated = await parametrosApi.editar(editingParametro, payload);
+        setParametrosList(prev => prev.map(p => p.id === editingParametro ? updated : p));
+      }
+      setEditingParametro(null); setParametroForm(null);
+    } catch(e) {
+      alert('Erro ao salvar parâmetro: ' + e.message);
+    }
+  }
+  async function handleToggleParametro(p) {
+    try {
+      const updated = await parametrosApi.editar(p.id, { ativo: !p.ativo });
+      setParametrosList(prev => prev.map(x => x.id === p.id ? updated : x));
+    } catch(e) {
+      alert('Erro: ' + e.message);
+    }
+  }
+
   // ── DESAFIOS ──
   function handleNewChallenge() { setEditingType('challenge'); setEditing('new'); setForm({ ...EMPTY_CHALLENGE, options:['','','',''] }); }
   function handleEditChallenge(ch) {
@@ -370,12 +421,14 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
     try { await req(`/api/simulacoes/${id}`, { method: 'DELETE', headers: authHeaders() }); } catch(e) {}
     setSimulations(prev => prev.filter(s => s.id !== id));
   }
-  async function handleAtivarSimulacao(id) {
+  async function handleAtivarSimulacao(id, valoresCustom) {
     if (!window.confirm('Ativar esta simulação vai alterar os parâmetros do animal de TODOS os alunos. Confirma?')) return;
     setAtivandoId(id);
     try {
-      await simulacoesApi.ativar(id);
+      await simulacoesApi.ativar(id, valoresCustom);
       setSimulations(prev => prev.map(s => ({ ...s, active: s.id === id })));
+      setLancandoId(null);
+      setValoresLancamento({});
       alert('✅ Simulação ativada! Os animais de todos os alunos foram atualizados.');
     } catch(e) {
       alert('Erro ao ativar simulação: ' + e.message);
@@ -640,6 +693,38 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
     );
   }
 
+  // ── FORMULÁRIO PARÂMETRO CUSTOMIZADO ──
+  if (editingParametro && parametroForm) {
+    return (
+      <div className="app-screen" style={styles.screen}>
+        <div style={styles.topbar}>
+          <button style={styles.backBtn} onClick={()=>{setEditingParametro(null);setParametroForm(null);}}>← Cancelar</button>
+          <div style={styles.title}>{editingParametro==='new'?'Novo Parâmetro':'Editar Parâmetro'}</div>
+          <button style={styles.saveBtn} onClick={handleSaveParametro}>Salvar</button>
+        </div>
+        <div style={styles.formScroll}>
+          <div style={styles.fieldLabel}>Nome do parâmetro</div>
+          <input style={styles.input} value={parametroForm.nome} onChange={e=>setParametroForm(f=>({...f,nome:e.target.value}))} placeholder="Ex: Glicemia"/>
+          <div style={styles.fieldLabel}>Unidade</div>
+          <input style={styles.input} value={parametroForm.unidade || ''} onChange={e=>setParametroForm(f=>({...f,unidade:e.target.value}))} placeholder="Ex: mg/dL"/>
+          <div style={styles.fieldLabel}>Faixa esperada</div>
+          <div style={{ display:'flex', gap:'8px' }}>
+            <input type="number" style={styles.input} value={parametroForm.valor_min} onChange={e=>setParametroForm(f=>({...f,valor_min:e.target.value}))} placeholder="Mín"/>
+            <input type="number" style={styles.input} value={parametroForm.valor_max} onChange={e=>setParametroForm(f=>({...f,valor_max:e.target.value}))} placeholder="Máx"/>
+          </div>
+          <div style={styles.fieldHint}>Usada só como referência visual pro aluno — este parâmetro nunca entra em nenhum cálculo do animal (saúde, física ou XP).</div>
+          <div style={styles.activeRow}>
+            <div style={styles.fieldLabel}>Parâmetro ativo</div>
+            <div style={{ ...styles.toggle, background: parametroForm.ativo ? '#32C878' : 'rgba(255,255,255,.2)' }} onClick={()=>setParametroForm(f=>({...f,ativo:!f.ativo}))}>
+              <div style={{ ...styles.toggleThumb, transform: parametroForm.ativo ? 'translateX(20px)' : 'translateX(2px)' }}/>
+            </div>
+          </div>
+          <div style={{height:'2rem'}}/>
+        </div>
+      </div>
+    );
+  }
+
   // ── PAINEL PRINCIPAL ──
   return (
     <div className="app-screen" style={styles.screen}>
@@ -664,7 +749,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
       )}
 
       <div style={styles.tabs}>
-        {[['turmas','🏫 Turmas'],['desafios','🎯 Desafios'],['simulacoes','🔬 Simulações'],['alunos','👥 Alunos'],['notas','📝 Notas'],['pesos','⚖️ Pesos'],['mensagens','💬 Mensagens'],['crescimento','🐭 Crescimento']].map(([id,label])=>(
+        {[['turmas','🏫 Turmas'],['desafios','🎯 Desafios'],['simulacoes','🔬 Simulações'],['parametros','📊 Parâmetros'],['alunos','👥 Alunos'],['notas','📝 Notas'],['pesos','⚖️ Pesos'],['mensagens','💬 Mensagens'],['crescimento','🐭 Crescimento']].map(([id,label])=>(
           <div key={id} style={{...styles.tab,...(tab===id?styles.tabActive:{})}} onClick={()=>setTab(id)}>{label}</div>
         ))}
       </div>
@@ -870,15 +955,87 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
                 <button style={styles.editBtn} onClick={()=>handleEditSimulation(sim)}>✏️ Editar</button>
                 <button
                   style={{ ...styles.ativarBtn, opacity: ativandoId === sim.id ? 0.6 : 1 }}
-                  onClick={() => handleAtivarSimulacao(sim.id)}
+                  onClick={() => {
+                    const paramsAtivos = parametrosList.filter(p => p.ativo);
+                    if (paramsAtivos.length === 0) { handleAtivarSimulacao(sim.id); return; }
+                    if (lancandoId === sim.id) { setLancandoId(null); setValoresLancamento({}); return; }
+                    setLancandoId(sim.id);
+                    setValoresLancamento({});
+                  }}
                   disabled={ativandoId === sim.id}
                 >
-                  {ativandoId === sim.id ? '⏳ Ativando...' : '🚀 Lançar para Turma'}
+                  {ativandoId === sim.id ? '⏳ Ativando...' : lancandoId === sim.id ? 'Cancelar' : '🚀 Lançar para Turma'}
                 </button>
                 <button style={styles.deleteBtn} onClick={()=>handleDeleteSimulation(sim.id)}>🗑️</button>
               </div>
+              {lancandoId === sim.id && (() => {
+                const paramsAtivos = parametrosList.filter(p => p.ativo);
+                const faltaPreencher = paramsAtivos.some(p => valoresLancamento[p.id] === undefined || valoresLancamento[p.id] === '');
+                return (
+                  <div style={{ marginTop:'10px', padding:'10px', background:'rgba(255,255,255,.06)', borderRadius:'10px' }}>
+                    <div style={styles.fieldLabel}>Valores desta sessão</div>
+                    {paramsAtivos.map(p => (
+                      <div key={p.id} style={{ marginBottom:'8px' }}>
+                        <div style={{ fontSize:'11px', color:'rgba(255,255,255,.7)', marginBottom:'4px' }}>
+                          {p.nome}{p.unidade ? ` (${p.unidade})` : ''} · esperado {p.valor_min}–{p.valor_max}
+                        </div>
+                        <input type="number" style={styles.input} value={valoresLancamento[p.id] ?? ''}
+                          onChange={e => setValoresLancamento(v => ({ ...v, [p.id]: e.target.value }))}
+                          placeholder="Valor desta simulação"/>
+                      </div>
+                    ))}
+                    <button
+                      style={{ ...styles.ativarBtn, opacity: faltaPreencher ? 0.5 : 1 }}
+                      disabled={faltaPreencher}
+                      onClick={() => {
+                        const valores = {};
+                        paramsAtivos.forEach(p => { valores[p.id] = Number(valoresLancamento[p.id]); });
+                        handleAtivarSimulacao(sim.id, valores);
+                      }}
+                    >
+                      Confirmar Lançamento
+                    </button>
+                  </div>
+                );
+              })()}
             </div>
           ))}
+          <div style={{height:'1rem'}}/>
+        </>
+      )}
+
+      {/* ── TAB PARÂMETROS CUSTOMIZADOS ── */}
+      {tab==='parametros' && (
+        <>
+          <div style={styles.challengeHeader}>
+            <div style={styles.sectionTitle}>parâmetros customizados ({parametrosList.length})</div>
+            <button style={styles.newBtn} onClick={handleNewParametro}>+ Novo</button>
+          </div>
+          <div style={styles.simInfo}>
+            📊 Parâmetros extras pra acompanhar durante a simulação — só exibição, não afetam saúde, física ou XP. Antes de lançar uma simulação, você digita o valor daquela sessão pra cada parâmetro ativo.
+          </div>
+          {parametrosList.length === 0 ? (
+            <div style={{ margin:'0 1rem', background:'rgba(255,255,255,.08)', borderRadius:'14px', padding:'2rem', textAlign:'center', color:'rgba(255,255,255,.4)', fontSize:'13px' }}>
+              Nenhum parâmetro customizado cadastrado ainda.
+            </div>
+          ) : (
+            parametrosList.map(p=>(
+              <div key={p.id} style={{...styles.challengeCard,...(!p.ativo?{opacity:.5}:{})}}>
+                <div style={styles.challengeTop}>
+                  <div style={styles.challengeTitle}>📊 {p.nome}</div>
+                  <span style={{...styles.metaTag, color: p.ativo?'#32C878':'rgba(255,255,255,.4)'}}>{p.ativo?'● Ativo':'○ Inativo'}</span>
+                </div>
+                <div style={styles.challengeMeta}>
+                  {p.unidade && <span style={styles.metaTag}>Unidade: {p.unidade}</span>}
+                  <span style={styles.metaTag}>Esperado: {p.valor_min}–{p.valor_max}</span>
+                </div>
+                <div style={styles.challengeActions}>
+                  <button style={styles.editBtn} onClick={()=>handleEditParametro(p)}>✏️ Editar</button>
+                  <button style={styles.toggleBtn} onClick={()=>handleToggleParametro(p)}>{p.ativo?'Desativar':'Ativar'}</button>
+                </div>
+              </div>
+            ))
+          )}
           <div style={{height:'1rem'}}/>
         </>
       )}
