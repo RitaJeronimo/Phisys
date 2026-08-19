@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { calculateFinalGrade } from '../engine/mascotEngine';
 import { configuracoes as configuracoesApi } from '../api';
-
-const GRADIENT = 'linear-gradient(160deg, #1B4FCC 0%, #7B2FBE 50%, #CC1B1B 100%)';
+import { COLORS, FONT_FAMILY, SHADOW_CARD } from '../theme';
 
 function FinalScreen({ user, score, saude, seconds, solvedChallenges, totalChallenges, errors, paramHistory, onBack }) {
 
@@ -132,7 +131,7 @@ function FinalScreen({ user, score, saude, seconds, solvedChallenges, totalChall
       {/* GRÁFICO DE EVOLUÇÃO */}
       <div style={styles.sectionLabel}>evolucao dos parametros</div>
       <div style={styles.chartCard}>
-        <div style={{ fontSize:'10px', color:'rgba(255,255,255,.5)', textAlign:'center', marginBottom:'4px' }}>
+        <div style={{ fontSize:'10px', color:COLORS.textMuted, textAlign:'center', marginBottom:'4px', fontWeight:'600' }}>
           Valores normalizados em % do máximo fisiológico de cada parâmetro
         </div>
         <svg width={chartW} height={chartH}>
@@ -141,23 +140,23 @@ function FinalScreen({ user, score, saude, seconds, solvedChallenges, totalChall
             const y = padT + innerH - (pct/100)*innerH;
             return (
               <g key={pct}>
-                <line x1={padL} y1={y} x2={chartW-padR} y2={y} stroke="rgba(255,255,255,.1)" strokeWidth="1"/>
-                <text x={padL-4} y={y+3} textAnchor="end" fontSize="8" fill="rgba(255,255,255,.45)">{pct}%</text>
+                <line x1={padL} y1={y} x2={chartW-padR} y2={y} stroke={COLORS.border} strokeWidth="1"/>
+                <text x={padL-4} y={y+3} textAnchor="end" fontSize="8" fill={COLORS.textMuted}>{pct}%</text>
               </g>
             );
           })}
           {/* EIXO Y — rótulo vertical */}
-          <text x="8" y={padT + innerH/2} textAnchor="middle" fontSize="8" fill="rgba(255,255,255,.45)" transform={`rotate(-90, 8, ${padT + innerH/2})`}>% normalizado</text>
+          <text x="8" y={padT + innerH/2} textAnchor="middle" fontSize="8" fill={COLORS.textMuted} transform={`rotate(-90, 8, ${padT + innerH/2})`}>% normalizado</text>
           {/* LINHA DO EIXO Y */}
-          <line x1={padL} y1={padT} x2={padL} y2={padT+innerH} stroke="rgba(255,255,255,.2)" strokeWidth="1"/>
+          <line x1={padL} y1={padT} x2={padL} y2={padT+innerH} stroke={COLORS.textMuted} strokeWidth="1"/>
           {/* LINHA DO EIXO X */}
-          <line x1={padL} y1={padT+innerH} x2={chartW-padR} y2={padT+innerH} stroke="rgba(255,255,255,.2)" strokeWidth="1"/>
+          <line x1={padL} y1={padT+innerH} x2={chartW-padR} y2={padT+innerH} stroke={COLORS.textMuted} strokeWidth="1"/>
           {/* EIXO X — labels dos desafios */}
           {history.map((pt, i) => (
-            <text key={i} x={padL + i*xStep} y={chartH-6} textAnchor="middle" fontSize="9" fill="rgba(255,255,255,.55)">{pt.label}</text>
+            <text key={i} x={padL + i*xStep} y={chartH-6} textAnchor="middle" fontSize="9" fill={COLORS.textMuted}>{pt.label}</text>
           ))}
           {/* RÓTULO EIXO X */}
-          <text x={padL + innerW/2} y={chartH} textAnchor="middle" fontSize="8" fill="rgba(255,255,255,.45)">Momentos da sessão</text>
+          <text x={padL + innerW/2} y={chartH} textAnchor="middle" fontSize="8" fill={COLORS.textMuted}>Momentos da sessão</text>
           {/* LINHAS DOS PARÂMETROS */}
           {chartParams.map(p => (
             <path key={p.id} d={makePath(p.id, p.max)} stroke={p.color} strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
@@ -194,28 +193,28 @@ function FinalScreen({ user, score, saude, seconds, solvedChallenges, totalChall
 }
 
 const styles = {
-  screen:       { width:'100%', minHeight:'100vh', display:'flex', flexDirection:'column', background:GRADIENT, margin:'0 auto', overflowX:'hidden' },
-  topbar:       { padding:'1.5rem 1rem 1rem', display:'flex', justifyContent:'center' },
-  title:        { fontSize:'20px', fontWeight:'700', color:'white' },
-  msgCard:      { margin:'0 1rem .75rem', background:'rgba(255,255,255,.15)', border:'1px solid rgba(255,255,255,.3)', borderRadius:'14px', padding:'1rem' },
-  msgText:      { fontSize:'13px', color:'white', lineHeight:'1.6', textAlign:'center', fontWeight:'500' },
+  screen:       { width:'100%', minHeight:'100vh', display:'flex', flexDirection:'column', background:COLORS.surface, margin:'0 auto', overflowX:'hidden', fontFamily:FONT_FAMILY, color:COLORS.textPrimary },
+  topbar:       { background:COLORS.bg, padding:'1.5rem 1rem 1rem', display:'flex', justifyContent:'center' },
+  title:        { fontSize:'20px', fontWeight:'800', color:'white' },
+  msgCard:      { margin:'0 1rem .75rem', background:COLORS.surfaceMuted, border:`1px solid ${COLORS.border}`, borderRadius:'16px', padding:'1rem' },
+  msgText:      { fontSize:'13px', color:COLORS.textPrimary, lineHeight:'1.6', textAlign:'center', fontWeight:'600' },
   summaryGrid:  { margin:'0 1rem .75rem', display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'8px' },
-  summaryCard:  { background:'rgba(255,255,255,.12)', border:'1px solid rgba(255,255,255,.2)', borderRadius:'12px', padding:'.875rem .5rem', display:'flex', flexDirection:'column', alignItems:'center', gap:'4px' },
+  summaryCard:  { background:COLORS.surface, boxShadow:SHADOW_CARD, borderRadius:'14px', padding:'.875rem .5rem', display:'flex', flexDirection:'column', alignItems:'center', gap:'4px' },
   summaryIcon:  { fontSize:'20px' },
-  summaryVal:   { fontSize:'18px', fontWeight:'700', color:'white' },
-  summaryLbl:   { fontSize:'9px', color:'rgba(255,255,255,.55)', textTransform:'uppercase', letterSpacing:'.05em', textAlign:'center' },
-  sectionLabel: { padding:'.25rem 1rem', fontSize:'10px', color:'rgba(255,255,255,.55)', letterSpacing:'.08em', textTransform:'uppercase' },
-  perfCard:     { margin:'0 1rem .75rem', background:'rgba(255,255,255,.1)', border:'1px solid rgba(255,255,255,.18)', borderRadius:'14px', padding:'1rem' },
+  summaryVal:   { fontSize:'18px', fontWeight:'800', color:COLORS.indigo },
+  summaryLbl:   { fontSize:'9px', color:COLORS.textMuted, textTransform:'uppercase', letterSpacing:'.05em', textAlign:'center', fontWeight:'700' },
+  sectionLabel: { padding:'.25rem 1rem', fontSize:'10px', color:COLORS.textMuted, letterSpacing:'.08em', textTransform:'uppercase', fontWeight:'700' },
+  perfCard:     { margin:'0 1rem .75rem', background:COLORS.surface, boxShadow:SHADOW_CARD, borderRadius:'14px', padding:'1rem' },
   perfRow:      { display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'8px' },
-  perfLabel:    { fontSize:'12px', color:'rgba(255,255,255,.7)' },
-  perfVal:      { fontSize:'13px', fontWeight:'700', color:'white' },
-  perfBarWrap:  { height:'6px', background:'rgba(255,255,255,.15)', borderRadius:'3px', overflow:'hidden' },
+  perfLabel:    { fontSize:'12px', color:COLORS.textMuted, fontWeight:'600' },
+  perfVal:      { fontSize:'13px', fontWeight:'800', color:COLORS.textPrimary },
+  perfBarWrap:  { height:'6px', background:COLORS.border, borderRadius:'3px', overflow:'hidden' },
   perfBar:      { height:'100%', borderRadius:'3px', transition:'width .3s' },
-  chartCard:    { margin:'0 1rem .75rem', background:'rgba(255,255,255,.1)', border:'1px solid rgba(255,255,255,.18)', borderRadius:'14px', padding:'1rem', overflowX:'auto' },
+  chartCard:    { margin:'0 1rem .75rem', background:COLORS.surface, boxShadow:SHADOW_CARD, borderRadius:'14px', padding:'1rem', overflowX:'auto' },
   chartLegend:  { display:'flex', flexWrap:'wrap', gap:'8px', marginTop:'8px', justifyContent:'center' },
   legendItem:   { display:'flex', alignItems:'center', gap:'4px' },
-  legendLabel:  { fontSize:'10px', color:'rgba(255,255,255,.7)' },
-  backBtn:      { width:'100%', padding:'13px', borderRadius:'10px', border:'none', background:'white', color:'#7B2FBE', fontSize:'14px', fontWeight:'700', cursor:'pointer', fontFamily:'inherit' },
+  legendLabel:  { fontSize:'10px', color:COLORS.textMuted, fontWeight:'600' },
+  backBtn:      { width:'100%', padding:'13px', borderRadius:'12px', border:'none', background:COLORS.indigo, color:'white', fontSize:'14px', fontWeight:'800', cursor:'pointer', fontFamily:'inherit' },
 };
 
 export default FinalScreen;
