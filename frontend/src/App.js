@@ -8,6 +8,7 @@ import SecondaryScreen from './screens/SecondaryScreen';
 import FinalScreen from './screens/FinalScreen';
 import { getDefaultPrimaryValues, calcularSaude } from './engine/mascotEngine';
 import { animal as animalApi, ranking as rankingApi, sessoes as sessoesApi, mensagens as mensagensApi, getToken, removeToken } from './api';
+import { COLORS, FONT_FAMILY, FONT_SCALE } from './theme';
 import React, { useState, useEffect } from 'react';
 
 function corrigirAnimal(a) {
@@ -167,41 +168,43 @@ function App() {
   function handleViewSecondary() { setScreen('secondary'); }
 
   if (showWelcome) return (
-    <div style={{ width:'100%', maxWidth:'400px', minHeight:'100vh', display:'flex', flexDirection:'column', justifyContent:'center', alignItems:'center', background:'linear-gradient(160deg, #1B4FCC 0%, #7B2FBE 50%, #CC1B1B 100%)', margin:'0 auto', padding:'2rem', boxSizing:'border-box' }}>
-      <svg viewBox="0 0 400 380" style={{ width:'130px', height:'130px', marginBottom:'1rem' }}>
-        <ellipse cx="110" cy="135" rx="38" ry="48" fill="#D4D4D4"/>
-        <ellipse cx="110" cy="135" rx="24" ry="34" fill="#FFD0DC"/>
-        <ellipse cx="290" cy="135" rx="38" ry="48" fill="#D4D4D4"/>
-        <ellipse cx="290" cy="135" rx="24" ry="34" fill="#FFD0DC"/>
-        <ellipse cx="200" cy="285" rx="82" ry="78" fill="#D4D4D4"/>
-        <ellipse cx="166" cy="335" rx="22" ry="13" fill="#D4D4D4"/>
-        <ellipse cx="234" cy="335" rx="22" ry="13" fill="#D4D4D4"/>
-        <ellipse cx="118" cy="268" rx="22" ry="15" fill="#D4D4D4" transform="rotate(-20,118,268)"/>
-        <ellipse cx="282" cy="268" rx="22" ry="15" fill="#D4D4D4" transform="rotate(20,282,268)"/>
-        <ellipse cx="200" cy="158" rx="82" ry="78" fill="#D4D4D4"/>
-        <ellipse cx="136" cy="170" rx="20" ry="14" fill="#FFB0C8" opacity=".6"/>
-        <ellipse cx="264" cy="170" rx="20" ry="14" fill="#FFB0C8" opacity=".6"/>
-        <ellipse cx="168" cy="152" rx="22" ry="26" fill="white"/>
-        <ellipse cx="168" cy="155" rx="16" ry="20" fill="#7B2FBE"/>
-        <ellipse cx="168" cy="155" rx="8" ry="10" fill="#3A1A6A"/>
-        <ellipse cx="176" cy="144" rx="6" ry="7" fill="white" opacity=".9"/>
-        <ellipse cx="232" cy="152" rx="22" ry="26" fill="white"/>
-        <ellipse cx="232" cy="155" rx="16" ry="20" fill="#7B2FBE"/>
-        <ellipse cx="232" cy="155" rx="8" ry="10" fill="#3A1A6A"/>
-        <ellipse cx="240" cy="144" rx="6" ry="7" fill="white" opacity=".9"/>
-        <ellipse cx="200" cy="175" rx="8" ry="6" fill="#FF8FAA"/>
-        <path d="M188 184 Q200 196 212 184" stroke="#666" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
-      </svg>
-      <div style={{ fontSize:'24px', fontWeight:'700', color:'white', textAlign:'center', marginBottom:'1rem' }}>Bem-vindo ao Phisys!</div>
-      <div style={{ fontSize:'13px', color:'rgba(255,255,255,.85)', textAlign:'center', lineHeight:'1.8', marginBottom:'2rem', background:'rgba(255,255,255,.12)', borderRadius:'16px', padding:'1.5rem' }}>
-        O Phisys é um ratinho virtual que precisa de cuidado, equilíbrio e boas decisões para manter sua homeostase.<br/><br/>
-        Ao longo da jornada, ele cresce, muda de fase e responde às suas escolhas — ajudando você a compreender como o corpo regula seus sistemas cardiovascular e renal.<br/><br/>
-        Cuide dele, observe seus parâmetros e teste hipóteses fisiológicas em tempo real!
+    <div style={{ width:'100%', maxWidth:'400px', minHeight:'100vh', display:'flex', flexDirection:'column', justifyContent:'center', alignItems:'center', background:COLORS.bg, margin:'0 auto', padding:'2rem', boxSizing:'border-box', fontFamily:FONT_FAMILY }}>
+      <div style={{ width:'100%', background:COLORS.surface, borderRadius:'26px', padding:'2rem 1.5rem', display:'flex', flexDirection:'column', alignItems:'center', boxShadow:'0 10px 30px rgba(43,43,118,.25)' }}>
+        <svg viewBox="0 0 400 380" style={{ width:'130px', height:'130px', marginBottom:'1rem' }}>
+          <ellipse cx="110" cy="135" rx="38" ry="48" fill="#D4D4D4"/>
+          <ellipse cx="110" cy="135" rx="24" ry="34" fill="#FFD0DC"/>
+          <ellipse cx="290" cy="135" rx="38" ry="48" fill="#D4D4D4"/>
+          <ellipse cx="290" cy="135" rx="24" ry="34" fill="#FFD0DC"/>
+          <ellipse cx="200" cy="285" rx="82" ry="78" fill="#D4D4D4"/>
+          <ellipse cx="166" cy="335" rx="22" ry="13" fill="#D4D4D4"/>
+          <ellipse cx="234" cy="335" rx="22" ry="13" fill="#D4D4D4"/>
+          <ellipse cx="118" cy="268" rx="22" ry="15" fill="#D4D4D4" transform="rotate(-20,118,268)"/>
+          <ellipse cx="282" cy="268" rx="22" ry="15" fill="#D4D4D4" transform="rotate(20,282,268)"/>
+          <ellipse cx="200" cy="158" rx="82" ry="78" fill="#D4D4D4"/>
+          <ellipse cx="136" cy="170" rx="20" ry="14" fill="#FFB0C8" opacity=".6"/>
+          <ellipse cx="264" cy="170" rx="20" ry="14" fill="#FFB0C8" opacity=".6"/>
+          <ellipse cx="168" cy="152" rx="22" ry="26" fill="white"/>
+          <ellipse cx="168" cy="155" rx="16" ry="20" fill="#7B2FBE"/>
+          <ellipse cx="168" cy="155" rx="8" ry="10" fill="#3A1A6A"/>
+          <ellipse cx="176" cy="144" rx="6" ry="7" fill="white" opacity=".9"/>
+          <ellipse cx="232" cy="152" rx="22" ry="26" fill="white"/>
+          <ellipse cx="232" cy="155" rx="16" ry="20" fill="#7B2FBE"/>
+          <ellipse cx="232" cy="155" rx="8" ry="10" fill="#3A1A6A"/>
+          <ellipse cx="240" cy="144" rx="6" ry="7" fill="white" opacity=".9"/>
+          <ellipse cx="200" cy="175" rx="8" ry="6" fill="#FF8FAA"/>
+          <path d="M188 184 Q200 196 212 184" stroke="#666" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+        </svg>
+        <div style={{ ...FONT_SCALE.heading, color:COLORS.textPrimary, textAlign:'center', marginBottom:'1rem' }}>Bem-vindo ao Phisys!</div>
+        <div style={{ ...FONT_SCALE.body, color:COLORS.textPrimary, textAlign:'center', lineHeight:'1.8', marginBottom:'1.5rem', background:COLORS.surfaceMuted, borderRadius:'16px', padding:'1.5rem' }}>
+          O Phisys é um ratinho virtual que precisa de cuidado, equilíbrio e boas decisões para manter sua homeostase.<br/><br/>
+          Ao longo da jornada, ele cresce, muda de fase e responde às suas escolhas — ajudando você a compreender como o corpo regula seus sistemas cardiovascular e renal.<br/><br/>
+          Cuide dele, observe seus parâmetros e teste hipóteses fisiológicas em tempo real!
+        </div>
+        <button style={{ width:'100%', padding:'14px', borderRadius:'12px', border:'none', background:COLORS.indigo, color:'white', fontSize:'15px', fontWeight:'800', cursor:'pointer', fontFamily:'inherit' }}
+          onClick={() => setShowWelcome(false)}>
+          Começar jornada 🐭
+        </button>
       </div>
-      <button style={{ width:'100%', padding:'14px', borderRadius:'10px', border:'none', background:'white', color:'#7B2FBE', fontSize:'15px', fontWeight:'700', cursor:'pointer' }}
-        onClick={() => setShowWelcome(false)}>
-        Começar jornada 🐭
-      </button>
     </div>
   );
 
