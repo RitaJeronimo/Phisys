@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { animal as animalApi, simulacoes as simulacoesApi } from '../api';
 import { PRIMARY_PARAMS, calcularSaude, calcularEnergiaModulada, getAgePANormal, getAgeStage, getMascotStatus, STATUS, DAILY_CARES } from '../engine/mascotEngine';
-
-
-const GRADIENT = 'linear-gradient(160deg, #1B4FCC 0%, #7B2FBE 50%, #CC1B1B 100%)';
+import { COLORS, FONT_FAMILY, SHADOW_CARD } from '../theme';
 
 // ─── FASES DE CRESCIMENTO ────────────────────────────────────────────────
 export const GROWTH_STAGES = {
@@ -58,18 +56,100 @@ const PARAM_INFO = {
   },
 };
 
+// ─── ÍCONES (substituem os emojis usados antes nos cards/badges) ──────────
+const ICON_COLOR = {
+  energia: COLORS.indigo,
+  hidratacao: COLORS.blue,
+  fc: COLORS.coral,
+  pa: COLORS.indigo,
+  peso: COLORS.indigo,
+  idade: COLORS.indigo,
+};
+
+function Icon({ name, size = 20, color }) {
+  const c = color || '#000';
+  switch (name) {
+    case 'energia':
+      return <svg width={size} height={size} viewBox="0 0 20 20" fill={c}><path d="M11 1.5 3.5 12h5.7l-1 6.5L16.5 8h-5.7z"/></svg>;
+    case 'hidratacao':
+      return <svg width={size} height={size} viewBox="0 0 20 20" fill={c}><path d="M10 2s6 7.5 6 11.5a6 6 0 1 1-12 0C4 9.5 10 2 10 2Z"/></svg>;
+    case 'fc':
+      return (
+        <svg width={size} height={size} viewBox="0 0 20 20">
+          <path fill={c} d="M10 17S2 12 2 6.9A3.9 3.9 0 0 1 10 5a3.9 3.9 0 0 1 8 1.9C18 12 10 17 10 17Z"/>
+          <path d="M3.3 10.5h2.4l1.3-2.3 1.6 4 1.3-5.4 1.1 3.7h4" stroke="white" strokeWidth="1.1" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      );
+    case 'pa':
+      return <svg width={size} height={size} viewBox="0 0 20 20" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="14.5" cy="13.5" r="2.5"/><path d="M4 3v6a4 4 0 0 0 8 0V3"/><path d="M6 3H2M10 3H6"/></svg>;
+    case 'peso':
+      return <svg width={size} height={size} viewBox="0 0 20 20" fill={c}><rect x="2" y="9" width="16" height="8" rx="2.5"/><rect x="7.5" y="4" width="5" height="5" rx="1.2"/></svg>;
+    case 'idade':
+      return <svg width={size} height={size} viewBox="0 0 20 20" fill={c}><rect x="2" y="4" width="16" height="14" rx="2"/><path d="M2 8h16v-1H2z"/><rect x="5.5" y="2" width="2" height="4" rx="1"/><rect x="12.5" y="2" width="2" height="4" rx="1"/></svg>;
+    case 'saude':
+      return <svg width={size} height={size} viewBox="0 0 20 20" fill="none" stroke={c} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 2 3 4.5v5c0 5 3 7.7 7 8.5 4-.8 7-3.5 7-8.5v-5Z"/><path d="M7 10l2 2 4-4"/></svg>;
+    case 'custom':
+      return <svg width={size} height={size} viewBox="0 0 20 20" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 15V9M8 15V5M13 15v-7M18 15v-3"/></svg>;
+    case 'careAgua':
+      return <svg width={size} height={size} viewBox="0 0 20 20"><path fill={c} d="M10 2s6 7.5 6 11.5a6 6 0 1 1-12 0C4 9.5 10 2 10 2Z"/><ellipse cx="8" cy="10.5" rx="1.4" ry="2" fill="white" opacity=".55"/></svg>;
+    case 'careComida':
+      return (
+        <svg width={size} height={size} viewBox="0 0 20 20">
+          <path fill="#3A9E96" d="M4 8.3a6 6 0 0 1 12 0Z"/>
+          <ellipse cx="10" cy="8.3" rx="6" ry="1.6" fill="#4CB4AB"/>
+          <path fill={c} d="M4.6 9c.7 1.2 3 1.5 5.4 1.5s4.7-.3 5.4-1.5H4.6Z"/>
+        </svg>
+      );
+    case 'careLimpeza':
+      return <svg width={size} height={size} viewBox="0 0 20 20" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M10 2v4M6 4.5l2 3M14 4.5l-2 3"/><path d="M10 10v8M6 14l4-4 4 4"/></svg>;
+    case 'section-vitals':
+      return <svg width={size} height={size} viewBox="0 0 20 20" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 10.5h3l2-6 3 12 2-9 1.5 3H18"/></svg>;
+    case 'section-cares':
+      return <svg width={size} height={size} viewBox="0 0 20 20" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="3" width="12" height="15" rx="2"/><rect x="7" y="1.5" width="6" height="3" rx="1"/><path d="M7 9h6M7 12.5h6M7 16h3.5"/></svg>;
+    case 'navHome':
+      return <svg width={size} height={size} viewBox="0 0 20 20" fill={c}><path d="M10 2.5 2.5 9v8.5h5V13h5v4.5h5V9Z"/></svg>;
+    case 'navParams':
+      return <svg width={size} height={size} viewBox="0 0 20 20" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round"><path d="M3 5h14M3 10h14M3 15h14"/><circle cx="7" cy="5" r="1.6" fill={c} stroke="none"/><circle cx="13" cy="10" r="1.6" fill={c} stroke="none"/><circle cx="8" cy="15" r="1.6" fill={c} stroke="none"/></svg>;
+    case 'navPlay':
+      return <svg width={size} height={size} viewBox="0 0 20 20" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="6.5" width="16" height="8" rx="4"/><path d="M7 8.5v4M5 10.5h4"/><circle cx="14" cy="9" r=".9" fill={c} stroke="none"/><circle cx="15.5" cy="11.5" r=".9" fill={c} stroke="none"/></svg>;
+    case 'navRanking':
+      return <svg width={size} height={size} viewBox="0 0 20 20" fill={c}><path d="M5 3h10v3a5 5 0 0 1-10 0Z"/><path d="M5 4.5H2.3v1A3 3 0 0 0 5 8.4M15 4.5h2.7v1A3 3 0 0 1 15 8.4" fill="none" stroke={c} strokeWidth="1.6" strokeLinecap="round"/><rect x="9" y="12" width="2" height="3.5"/><rect x="6.5" y="15.5" width="7" height="1.8" rx=".9"/></svg>;
+    case 'cap':
+      return <svg width={size} height={size} viewBox="0 0 20 20" fill={c}><path d="M10 2 1 6.5 10 11l7.5-3.8V12h1.5V6.5Z"/><path d="M4.5 8.7v3.6c0 1.6 2.5 3 5.5 3s5.5-1.4 5.5-3V8.7L10 12.3Z" fill={c}/></svg>;
+    case 'chevronRight':
+      return <svg width={size} height={size} viewBox="0 0 20 20" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 4l6 6-6 6"/></svg>;
+    case 'star':
+      return <svg width={size} height={size} viewBox="0 0 20 20" fill={c}><path d="M10 1.5 12.3 7l6 .6-4.5 3.9 1.4 5.9L10 14.2 4.8 17.4l1.4-5.9L1.7 7.6l6-.6Z"/></svg>;
+    default:
+      return null;
+  }
+}
+
+const CARE_ICON = { hidratacao: 'careAgua', racao: 'careComida', maravalha: 'careLimpeza' };
+const CARE_THEME = { hidratacao: COLORS.care.agua, racao: COLORS.care.comida, maravalha: COLORS.care.limpeza };
+
+function statusColors(status) {
+  if (status === STATUS.SAUDAVEL)   return COLORS.status.saudavel;
+  if (status === STATUS.DEBILITADO) return COLORS.status.debilitado;
+  return COLORS.status.critico;
+}
+
 function PACard({ pas, pad, paNormal, onClick }) {
   const pasOk = pas >= paNormal.pas[0] && pas <= paNormal.pas[1];
   const padOk = pad >= paNormal.pad[0] && pad <= paNormal.pad[1];
   const inRange = pasOk && padOk;
-  const color = inRange ? '#32C878' : '#E24B4A';
+  const color = inRange ? COLORS.status.saudavel.color : COLORS.status.critico.color;
   return (
-    <div style={{ ...styles.paramCard, cursor:'pointer' }} onClick={() => onClick('pa')}>
-      <div style={styles.paramIcon}>❤️</div>
-      <div style={{ ...styles.paramVal, fontSize:'11px' }}>{Math.round(pas)}/{Math.round(pad)}</div>
-      <div style={styles.paramName}>PA (mmHg)</div>
-      <div style={styles.paramBar}>
-        <div style={{ ...styles.paramFill, width: Math.min(((pas-60)/(200-60))*100, 100) + '%', background: color }} />
+    <div style={styles.indicatorCard} onClick={() => onClick('pa')}>
+      <div style={styles.indicatorTop}>
+        <div style={styles.indicatorIcon}><Icon name="pa" size={20} color={ICON_COLOR.pa}/></div>
+        <div style={styles.indicatorText}>
+          <div style={styles.indicatorLabel}>Pressão arterial</div>
+          <div style={styles.indicatorValue}>{Math.round(pas)}/{Math.round(pad)} mmHg</div>
+        </div>
+      </div>
+      <div style={styles.indicatorBarTrack}>
+        <div style={{ ...styles.indicatorBarFill, width: Math.min(((pas-60)/(200-60))*100, 100) + '%', background: color }}/>
       </div>
     </div>
   );
@@ -89,16 +169,20 @@ function ParamCard({ param, value, onClick, normalOverride }) {
   const pct = ((value - param.min) / (param.max - param.min)) * 100;
   const inRange = value >= normal[0] && value <= normal[1];
   const deviation = Math.abs(value - (normal[0] + normal[1]) / 2) / ((normal[1] - normal[0]) / 2);
-  const color = inRange ? '#32C878' : deviation > 2 ? '#E24B4A' : '#EF9F27';
+  const color = inRange ? COLORS.status.saudavel.color : deviation > 2 ? COLORS.status.critico.color : COLORS.status.debilitado.color;
   const display = param.step < 1 ? value.toFixed(1) : Math.round(value);
-  const isHealth = param.id === 'saude';
+  const unit = param.unit === '%' ? '%' : param.unit === 'bpm' ? ' bpm' : param.unit === 'g' ? ' g' : param.id === 'idade' ? ' dias' : '';
   return (
-    <div style={{ ...styles.paramCard, ...(isHealth ? { background: inRange ? 'rgba(50,200,120,.2)' : 'rgba(220,60,60,.2)', borderColor: color } : {}), cursor:'pointer' }} onClick={() => onClick(param.id)}>
-      <div style={styles.paramIcon}>{param.icon}</div>
-      <div style={{ ...styles.paramVal, ...(isHealth ? { color } : {}) }}>{display}{param.unit === '%' ? '%' : ''}</div>
-      <div style={styles.paramName}>{param.name}</div>
-      <div style={styles.paramBar}>
-        <div style={{ ...styles.paramFill, width: Math.min(pct, 100) + '%', background: color }} />
+    <div style={styles.indicatorCard} onClick={() => onClick(param.id)}>
+      <div style={styles.indicatorTop}>
+        <div style={styles.indicatorIcon}><Icon name={param.id} size={20} color={ICON_COLOR[param.id] || COLORS.indigo}/></div>
+        <div style={styles.indicatorText}>
+          <div style={styles.indicatorLabel}>{param.name}</div>
+          <div style={styles.indicatorValue}>{display}{unit}</div>
+        </div>
+      </div>
+      <div style={styles.indicatorBarTrack}>
+        <div style={{ ...styles.indicatorBarFill, width: Math.min(pct, 100) + '%', background: color }}/>
       </div>
     </div>
   );
@@ -109,15 +193,19 @@ function ParamCard({ param, value, onClick, normalOverride }) {
 // calcularSaude - o valor vem direto de GET /api/simulacoes/ativa.
 function CustomParamCard({ nome, unidade, valor, valorMin, valorMax }) {
   const inRange = valor >= valorMin && valor <= valorMax;
-  const color = inRange ? '#32C878' : '#E24B4A';
+  const color = inRange ? COLORS.status.saudavel.color : COLORS.status.critico.color;
   const pct = valorMax > valorMin ? ((valor - valorMin) / (valorMax - valorMin)) * 100 : 0;
   return (
-    <div style={styles.paramCard}>
-      <div style={styles.paramIcon}>📊</div>
-      <div style={styles.paramVal}>{valor}{unidade ? ` ${unidade}` : ''}</div>
-      <div style={styles.paramName}>{nome}</div>
-      <div style={styles.paramBar}>
-        <div style={{ ...styles.paramFill, width: Math.min(Math.max(pct, 0), 100) + '%', background: color }} />
+    <div style={styles.indicatorCard}>
+      <div style={styles.indicatorTop}>
+        <div style={styles.indicatorIcon}><Icon name="custom" size={18} color={COLORS.indigo}/></div>
+        <div style={styles.indicatorText}>
+          <div style={styles.indicatorLabel}>{nome}</div>
+          <div style={styles.indicatorValue}>{valor}{unidade ? ` ${unidade}` : ''}</div>
+        </div>
+      </div>
+      <div style={styles.indicatorBarTrack}>
+        <div style={{ ...styles.indicatorBarFill, width: Math.min(Math.max(pct, 0), 100) + '%', background: color }}/>
       </div>
     </div>
   );
@@ -126,15 +214,16 @@ function CustomParamCard({ nome, unidade, valor, valorMin, valorMax }) {
 function ParamModal({ paramId, onClose }) {
   const [showAnswer, setShowAnswer] = useState(false);
   const info = PARAM_INFO[paramId];
-  const param = PRIMARY_PARAMS.find(p => p.id === paramId) || { id:'idade', name:'Idade', unit:'', icon:'🗓️' };
+  const param = PRIMARY_PARAMS.find(p => p.id === paramId) || { id:'idade', name:'Idade', unit:'' };
   if (!info) return null;
-  const icon = paramId === 'pa' ? '❤️' : param.icon;
+  const iconName = paramId === 'pa' ? 'pa' : paramId;
   const name = paramId === 'pa' ? 'Pressão Arterial' : param.name;
+  const iconColor = paramId === 'saude' ? COLORS.accent : (ICON_COLOR[paramId] || COLORS.indigo);
   return (
     <div style={styles.modalOverlay} onClick={onClose}>
       <div style={styles.infoCard} onClick={e => e.stopPropagation()}>
         <div style={styles.infoHeader}>
-          <span style={styles.infoIcon}>{icon}</span>
+          <span style={styles.infoIconChip}><Icon name={iconName} size={18} color={iconColor}/></span>
           <span style={styles.infoTitle}>{name}</span>
           <button style={styles.infoClose} onClick={onClose}>✕</button>
         </div>
@@ -153,56 +242,51 @@ function ParamModal({ paramId, onClose }) {
   );
 }
 
-function Mascot({ status, ageDays }) {
-  const stage = getGrowthStage(ageDays || 90);
-  const bodyColor  = status === STATUS.SAUDAVEL ? '#D4D4D4' : status === STATUS.DEBILITADO ? '#FAC775' : '#F09595';
-  const earIn      = status === STATUS.SAUDAVEL ? '#FFD0DC' : status === STATUS.DEBILITADO ? '#F5CC80' : '#FFB0B0';
-  const eyeOuter   = status === STATUS.SAUDAVEL ? '#7B2FBE' : status === STATUS.DEBILITADO ? '#633806' : '#791F1F';
-  const eyeInner   = status === STATUS.SAUDAVEL ? '#3A1A6A' : status === STATUS.DEBILITADO ? '#3A1A00' : '#3A0000';
-  const cheek      = status === STATUS.SAUDAVEL ? '#FFB0C8' : status === STATUS.DEBILITADO ? '#F5CC80' : '#FFB0B0';
-  const statusColor= status === STATUS.SAUDAVEL ? '#32C878' : status === STATUS.DEBILITADO ? '#EF9F27' : '#E24B4A';
-  const emoji      = status === STATUS.SAUDAVEL ? '😊 Saudável' : status === STATUS.DEBILITADO ? '😰 Debilitado' : '😵 Crítico';
-  const mouth = status === STATUS.SAUDAVEL
-    ? <path d="M188 184 Q200 196 212 184" stroke="#666" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
-    : status === STATUS.DEBILITADO
-    ? <path d="M188 188 Q200 188 212 188" stroke="#888" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
-    : <path d="M188 192 Q200 182 212 192" stroke="#AA4444" strokeWidth="2.5" fill="none" strokeLinecap="round"/>;
-  const eyeL = status === STATUS.CRITICO
-    ? <><ellipse cx="168" cy="152" rx="22" ry="22" fill="white"/><line x1="158" y1="142" x2="178" y2="162" stroke={eyeOuter} strokeWidth="4" strokeLinecap="round"/><line x1="178" y1="142" x2="158" y2="162" stroke={eyeOuter} strokeWidth="4" strokeLinecap="round"/></>
-    : status === STATUS.DEBILITADO
-    ? <><ellipse cx="168" cy="152" rx="22" ry="22" fill="white"/><ellipse cx="168" cy="156" rx="16" ry="10" fill={eyeOuter}/><ellipse cx="168" cy="156" rx="8" ry="5" fill={eyeInner}/><path d="M148 148 Q168 138 188 148" stroke="#999" strokeWidth="2" fill="none"/><ellipse cx="176" cy="150" rx="5" ry="3" fill="white" opacity=".8"/></>
-    : <><ellipse cx="168" cy="152" rx="22" ry="26" fill="white"/><ellipse cx="168" cy="155" rx="16" ry="20" fill={eyeOuter}/><ellipse cx="168" cy="155" rx="8" ry="10" fill={eyeInner}/><ellipse cx="176" cy="144" rx="6" ry="7" fill="white" opacity=".9"/><ellipse cx="162" cy="160" rx="3" ry="3.5" fill="white" opacity=".5"/></>;
-  const eyeR = status === STATUS.CRITICO
-    ? <><ellipse cx="232" cy="152" rx="22" ry="22" fill="white"/><line x1="222" y1="142" x2="242" y2="162" stroke={eyeOuter} strokeWidth="4" strokeLinecap="round"/><line x1="242" y1="142" x2="222" y2="162" stroke={eyeOuter} strokeWidth="4" strokeLinecap="round"/></>
-    : status === STATUS.DEBILITADO
-    ? <><ellipse cx="232" cy="152" rx="22" ry="22" fill="white"/><ellipse cx="232" cy="156" rx="16" ry="10" fill={eyeOuter}/><ellipse cx="232" cy="156" rx="8" ry="5" fill={eyeInner}/><path d="M212 148 Q232 138 252 148" stroke="#999" strokeWidth="2" fill="none"/><ellipse cx="240" cy="150" rx="5" ry="3" fill="white" opacity=".8"/></>
-    : <><ellipse cx="232" cy="152" rx="22" ry="26" fill="white"/><ellipse cx="232" cy="155" rx="16" ry="20" fill={eyeOuter}/><ellipse cx="232" cy="155" rx="8" ry="10" fill={eyeInner}/><ellipse cx="240" cy="144" rx="6" ry="7" fill="white" opacity=".9"/><ellipse cx="226" cy="160" rx="3" ry="3.5" fill="white" opacity=".5"/></>;
-  const isFilhote = stage.id === 'RECEM_NASCIDO';
-  const isJuvenil = stage.id === 'JUVENIL';
-  const svgSize   = isFilhote ? 110 : isJuvenil ? 150 : 180;
+function HomeostaseRing({ pct }) {
+  const r = 53, c = 2 * Math.PI * r;
+  const clamped = Math.max(0, Math.min(100, pct));
+  const offset = c * (1 - clamped / 100);
+  const sc = statusColors(clamped >= 75 ? STATUS.SAUDAVEL : clamped >= 40 ? STATUS.DEBILITADO : STATUS.CRITICO);
   return (
-    <div style={styles.animalBg}>
-      <div style={styles.animalLabel}>Mantenha o Phisys em homeostase! 🐭</div>
-      <div style={{ ...styles.animalStatus, color: statusColor }}>{emoji}</div>
-      <div style={{ ...styles.stageBadge }}>{stage.icon} {stage.label}</div>
-      <svg viewBox="0 0 400 380" style={{ width:`${svgSize}px`, height:`${svgSize}px`, marginTop:20 }}>
-        {!isFilhote && (<path d="M188 350 Q162 358 148 340 Q136 322 144 308 Q152 295 164 305" stroke="#C8C8C8" strokeWidth="7" fill="none" strokeLinecap="round"/>)}
-        <ellipse cx="166" cy="335" rx="22" ry="13" fill={bodyColor}/>
-        <ellipse cx="234" cy="335" rx="22" ry="13" fill={bodyColor}/>
-        <ellipse cx="200" cy="285" rx="82" ry="78" fill={bodyColor}/>
-        <ellipse cx="200" cy="295" rx="48" ry="50" fill="white" opacity=".2"/>
-        {!isFilhote && (<><ellipse cx="118" cy="268" rx="22" ry="15" fill={bodyColor} transform="rotate(-20,118,268)"/><ellipse cx="282" cy="268" rx="22" ry="15" fill={bodyColor} transform="rotate(20,282,268)"/></>)}
-        {isFilhote ? (<><ellipse cx="130" cy="145" rx="28" ry="34" fill={bodyColor}/><ellipse cx="130" cy="145" rx="17" ry="23" fill={earIn}/><ellipse cx="270" cy="145" rx="28" ry="34" fill={bodyColor}/><ellipse cx="270" cy="145" rx="17" ry="23" fill={earIn}/></>) : (<><ellipse cx="110" cy="135" rx="38" ry="48" fill={bodyColor}/><ellipse cx="110" cy="135" rx="24" ry="34" fill={earIn}/><ellipse cx="290" cy="135" rx="38" ry="48" fill={bodyColor}/><ellipse cx="290" cy="135" rx="24" ry="34" fill={earIn}/></>)}
-        <ellipse cx="200" cy="158" rx={isFilhote ? 90 : 82} ry={isFilhote ? 86 : 78} fill={bodyColor}/>
-        <ellipse cx="136" cy="170" rx="20" ry="14" fill={cheek} opacity=".6"/>
-        <ellipse cx="264" cy="170" rx="20" ry="14" fill={cheek} opacity=".6"/>
-        {isFilhote ? (<><ellipse cx="168" cy="150" rx="26" ry="30" fill="white"/><ellipse cx="168" cy="153" rx="19" ry="23" fill={eyeOuter}/><ellipse cx="168" cy="153" rx="9" ry="11" fill={eyeInner}/><ellipse cx="178" cy="141" rx="7" ry="8" fill="white" opacity=".9"/><ellipse cx="232" cy="150" rx="26" ry="30" fill="white"/><ellipse cx="232" cy="153" rx="19" ry="23" fill={eyeOuter}/><ellipse cx="232" cy="153" rx="9" ry="11" fill={eyeInner}/><ellipse cx="242" cy="141" rx="7" ry="8" fill="white" opacity=".9"/></>) : (<>{eyeL}{eyeR}</>)}
-        <ellipse cx="200" cy="175" rx="8" ry="6" fill="#FF8FAA"/>
-        {mouth}
-        {!isFilhote && !isJuvenil && (<><line x1="170" y1="178" x2="120" y2="168" stroke="rgba(255,255,255,.4)" strokeWidth="1.5" strokeLinecap="round"/><line x1="170" y1="183" x2="118" y2="183" stroke="rgba(255,255,255,.4)" strokeWidth="1.5" strokeLinecap="round"/><line x1="230" y1="178" x2="280" y2="168" stroke="rgba(255,255,255,.4)" strokeWidth="1.5" strokeLinecap="round"/><line x1="230" y1="183" x2="282" y2="183" stroke="rgba(255,255,255,.4)" strokeWidth="1.5" strokeLinecap="round"/></>)}
-        {status !== STATUS.SAUDAVEL && (<ellipse cx="290" cy="120" rx="7" ry="11" fill="#85B7EB" opacity=".8"/>)}
-        {status === STATUS.SAUDAVEL && (<><text x="316" y="100" fontSize="18" fill="white" opacity=".9">✦</text><text x="72" y="112" fontSize="12" fill="white" opacity=".8">✦</text></>)}
+    <div style={styles.ringWrap}>
+      <svg width="128" height="128" viewBox="0 0 128 128" style={{ transform:'rotate(-90deg)', display:'block' }}>
+        <circle cx="64" cy="64" r={r} fill="none" stroke={COLORS.border} strokeWidth="12"/>
+        <circle cx="64" cy="64" r={r} fill="none" stroke={sc.color} strokeWidth="12" strokeLinecap="round"
+          strokeDasharray={c} strokeDashoffset={offset} style={{ transition:'stroke-dashoffset .3s ease' }}/>
       </svg>
+      <div style={styles.ringCenter}>
+        <div style={styles.ringLabel}>Homeostase</div>
+        <div style={styles.ringPct}>{Math.round(clamped)}%</div>
+      </div>
+    </div>
+  );
+}
+
+// Card com a mascote (placeholder ate as imagens finais chegarem — ver
+// frontend/src/assets/mascote), o anel de Homeostase e os badges de
+// status/estagio. O clique no anel reaproveita o mesmo modal educativo dos
+// demais indicadores (PARAM_INFO.saude), em vez de deixar esse conteudo
+// orfao agora que o card antigo de "Saude" saiu do grid (fica redundante
+// com o anel).
+function StatusCard({ saude, status, stage, onOpenSaude }) {
+  const sc = statusColors(status);
+  const statusLabel = status === STATUS.SAUDAVEL ? 'Saudável' : status === STATUS.DEBILITADO ? 'Debilitado' : 'Crítico';
+  return (
+    <div style={styles.statusCard}>
+      <div style={styles.mascotPlaceholder}>
+        <div style={styles.mascotEmoji}>🐭</div>
+        <div style={styles.mascotCaption}>mascote em breve</div>
+      </div>
+
+      <div style={{ cursor:'pointer' }} onClick={onOpenSaude} title="Sobre a Homeostase">
+        <HomeostaseRing pct={saude}/>
+      </div>
+
+      <div style={styles.statusCol}>
+        <div style={{ ...styles.shield, background: sc.soft }}><Icon name="saude" size={20} color={sc.color}/></div>
+        <div style={{ ...styles.statusName, color: sc.color }}>{statusLabel}</div>
+        <div style={styles.stagePill}><span>{stage.icon}</span>{stage.label}</div>
+      </div>
     </div>
   );
 }
@@ -298,14 +382,14 @@ function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, on
   const energiaModulada = calcularEnergiaModulada(values, saude);
   const valsWithSaude = { ...values, saude, energia: energiaModulada };
   const line1 = PRIMARY_PARAMS.filter(p => ['energia','hidratacao','fc'].includes(p.id));
-  const line2 = PRIMARY_PARAMS.filter(p => ['peso','saude'].includes(p.id));
   const currentAge = ageDays || 90;
   const stage = getGrowthStage(currentAge);
   // stageInfo vem do mascotEngine (getAgeStage), que carrega as faixas
   // fisiologicas reais por fase (fcNormal, pesoNormal) - usadas abaixo para
   // corrigir a cor dos cards de FC e Peso conforme a fase atual do animal.
   const stageInfo = getAgeStage(currentAge);
-  const idadeParam = { id:'idade', name:`Idade · ${stage.label}`, unit:'', min:0, max:730, normal:[0,730], default:currentAge, step:1, icon:stage.icon };
+  const pesoParam = PRIMARY_PARAMS.find(p => p.id === 'peso');
+  const idadeParam = { id:'idade', name:'Idade', unit:'', min:0, max:730, normal:[0,730], default:currentAge, step:1 };
 
   async function handleCare(id) {
     const statusDoCuidado = cuidadoStatus[id];
@@ -365,149 +449,206 @@ function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, on
           </div>
         </div>
       )}
-      <div style={styles.topbar}>
+
+      <div style={styles.header}>
+        <svg style={styles.headerDeco} viewBox="0 0 140 100" fill="none" stroke="white" strokeWidth="1">
+          <circle cx="30" cy="20" r="2" fill="white" stroke="none"/><circle cx="60" cy="12" r="2" fill="white" stroke="none"/>
+          <circle cx="90" cy="28" r="2" fill="white" stroke="none"/><circle cx="115" cy="15" r="2" fill="white" stroke="none"/>
+          <circle cx="50" cy="45" r="2" fill="white" stroke="none"/><circle cx="80" cy="55" r="2" fill="white" stroke="none"/>
+          <line x1="30" y1="20" x2="60" y2="12"/><line x1="60" y1="12" x2="90" y2="28"/>
+          <line x1="90" y1="28" x2="115" y2="15"/><line x1="50" y1="45" x2="80" y2="55"/>
+          <line x1="60" y1="12" x2="50" y2="45"/><line x1="90" y1="28" x2="80" y2="55"/>
+        </svg>
         <div>
-          <div style={styles.userName}>{user.name.split(' ')[0]} 👋</div>
+          <div style={styles.userName}>{user.name.split(' ')[0]} <span>👋</span></div>
           <div style={styles.userSub}>Modelo Experimental</div>
         </div>
-        <div style={styles.xpBadge}>⚡ {Math.round(score)} XP</div>
+        <div style={styles.xpBadge}>
+          <Icon name="star" size={14} color={COLORS.xpPill.star}/>
+          <span>{Math.round(score)} XP</span>
+        </div>
       </div>
-      <div style={styles.paramsGrid}>
-        {line1.map(p => (
-          <ParamCard
-            key={p.id}
-            param={p}
-            value={valsWithSaude[p.id] ?? p.default}
-            onClick={setActiveParam}
-            normalOverride={p.id === 'fc' ? stageInfo.fcNormal : undefined}
-          />
-        ))}
-       <PACard pas={valsWithSaude.pas ?? 110} pad={valsWithSaude.pad ?? 70} paNormal={getAgePANormal(currentAge)} onClick={setActiveParam}/>
-      </div>
-      <div style={styles.paramsGridBottom}>
-        {line2.map(p => (
-          <ParamCard
-            key={p.id}
-            param={p}
-            value={valsWithSaude[p.id] ?? p.default}
-            onClick={setActiveParam}
-            normalOverride={p.id === 'peso' ? stageInfo.pesoNormal : undefined}
-          />
-        ))}
-        <ParamCard param={idadeParam} value={currentAge} onClick={setActiveParam}/>
-      </div>
-      {customParamValues.length > 0 && (
-        <div style={styles.paramsGridBottom}>
+
+      <div style={styles.scroll}>
+
+        <StatusCard saude={saude} status={status} stage={stage} onOpenSaude={() => setActiveParam('saude')}/>
+
+        <div style={styles.sectionTitle}>
+          <div style={styles.sectionIcon}><Icon name="section-vitals" size={13} color="white"/></div>
+          <span>Indicadores fisiológicos</span>
+        </div>
+        <div style={styles.indicatorsGrid}>
+          {line1.map(p => (
+            <ParamCard
+              key={p.id}
+              param={p}
+              value={valsWithSaude[p.id] ?? p.default}
+              onClick={setActiveParam}
+              normalOverride={p.id === 'fc' ? stageInfo.fcNormal : undefined}
+            />
+          ))}
+          <PACard pas={valsWithSaude.pas ?? 110} pad={valsWithSaude.pad ?? 70} paNormal={getAgePANormal(currentAge)} onClick={setActiveParam}/>
+          <ParamCard param={pesoParam} value={valsWithSaude.peso ?? pesoParam.default} onClick={setActiveParam} normalOverride={stageInfo.pesoNormal}/>
+          <ParamCard param={idadeParam} value={currentAge} onClick={setActiveParam}/>
           {customParamValues.map(p => (
             <CustomParamCard key={p.id} nome={p.nome} unidade={p.unidade} valor={Number(p.valor)} valorMin={Number(p.valor_min)} valorMax={Number(p.valor_max)}/>
           ))}
         </div>
-      )}
-      <div style={styles.animalArea}><Mascot status={status} ageDays={currentAge}/></div>
-      <div style={styles.actionBtns}>
-        <div style={styles.actionBtn} onClick={onViewSecondary}><span style={styles.actionBtnIcon}>📊</span><span style={styles.actionBtnLabel}>Parâm. Secundários</span></div>
-        <div style={styles.actionBtn} onClick={() => setShowModes(true)}><span style={styles.actionBtnIcon}>🎮</span><span style={styles.actionBtnLabel}>Opções de Jogo</span></div>
-        <div style={styles.actionBtn} onClick={onViewRanking}><span style={styles.actionBtnIcon}>🏆</span><span style={styles.actionBtnLabel}>Ranking</span></div>
-      </div>
-      <div style={styles.caresLabel}>cuidados diários</div>
-      <div style={styles.cares}>
-        {Object.values(DAILY_CARES).map(c => {
-          const st = cuidadoStatus[c.id];
-          const bloqueado = (st && st.disponivel === false) || pendingCares[c.id];
-          let desc = c.label;
-          if (bloqueado) {
-            if (st.modo === 'sessao') {
-              desc = `Limite atingido (${st.usados}/${st.limite})`;
-            } else {
-              const restante = formatarTempoRestante(st.liberaEm);
-              desc = restante ? `Libera em ${restante}` : c.label;
+
+        <div style={styles.sectionTitle}>
+          <div style={styles.sectionIcon}><Icon name="section-cares" size={13} color="white"/></div>
+          <span>Cuidados diários</span>
+        </div>
+        <div style={styles.caresRow}>
+          {Object.values(DAILY_CARES).map(c => {
+            const st = cuidadoStatus[c.id];
+            const bloqueado = (st && st.disponivel === false) || pendingCares[c.id];
+            let desc = null;
+            if (bloqueado) {
+              if (st.modo === 'sessao') {
+                desc = `Limite atingido (${st.usados}/${st.limite})`;
+              } else {
+                const restante = formatarTempoRestante(st.liberaEm);
+                desc = restante ? `Libera em ${restante}` : null;
+              }
             }
-          }
-          return (
-            <div
-              key={c.id}
-              style={{
-                ...styles.careCard,
-                ...(bloqueado ? styles.careBlocked : {}),
-                position:'relative',
-                cursor: bloqueado ? 'not-allowed' : 'pointer',
-                opacity: bloqueado ? 0.55 : 1,
-              }}
-              onClick={() => handleCare(c.id)}
-            >
-              <div style={styles.careIcon}>{c.icon}</div>
-              <div style={styles.careName}>{c.label.split(' ')[0]}</div>
-              <div style={styles.careDesc}>{desc}</div>
-              {careEffect === c.id && (
-                <div style={{ position:'absolute', top:'-10px', right:'4px', fontSize:'11px', fontWeight:'700', color:'#FFD700', animation:'fadeUp 1.5s ease-out', pointerEvents:'none' }}>+5 XP ⚡</div>
-              )}
-              {careError === c.id && (
-                <div style={{ position:'absolute', top:'-10px', right:'4px', fontSize:'10px', fontWeight:'700', color:'#E24B4A', pointerEvents:'none' }}>Indisponível</div>
-              )}
-            </div>
-          );
-        })}
+            const theme = CARE_THEME[c.id];
+            return (
+              <div
+                key={c.id}
+                style={{
+                  ...styles.careCard,
+                  background: bloqueado ? COLORS.surfaceMuted : theme.bg,
+                  position:'relative',
+                  cursor: bloqueado ? 'not-allowed' : 'pointer',
+                  opacity: bloqueado ? 0.6 : 1,
+                }}
+                onClick={() => handleCare(c.id)}
+              >
+                <span style={styles.careIconBox}><Icon name={CARE_ICON[c.id]} size={24} color={theme.icon}/></span>
+                <div style={styles.careLabel}>{c.label.split(' ')[0]}</div>
+                {desc && <div style={styles.careDesc}>{desc}</div>}
+                {careEffect === c.id && (
+                  <div style={{ position:'absolute', top:'-10px', right:'4px', fontSize:'11px', fontWeight:'800', color:COLORS.status.debilitado.color, animation:'fadeUp 1.5s ease-out', pointerEvents:'none' }}>+5 XP ⚡</div>
+                )}
+                {careError === c.id && (
+                  <div style={{ position:'absolute', top:'-10px', right:'4px', fontSize:'10px', fontWeight:'800', color:COLORS.status.critico.color, pointerEvents:'none' }}>Indisponível</div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        <div style={styles.logoutRow} onClick={onLogout}>sair da conta</div>
       </div>
-      
-      <div style={styles.footer}>
-        {user.mode === 'professor' && (<button style={styles.panelBtn} onClick={onViewPanel}>Painel do Professor</button>)}
-        <button style={styles.logoutBtn} onClick={onLogout}>sair da conta</button>
+
+      <div style={styles.bottomNav}>
+        <div style={{ ...styles.navItem, ...styles.navItemActive }}>
+          <span style={styles.navIconBox}><Icon name="navHome" size={22} color={COLORS.indigo}/></span>
+          <span>Início</span>
+        </div>
+        <div style={styles.navItem} onClick={onViewSecondary}>
+          <span style={styles.navIconBox}><Icon name="navParams" size={22} color={COLORS.textMuted}/></span>
+          <span>Parâmetros</span>
+        </div>
+        <div style={styles.navItem} onClick={() => setShowModes(true)}>
+          <span style={styles.navIconBox}><Icon name="navPlay" size={22} color={COLORS.textMuted}/></span>
+          <span>Jogar</span>
+        </div>
+        <div style={styles.navItem} onClick={onViewRanking}>
+          <span style={styles.navIconBox}><Icon name="navRanking" size={22} color={COLORS.textMuted}/></span>
+          <span>Ranking</span>
+        </div>
       </div>
+
+      {user.mode === 'professor' && (
+        <div style={styles.professorBar} onClick={onViewPanel}>
+          <Icon name="cap" size={16} color="rgba(255,255,255,.85)"/>
+          <span>Área do professor</span>
+          <Icon name="chevronRight" size={13} color="rgba(255,255,255,.85)"/>
+        </div>
+      )}
     </div>
   );
 }
 
 const styles = {
-  screen:           { width:'100%', minHeight:'100vh', display:'flex', flexDirection:'column', background:GRADIENT, margin:'0 auto', paddingBottom:'1rem', overflowX:'hidden' },
-  topbar:           { padding:'1rem 1rem .5rem', display:'flex', justifyContent:'space-between', alignItems:'center' },
-  userName:         { fontSize:'16px', fontWeight:'700', color:'white' },
-  userSub:          { fontSize:'11px', color:'rgba(255,255,255,.6)' },
-  xpBadge:          { background:'rgba(255,255,255,.15)', border:'1px solid rgba(255,255,255,.3)', borderRadius:'20px', padding:'4px 12px', fontSize:'12px', color:'white', fontWeight:'600' },
-  paramsGrid:       { padding:'.25rem 1rem', display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:'5px' },
-  paramsGridBottom: { padding:'0 1rem .25rem', display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'5px' },
-  paramCard:        { background:'rgba(255,255,255,.12)', border:'1px solid rgba(255,255,255,.2)', borderRadius:'10px', padding:'6px 4px', display:'flex', flexDirection:'column', alignItems:'center', gap:'3px' },
-  paramIcon:        { fontSize:'14px' },
-  paramVal:         { fontSize:'12px', fontWeight:'700', color:'white' },
-  paramName:        { fontSize:'8px', color:'rgba(255,255,255,.6)', textAlign:'center', letterSpacing:'.03em' },
-  paramBar:         { width:'100%', height:'3px', background:'rgba(255,255,255,.15)', borderRadius:'2px', overflow:'hidden' },
-  paramFill:        { height:'100%', borderRadius:'2px' },
-  animalArea:       { margin:'0 1rem .25rem' },
-  animalBg:         { background:'rgba(255,255,255,.08)', borderRadius:'20px', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', border:'1px solid rgba(255,255,255,.15)', position:'relative', padding:'8px', minHeight:'220px', overflow:'hidden' },
-  animalLabel: { position:'absolute', top:'8px', left:'10px', fontSize:'10px', color:'rgba(255,255,255,.5)', letterSpacing:'.04em', maxWidth:'55%' },
-  animalStatus:     { position:'absolute', top:'8px', right:'10px', fontSize:'12px', fontWeight:'600' },
-  stageBadge:       { position:'absolute', bottom:'8px', left:'50%', transform:'translateX(-50%)', background:'rgba(255,255,255,.15)', borderRadius:'20px', padding:'3px 10px', fontSize:'10px', color:'rgba(255,255,255,.8)', whiteSpace:'nowrap' },
-  actionBtns:       { margin:'0 1rem .5rem', display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'7px' },
-  actionBtn:        { background:'rgba(255,255,255,.15)', border:'1px solid rgba(255,255,255,.25)', borderRadius:'12px', padding:'10px 6px', display:'flex', flexDirection:'column', alignItems:'center', gap:'4px', cursor:'pointer' },
-  actionBtnIcon:    { fontSize:'18px' },
-  actionBtnLabel:   { fontSize:'9px', color:'white', fontWeight:'600', textAlign:'center' },
-  caresLabel:       { padding:'.25rem 1rem', fontSize:'10px', color:'rgba(255,255,255,.6)', letterSpacing:'.08em', textTransform:'uppercase' },
-  cares:            { margin:'0 1rem .5rem', display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'7px' },
-  careCard:         { background:'rgba(255,255,255,.14)', border:'1px solid rgba(255,255,255,.25)', borderRadius:'12px', padding:'.625rem .5rem', display:'flex', flexDirection:'column', alignItems:'center', gap:'3px', cursor:'pointer' },
-  careBlocked:      { background:'rgba(255,255,255,.06)', borderColor:'rgba(255,255,255,.12)' },
-  careIcon:         { fontSize:'20px' },
-  careName:         { fontSize:'11px', fontWeight:'600', color:'white', textAlign:'center' },
-  careDesc:         { fontSize:'9px', color:'rgba(255,255,255,.55)', textAlign:'center' },
-  footer:           { padding:'.5rem 1rem 0', display:'flex', flexDirection:'column', alignItems:'center', gap:'6px' },
-  panelBtn:         { width:'100%', padding:'10px', borderRadius:'10px', border:'none', background:'white', color:'#7B2FBE', fontSize:'13px', fontWeight:'700', cursor:'pointer', fontFamily:'inherit' },
-  logoutBtn:        { fontSize:'11px', color:'rgba(255,255,255,.4)', cursor:'pointer', background:'none', border:'none', fontFamily:'inherit' },
-  modalOverlay:     { position:'fixed', top:0, left:0, width:'100%', height:'100%', background:'rgba(0,0,0,.6)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:100 },
-  modalCard:        { background:'linear-gradient(160deg,#1B4FCC,#7B2FBE,#CC1B1B)', borderRadius:'20px', padding:'1.5rem', width:'90%', maxWidth:'340px', display:'flex', flexDirection:'column', gap:'12px' },
-  modalTitle:       { fontSize:'16px', fontWeight:'700', color:'white', textAlign:'center', marginBottom:'4px' },
-  modeBtn:          { background:'rgba(255,255,255,.15)', border:'1px solid rgba(255,255,255,.3)', borderRadius:'14px', padding:'1rem', cursor:'pointer' },
+  screen:           { width:'100%', minHeight:'100vh', display:'flex', flexDirection:'column', background:COLORS.surface, margin:'0 auto', overflowX:'hidden', fontFamily:FONT_FAMILY, color:COLORS.textPrimary },
+
+  header:           { position:'relative', background:COLORS.bg, padding:'22px 18px 28px', overflow:'hidden', display:'flex', alignItems:'flex-start', justifyContent:'space-between' },
+  headerDeco:       { position:'absolute', top:'-10px', right:'-10px', width:'140px', height:'100px', opacity:.35, pointerEvents:'none' },
+  userName:         { fontSize:'22px', fontWeight:'800', color:'white', display:'flex', alignItems:'center', gap:'7px', position:'relative' },
+  userSub:          { fontSize:'12.5px', fontWeight:'600', color:'rgba(255,255,255,.55)', marginTop:'3px', position:'relative' },
+  xpBadge:          { display:'flex', alignItems:'center', gap:'7px', background:COLORS.xpPill.bg, border:'1px solid rgba(255,255,255,.25)', borderRadius:'999px', padding:'8px 15px 8px 11px', fontSize:'14px', color:'white', fontWeight:'800', position:'relative' },
+
+  scroll:           { flex:1, padding:'0 16px 8px', marginTop:'-14px', display:'flex', flexDirection:'column', gap:'10px', position:'relative' },
+
+  statusCard:       { background:'#FFFFFF', borderRadius:'28px', padding:'18px 15px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:'8px', boxShadow:'0 2px 6px rgba(43,43,118,.06), 0 10px 24px rgba(43,43,118,.09)' },
+
+  mascotPlaceholder:{ width:'104px', height:'104px', borderRadius:'20px', border:`2px dashed ${COLORS.borderDashed}`, background:COLORS.surfaceMuted, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'3px', flexShrink:0,
+                       // preparado pra receber a foto real da mascote (object-fit: contain) -
+                       // ver frontend/src/assets/mascote quando as 12 imagens estiverem prontas
+                     },
+  mascotEmoji:      { fontSize:'32px', lineHeight:1 },
+  mascotCaption:    { fontSize:'7.5px', fontWeight:'800', letterSpacing:'.03em', textTransform:'uppercase', color:COLORS.textMuted, textAlign:'center', padding:'0 4px', lineHeight:1.3 },
+
+  ringWrap:         { position:'relative', width:'128px', height:'128px', flexShrink:0 },
+  ringCenter:       { position:'absolute', inset:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'3px' },
+  ringLabel:        { fontSize:'11px', fontWeight:'700', color:COLORS.textMuted, textAlign:'center', lineHeight:1.2 },
+  ringPct:          { fontSize:'28px', fontWeight:'800', color:COLORS.textPrimary, lineHeight:1 },
+
+  statusCol:        { display:'flex', flexDirection:'column', alignItems:'center', gap:'9px', flexShrink:0 },
+  shield:           { width:'38px', height:'38px', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center' },
+  statusName:       { fontSize:'13px', fontWeight:'800', textAlign:'center' },
+  stagePill:        { display:'flex', alignItems:'center', gap:'5px', background:COLORS.stagePill.bg, borderRadius:'999px', padding:'6px 12px', fontSize:'11.5px', fontWeight:'700', color:COLORS.stagePill.text, whiteSpace:'nowrap' },
+
+  sectionTitle:     { display:'flex', alignItems:'center', gap:'9px' },
+  sectionIcon:      { width:'24px', height:'24px', borderRadius:'50%', background:COLORS.indigo, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 },
+
+  indicatorsGrid:   { display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:'10px' },
+  indicatorCard:    { background:'#FFFFFF', borderRadius:'18px', padding:'14px', display:'flex', flexDirection:'column', justifyContent:'space-between', gap:'11px', boxShadow:SHADOW_CARD, cursor:'pointer' },
+  indicatorTop:     { display:'flex', alignItems:'center', gap:'10px' },
+  indicatorIcon:    { width:'38px', height:'38px', borderRadius:'50%', background:COLORS.iconChipBg, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 },
+  indicatorText:    { display:'flex', flexDirection:'column', gap:'2px', minWidth:0 },
+  indicatorLabel:   { fontSize:'11.5px', fontWeight:'700', color:COLORS.textMuted },
+  indicatorValue:   { fontSize:'17px', fontWeight:'800', color:COLORS.indigo },
+  indicatorBarTrack:{ height:'6px', borderRadius:'999px', background:COLORS.border, overflow:'hidden' },
+  indicatorBarFill: { height:'100%', borderRadius:'999px' },
+
+  caresRow:         { display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'10px' },
+  careCard:         { borderRadius:'18px', padding:'16px 6px', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'8px' },
+  careIconBox:      { display:'flex', alignItems:'center', justifyContent:'center' },
+  careLabel:        { fontSize:'12px', fontWeight:'800', textAlign:'center', color:COLORS.textPrimary, lineHeight:1.25 },
+  careDesc:         { fontSize:'9px', color:COLORS.textMuted, textAlign:'center', fontWeight:'600' },
+
+  logoutRow:        { textAlign:'center', fontSize:'11px', color:COLORS.textMuted, cursor:'pointer', padding:'2px 0 4px', fontWeight:'600' },
+
+  bottomNav:        { background:COLORS.surface, boxShadow:'0 -4px 14px rgba(43,43,118,.06)', display:'grid', gridTemplateColumns:'repeat(4,1fr)', padding:'14px 8px 12px' },
+  navItem:          { display:'flex', flexDirection:'column', alignItems:'center', gap:'4px', color:COLORS.textMuted, fontSize:'10.5px', fontWeight:'700', cursor:'pointer' },
+  navItemActive:    { color:COLORS.indigo },
+  navIconBox:        { display:'flex', alignItems:'center', justifyContent:'center' },
+
+  professorBar:     { background:COLORS.bg, display:'flex', alignItems:'center', justifyContent:'center', gap:'8px', padding:'13px 0 17px', fontSize:'13.5px', fontWeight:'700', color:'rgba(255,255,255,.85)', cursor:'pointer' },
+
+  modalOverlay:     { position:'fixed', top:0, left:0, width:'100%', height:'100%', background:'rgba(0,0,0,.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:100 },
+  modalCard:        { background:COLORS.surface, borderRadius:'24px', padding:'1.5rem', width:'90%', maxWidth:'340px', display:'flex', flexDirection:'column', gap:'12px', boxShadow:'0 20px 50px rgba(43,43,118,.35)' },
+  modalTitle:       { fontSize:'16px', fontWeight:'800', color:COLORS.textPrimary, textAlign:'center', marginBottom:'4px' },
+  modeBtn:          { background:COLORS.surfaceMuted, border:`1px solid ${COLORS.border}`, borderRadius:'16px', padding:'1rem', cursor:'pointer' },
   modeBtnIcon:      { fontSize:'24px', marginBottom:'4px' },
-  modeBtnTitle:     { fontSize:'14px', fontWeight:'700', color:'white', marginBottom:'4px' },
-  modeBtnDesc:      { fontSize:'11px', color:'rgba(255,255,255,.75)', lineHeight:'1.4' },
-  modalCancel:      { background:'rgba(255,255,255,.1)', border:'1px solid rgba(255,255,255,.2)', borderRadius:'20px', padding:'8px', color:'rgba(255,255,255,.7)', fontSize:'12px', cursor:'pointer', fontFamily:'inherit' },
-  infoCard:         { background:'linear-gradient(160deg,#1B4FCC,#7B2FBE,#CC1B1B)', borderRadius:'20px', padding:'1.5rem', width:'90%', maxWidth:'340px', display:'flex', flexDirection:'column', gap:'12px' },
+  modeBtnTitle:     { fontSize:'14px', fontWeight:'800', color:COLORS.textPrimary, marginBottom:'4px' },
+  modeBtnDesc:      { fontSize:'11px', color:COLORS.textMuted, lineHeight:'1.4' },
+  modalCancel:      { background:'none', border:'none', borderRadius:'20px', padding:'8px', color:COLORS.textMuted, fontSize:'12px', cursor:'pointer', fontFamily:'inherit', fontWeight:'600' },
+
+  infoCard:         { background:COLORS.surface, borderRadius:'24px', padding:'1.5rem', width:'90%', maxWidth:'340px', display:'flex', flexDirection:'column', gap:'12px', boxShadow:'0 20px 50px rgba(43,43,118,.35)' },
   infoHeader:       { display:'flex', alignItems:'center', gap:'10px' },
-  infoIcon:         { fontSize:'24px' },
-  infoTitle:        { flex:1, fontSize:'16px', fontWeight:'700', color:'white' },
-  infoClose:        { background:'none', border:'none', color:'rgba(255,255,255,.6)', fontSize:'18px', cursor:'pointer', fontFamily:'inherit' },
-  infoQuestion:     { background:'rgba(255,255,255,.15)', borderRadius:'12px', padding:'1rem', fontSize:'13px', color:'white', fontWeight:'600', lineHeight:'1.5' },
-  showAnswerBtn:    { background:'white', border:'none', borderRadius:'20px', padding:'10px', color:'#7B2FBE', fontSize:'13px', fontWeight:'700', cursor:'pointer', fontFamily:'inherit' },
-  infoAnswer:       { background:'rgba(255,255,255,.1)', borderRadius:'12px', padding:'1rem', fontSize:'12px', color:'rgba(255,255,255,.9)', lineHeight:'1.6' },
-  infoDica:         { background:'rgba(50,200,120,.2)', border:'1px solid rgba(50,200,120,.4)', borderRadius:'10px', padding:'.75rem', fontSize:'11px', color:'white', lineHeight:'1.4' },
-  infoCloseBtn:     { background:'rgba(255,255,255,.1)', border:'1px solid rgba(255,255,255,.2)', borderRadius:'20px', padding:'8px', color:'rgba(255,255,255,.7)', fontSize:'12px', cursor:'pointer', fontFamily:'inherit' },
+  infoIconChip:     { width:'34px', height:'34px', borderRadius:'50%', background:COLORS.iconChipBg, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 },
+  infoTitle:        { flex:1, fontSize:'16px', fontWeight:'800', color:COLORS.textPrimary },
+  infoClose:        { background:'none', border:'none', color:COLORS.textMuted, fontSize:'18px', cursor:'pointer', fontFamily:'inherit' },
+  infoQuestion:     { background:COLORS.iconChipBg, borderRadius:'14px', padding:'1rem', fontSize:'13px', color:COLORS.indigo, fontWeight:'700', lineHeight:'1.5' },
+  showAnswerBtn:    { background:COLORS.indigo, border:'none', borderRadius:'999px', padding:'10px', color:'white', fontSize:'13px', fontWeight:'800', cursor:'pointer', fontFamily:'inherit' },
+  infoAnswer:       { background:COLORS.surfaceMuted, borderRadius:'14px', padding:'1rem', fontSize:'12px', color:COLORS.textPrimary, lineHeight:'1.6' },
+  infoDica:         { background:COLORS.status.saudavel.soft, border:`1px solid ${COLORS.status.saudavel.color}`, borderRadius:'12px', padding:'.75rem', fontSize:'11px', color:COLORS.textPrimary, lineHeight:'1.4', fontWeight:'600' },
+  infoCloseBtn:     { background:'none', border:`1px solid ${COLORS.border}`, borderRadius:'999px', padding:'8px', color:COLORS.textMuted, fontSize:'12px', cursor:'pointer', fontFamily:'inherit', fontWeight:'600' },
 };
 
 const styleTag = document.createElement('style');
