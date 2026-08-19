@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-
-const GRADIENT = 'linear-gradient(160deg, #1B4FCC 0%, #7B2FBE 50%, #CC1B1B 100%)';
+import { COLORS, FONT_FAMILY } from '../theme';
 
 const LEVELS = [
   { value: 1, emoji: '😞', label: 'Muito desmotivado', color: '#E24B4A' },
@@ -110,20 +109,20 @@ function MotivationScreen({ user, onContinue, customMessages }) {
 }
 
 const styles = {
-  screen:       { display:'flex', justifyContent:'center', alignItems:'center', minHeight:'100vh', background:'#f0f0f0', padding:'2rem 1rem' },
-  card:         { background:GRADIENT, borderRadius:'20px', padding:'2rem 1.5rem', width:'100%', maxWidth:'370px', display:'flex', flexDirection:'column', alignItems:'center', gap:'1rem', boxShadow:'0 8px 40px rgba(123,47,190,0.35)' },
-  greeting:     { fontSize:'20px', fontWeight:'700', color:'white' },
-  question:     { fontSize:'16px', fontWeight:'600', color:'white', textAlign:'center' },
-  subtext:      { fontSize:'12px', color:'rgba(255,255,255,.7)', textAlign:'center', lineHeight:'1.5' },
+  screen:       { display:'flex', justifyContent:'center', alignItems:'center', minHeight:'100vh', background:COLORS.bg, padding:'2rem 1rem', fontFamily:FONT_FAMILY },
+  card:         { background:COLORS.surface, borderRadius:'26px', padding:'2rem 1.5rem', width:'100%', maxWidth:'370px', display:'flex', flexDirection:'column', alignItems:'center', gap:'1rem', boxShadow:'0 10px 30px rgba(43,43,118,.25)' },
+  greeting:     { fontSize:'22px', fontWeight:'800', color:COLORS.textPrimary },
+  question:     { fontSize:'16px', fontWeight:'700', color:COLORS.textPrimary, textAlign:'center' },
+  subtext:      { fontSize:'12px', color:COLORS.textMuted, textAlign:'center', lineHeight:'1.5' },
   levels:       { display:'flex', gap:'8px', justifyContent:'center', width:'100%', marginTop:'.5rem' },
-  levelBtn:     { flex:1, background:'rgba(255,255,255,.12)', border:'2px solid rgba(255,255,255,.2)', borderRadius:'14px', padding:'10px 4px', display:'flex', flexDirection:'column', alignItems:'center', gap:'4px', cursor:'pointer', transition:'all .2s' },
+  levelBtn:     { flex:1, background:COLORS.iconChipBg, border:`2px solid ${COLORS.border}`, borderRadius:'14px', padding:'10px 4px', display:'flex', flexDirection:'column', alignItems:'center', gap:'4px', cursor:'pointer', transition:'all .2s' },
   levelEmoji:   { fontSize:'26px' },
-  levelNum:     { fontSize:'11px', color:'rgba(255,255,255,.7)', fontWeight:'600' },
-  messageCard:  { width:'100%', background:'rgba(255,255,255,.12)', border:'1px solid', borderRadius:'14px', padding:'1rem', display:'flex', flexDirection:'column', gap:'8px' },
-  levelLabel:   { fontSize:'13px', fontWeight:'700' },
-  messageText:  { fontSize:'12px', color:'rgba(255,255,255,.9)', lineHeight:'1.6' },
-  continueBtn:  { width:'100%', padding:'13px', borderRadius:'10px', border:'none', background:'white', color:'#7B2FBE', fontSize:'14px', fontWeight:'700', cursor:'pointer', fontFamily:'inherit', marginTop:'.5rem' },
-  note:         { fontSize:'10px', color:'rgba(255,255,255,.5)', textAlign:'center', lineHeight:'1.5' },
+  levelNum:     { fontSize:'11px', color:COLORS.textMuted, fontWeight:'700' },
+  messageCard:  { width:'100%', background:COLORS.surfaceMuted, border:'1px solid', borderRadius:'14px', padding:'1rem', display:'flex', flexDirection:'column', gap:'8px' },
+  levelLabel:   { fontSize:'13px', fontWeight:'800' },
+  messageText:  { fontSize:'12px', color:COLORS.textPrimary, lineHeight:'1.6' },
+  continueBtn:  { width:'100%', padding:'13px', borderRadius:'12px', border:'none', background:COLORS.indigo, color:'white', fontSize:'14px', fontWeight:'800', cursor:'pointer', fontFamily:'inherit', marginTop:'.5rem' },
+  note:         { fontSize:'10px', color:COLORS.textMuted, textAlign:'center', lineHeight:'1.5' },
 };
 
 export default MotivationScreen;
