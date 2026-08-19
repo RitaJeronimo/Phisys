@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { animal as animalApi, simulacoes as simulacoesApi } from '../api';
 import { PRIMARY_PARAMS, calcularSaude, calcularEnergiaModulada, getAgePANormal, getAgeStage, getMascotStatus, STATUS, DAILY_CARES } from '../engine/mascotEngine';
-import { COLORS, FONT_FAMILY, SHADOW_CARD } from '../theme';
+import { COLORS, FONT_FAMILY, SHADOW_CARD, FONT_SCALE } from '../theme';
 
 // ─── FASES DE CRESCIMENTO ────────────────────────────────────────────────
 export const GROWTH_STAGES = {
@@ -475,7 +475,7 @@ function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, on
 
         <div style={styles.sectionTitle}>
           <div style={styles.sectionIcon}><Icon name="section-vitals" size={13} color="white"/></div>
-          <span>Indicadores fisiológicos</span>
+          <span style={styles.sectionTitleText}>Indicadores fisiológicos</span>
         </div>
         <div style={styles.indicatorsGrid}>
           {line1.map(p => (
@@ -497,7 +497,7 @@ function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, on
 
         <div style={styles.sectionTitle}>
           <div style={styles.sectionIcon}><Icon name="section-cares" size={13} color="white"/></div>
-          <span>Cuidados diários</span>
+          <span style={styles.sectionTitleText}>Cuidados diários</span>
         </div>
         <div style={styles.caresRow}>
           {Object.values(DAILY_CARES).map(c => {
@@ -603,6 +603,7 @@ const styles = {
   stagePill:        { display:'flex', alignItems:'center', gap:'5px', background:COLORS.stagePill.bg, borderRadius:'999px', padding:'6px 12px', fontSize:'11.5px', fontWeight:'700', color:COLORS.stagePill.text, whiteSpace:'nowrap' },
 
   sectionTitle:     { display:'flex', alignItems:'center', gap:'9px' },
+  sectionTitleText: { ...FONT_SCALE.title, color:COLORS.textPrimary },
   sectionIcon:      { width:'24px', height:'24px', borderRadius:'50%', background:COLORS.indigo, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 },
 
   indicatorsGrid:   { display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:'10px' },
