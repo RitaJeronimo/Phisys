@@ -477,7 +477,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
     setEditing(null); setSimForm(null); setEditingType(null);
   }
 
-  const diffColor = { facil:'#32C878', medio:'#EF9F27', dificil:'#E24B4A' };
+  const diffColor = { facil:COLORS.status.saudavel.color, medio:COLORS.status.debilitado.color, dificil:COLORS.status.critico.color };
   const diffLabel = { facil:'Fácil', medio:'Médio', dificil:'Difícil' };
   const focusLabel = { renal:'🫗 Renal', cardiovascular:'❤️ Cardiovascular' };
   const nomeTurma = (turmaId) => turmasList.find(t => t.id === turmaId)?.nome || '—';
@@ -520,7 +520,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
           <div style={styles.fieldLabel}>Alternativas (marque a correta)</div>
           {form.options.map((opt,i)=>(
             <div key={i} style={styles.optionRow}>
-              <div style={{ ...styles.optionLetter, background: form.correct===i ? '#32C878' : 'rgba(255,255,255,.15)', color: form.correct===i ? 'white' : 'rgba(255,255,255,.6)' }} onClick={()=>setForm(f=>({...f,correct:i}))}>
+              <div style={{ ...styles.optionLetter, background: form.correct===i ? COLORS.status.saudavel.color : COLORS.surfaceMuted, color: form.correct===i ? 'white' : COLORS.textMuted }} onClick={()=>setForm(f=>({...f,correct:i}))}>
                 {String.fromCharCode(65+i)}
               </div>
               <input style={styles.optionInput} value={opt} onChange={e=>handleFormOption(i,e.target.value)} placeholder={`Alternativa ${String.fromCharCode(65+i)}`}/>
@@ -542,11 +542,11 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
               <div key={p.id} style={{ ...styles.simParamRow, marginBottom:'6px' }}>
                 <div style={styles.simParamHeader}>
                   <span style={styles.simParamName}>{p.label}</span>
-                  <span style={{ ...styles.simParamVal, color:'#32C878' }}>{val > 0 ? '+' : ''}{val} {p.unit}</span>
+                  <span style={{ ...styles.simParamVal, color:COLORS.status.saudavel.color }}>{val > 0 ? '+' : ''}{val} {p.unit}</span>
                 </div>
                 <input type="range" min={p.min} max={p.max} step={p.step} value={val}
                   onChange={e => setForm(f => ({ ...f, delta_acerto: { ...(f.delta_acerto||{}), [p.id]: Number(e.target.value) } }))}
-                  style={{ width:'100%', accentColor:'#32C878', margin:'4px 0' }}
+                  style={{ width:'100%', accentColor:COLORS.status.saudavel.color, margin:'4px 0' }}
                 />
               </div>
             );
@@ -566,11 +566,11 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
               <div key={p.id} style={{ ...styles.simParamRow, marginBottom:'6px' }}>
                 <div style={styles.simParamHeader}>
                   <span style={styles.simParamName}>{p.label}</span>
-                  <span style={{ ...styles.simParamVal, color:'#E24B4A' }}>{val > 0 ? '+' : ''}{val} {p.unit}</span>
+                  <span style={{ ...styles.simParamVal, color:COLORS.status.critico.color }}>{val > 0 ? '+' : ''}{val} {p.unit}</span>
                 </div>
                 <input type="range" min={p.min} max={p.max} step={p.step} value={val}
                   onChange={e => setForm(f => ({ ...f, delta_erro: { ...(f.delta_erro||{}), [p.id]: Number(e.target.value) } }))}
-                  style={{ width:'100%', accentColor:'#E24B4A', margin:'4px 0' }}
+                  style={{ width:'100%', accentColor:COLORS.status.critico.color, margin:'4px 0' }}
                 />
               </div>
             );
@@ -578,7 +578,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
 
           <div style={styles.activeRow}>
             <div style={styles.fieldLabel}>Desafio ativo</div>
-            <div style={{ ...styles.toggle, background: form.active ? '#32C878' : 'rgba(255,255,255,.2)' }} onClick={()=>setForm(f=>({...f,active:!f.active}))}>
+            <div style={{ ...styles.toggle, background: form.active ? COLORS.status.saudavel.color : COLORS.border }} onClick={()=>setForm(f=>({...f,active:!f.active}))}>
               <div style={{ ...styles.toggleThumb, transform: form.active ? 'translateX(20px)' : 'translateX(2px)' }}/>
             </div>
           </div>
@@ -602,11 +602,11 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
           <input style={styles.input} value={simForm.title} onChange={e=>setSimForm(f=>({...f,title:e.target.value}))} placeholder="Ex: Insuficiência Cardíaca"/>
           <div style={styles.fieldLabel}>Foco</div>
           <div style={{ display:'flex', gap:'8px', marginBottom:'4px' }}>
-            <div style={{ flex:1, padding:'10px', borderRadius:'10px', border:'1px solid rgba(255,255,255,.25)', background: simForm.focus === 'cardiovascular' ? 'rgba(255,255,255,.3)' : 'rgba(255,255,255,.1)', color:'white', fontSize:'13px', textAlign:'center', cursor:'pointer', fontWeight: simForm.focus === 'cardiovascular' ? '700' : '400' }}
+            <div style={{ flex:1, padding:'10px', borderRadius:'10px', border:`1px solid ${simForm.focus === 'cardiovascular' ? COLORS.indigo : COLORS.border}`, background: simForm.focus === 'cardiovascular' ? COLORS.iconChipBg : COLORS.surfaceMuted, color: simForm.focus === 'cardiovascular' ? COLORS.indigo : COLORS.textMuted, fontSize:'13px', textAlign:'center', cursor:'pointer', fontWeight: simForm.focus === 'cardiovascular' ? '700' : '400' }}
               onClick={() => setSimForm(f=>({...f, focus:'cardiovascular'}))}>
               ❤️ Cardiovascular
             </div>
-            <div style={{ flex:1, padding:'10px', borderRadius:'10px', border:'1px solid rgba(255,255,255,.25)', background: simForm.focus === 'renal' ? 'rgba(255,255,255,.3)' : 'rgba(255,255,255,.1)', color:'white', fontSize:'13px', textAlign:'center', cursor:'pointer', fontWeight: simForm.focus === 'renal' ? '700' : '400' }}
+            <div style={{ flex:1, padding:'10px', borderRadius:'10px', border:`1px solid ${simForm.focus === 'renal' ? COLORS.indigo : COLORS.border}`, background: simForm.focus === 'renal' ? COLORS.iconChipBg : COLORS.surfaceMuted, color: simForm.focus === 'renal' ? COLORS.indigo : COLORS.textMuted, fontSize:'13px', textAlign:'center', cursor:'pointer', fontWeight: simForm.focus === 'renal' ? '700' : '400' }}
               onClick={() => setSimForm(f=>({...f, focus:'renal'}))}>
               🫗 Renal
             </div>
@@ -627,9 +627,9 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
           <div style={{ display:'flex', alignItems:'center', gap:'12px', marginBottom:'1rem' }}>
             <input type="range" min="1" max="10" step="1" value={simForm.cuidadosPorSessao ?? 3}
               onChange={e => setSimForm(f => ({ ...f, cuidadosPorSessao: Number(e.target.value) }))}
-              style={{ flex:1, accentColor:'#32C878' }}
+              style={{ flex:1, accentColor:COLORS.indigo }}
             />
-            <div style={{ fontSize:'16px', fontWeight:'700', color:'white', width:'40px', textAlign:'right' }}>
+            <div style={{ ...FONT_SCALE.title, color:COLORS.textPrimary, width:'40px', textAlign:'right' }}>
               {simForm.cuidadosPorSessao ?? 3}x
             </div>
           </div>
@@ -639,7 +639,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
           {PRIMARY_PARAMS.filter(p => p.id !== 'saude').map(p => {
             const val = simForm.params[p.id] ?? p.default;
             const inRange = val >= p.normal[0] && val <= p.normal[1];
-            const color = inRange ? '#32C878' : '#E24B4A';
+            const color = inRange ? COLORS.status.saudavel.color : COLORS.status.critico.color;
             return (
               <div key={p.id} style={styles.simParamRow}>
                 <div style={styles.simParamHeader}>
@@ -658,7 +658,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
           })}
           <div style={styles.activeRow}>
             <div style={styles.fieldLabel}>Simulação ativa</div>
-            <div style={{ ...styles.toggle, background: simForm.active ? '#32C878' : 'rgba(255,255,255,.2)' }} onClick={()=>setSimForm(f=>({...f,active:!f.active}))}>
+            <div style={{ ...styles.toggle, background: simForm.active ? COLORS.status.saudavel.color : COLORS.border }} onClick={()=>setSimForm(f=>({...f,active:!f.active}))}>
               <div style={{ ...styles.toggleThumb, transform: simForm.active ? 'translateX(20px)' : 'translateX(2px)' }}/>
             </div>
           </div>
@@ -714,7 +714,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
           <div style={styles.fieldHint}>Usada só como referência visual pro aluno — este parâmetro nunca entra em nenhum cálculo do animal (saúde, física ou XP).</div>
           <div style={styles.activeRow}>
             <div style={styles.fieldLabel}>Parâmetro ativo</div>
-            <div style={{ ...styles.toggle, background: parametroForm.ativo ? '#32C878' : 'rgba(255,255,255,.2)' }} onClick={()=>setParametroForm(f=>({...f,ativo:!f.ativo}))}>
+            <div style={{ ...styles.toggle, background: parametroForm.ativo ? COLORS.status.saudavel.color : COLORS.border }} onClick={()=>setParametroForm(f=>({...f,ativo:!f.ativo}))}>
               <div style={{ ...styles.toggleThumb, transform: parametroForm.ativo ? 'translateX(20px)' : 'translateX(2px)' }}/>
             </div>
           </div>
@@ -764,7 +764,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
             🏫 Cada turma tem um código de acesso para alunos e um código separado para professores. Só quem tiver o código de professor consegue se cadastrar como professor dessa turma. Desafios, simulações e ranking ficam isolados por turma.
           </div>
           {turmasList.length === 0 ? (
-            <div style={{ margin:'0 1rem', background:'rgba(255,255,255,.08)', borderRadius:'14px', padding:'2rem', textAlign:'center', color:'rgba(255,255,255,.4)', fontSize:'13px' }}>
+            <div style={{ margin:'0 1rem', background:COLORS.surfaceMuted, borderRadius:'14px', padding:'2rem', textAlign:'center', color:COLORS.textMuted, fontSize:'13px' }}>
               Nenhuma turma cadastrada ainda.
             </div>
           ) : (
@@ -772,13 +772,13 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
               <div key={t.id} style={{...styles.challengeCard,...(!t.ativa?{opacity:.5}:{})}}>
                 <div style={styles.challengeTop}>
                   <div style={styles.challengeTitle}>🏫 {t.nome}</div>
-                  <span style={{...styles.metaTag, color: t.ativa?'#32C878':'rgba(255,255,255,.4)'}}>{t.ativa?'● Ativa':'○ Inativa'}</span>
+                  <span style={{...styles.metaTag, color: t.ativa?COLORS.status.saudavel.color:COLORS.textMuted}}>{t.ativa?'● Ativa':'○ Inativa'}</span>
                 </div>
                 <div style={styles.challengeMeta}>
                   <span style={styles.metaTag}>Código alunos: {t.codigo}</span>
                   {t.codigo_professor
                     ? <span style={styles.metaTag}>Código professor: {t.codigo_professor}</span>
-                    : <span style={{...styles.metaTag, color:'#E24B4A'}}>⚠️ Sem código de professor</span>}
+                    : <span style={{...styles.metaTag, color:COLORS.status.critico.color}}>⚠️ Sem código de professor</span>}
                 </div>
                 <div style={styles.challengeActions}>
                   <button style={styles.editBtn} onClick={()=>handleEditTurma(t)}>✏️ Editar</button>
@@ -794,9 +794,9 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
       {/* ── TAB DESAFIOS ── */}
       {tab==='desafios' && (
         <>
-          <div style={{ margin:'0 1rem .75rem', background:'rgba(100,149,237,.15)', border:'1px solid rgba(100,149,237,.3)', borderRadius:'14px', padding:'1rem' }}>
-            <div style={{ fontSize:'12px', fontWeight:'700', color:'white', marginBottom:'8px' }}>📋 Foco do Modo Sessão</div>
-            <div style={{ fontSize:'11px', color:'rgba(255,255,255,.65)', marginBottom:'10px', lineHeight:'1.4' }}>
+          <div style={{ margin:'0 1rem .75rem', background:COLORS.iconChipBg, borderRadius:'14px', padding:'1rem' }}>
+            <div style={{ ...FONT_SCALE.bodyBold, color:COLORS.textPrimary, marginBottom:'8px' }}>📋 Foco do Modo Sessão</div>
+            <div style={{ ...FONT_SCALE.label, color:COLORS.textMuted, marginBottom:'10px', lineHeight:'1.4' }}>
               No Modo Sessão, os alunos verão apenas os desafios ativos do foco selecionado.
             </div>
             <div style={{ display:'flex', gap:'8px' }}>
@@ -808,10 +808,10 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
                 <div key={opt.value}
                   style={{
                     flex:1, padding:'8px 4px', borderRadius:'10px', textAlign:'center', cursor:'pointer',
-                    fontSize:'11px', fontWeight:'600',
-                    background: sessaoFoco === opt.value ? 'rgba(255,255,255,.3)' : 'rgba(255,255,255,.1)',
-                    border: `1px solid ${sessaoFoco === opt.value ? 'rgba(255,255,255,.5)' : 'rgba(255,255,255,.2)'}`,
-                    color: sessaoFoco === opt.value ? 'white' : 'rgba(255,255,255,.6)',
+                    fontSize:'11px', fontWeight:'700',
+                    background: sessaoFoco === opt.value ? COLORS.indigo : COLORS.surface,
+                    border: `1px solid ${sessaoFoco === opt.value ? COLORS.indigo : COLORS.border}`,
+                    color: sessaoFoco === opt.value ? 'white' : COLORS.textMuted,
                   }}
                   onClick={() => {
                     setSessaoFoco(opt.value);
@@ -822,7 +822,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
                 </div>
               ))}
             </div>
-            <div style={{ fontSize:'10px', color:'rgba(255,255,255,.45)', marginTop:'8px' }}>
+            <div style={{ ...FONT_SCALE.caption, color:COLORS.textMuted, marginTop:'8px' }}>
               {challenges.filter(c => c.active && (sessaoFoco === 'todos' || c.focus === sessaoFoco)).length} desafio(s) ativo(s) neste foco
             </div>
           </div>
@@ -834,22 +834,22 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
             const faltamDesafios = desafiosDisponiveis < TAMANHO_RODADA;
 
             return (
-              <div style={{ margin:'0 1rem .75rem', background:'rgba(239,159,39,.15)', border:'1px solid rgba(239,159,39,.3)', borderRadius:'14px', padding:'1rem' }}>
-                <div style={{ fontSize:'12px', fontWeight:'700', color:'white', marginBottom:'8px' }}>🩺 Recuperação do Animal</div>
-                <div style={{ fontSize:'11px', color:'rgba(255,255,255,.65)', marginBottom:'12px', lineHeight:'1.4' }}>
+              <div style={{ margin:'0 1rem .75rem', background:COLORS.status.debilitado.soft, border:`1px solid ${COLORS.status.debilitado.color}`, borderRadius:'14px', padding:'1rem' }}>
+                <div style={{ ...FONT_SCALE.bodyBold, color:COLORS.textPrimary, marginBottom:'8px' }}>🩺 Recuperação do Animal</div>
+                <div style={{ ...FONT_SCALE.label, color:COLORS.textMuted, marginBottom:'12px', lineHeight:'1.4' }}>
                   Ajuste a intensidade e a quantidade de chances que o aluno tem para recuperar o animal de um estado crítico.
                 </div>
 
                 {faltamDesafios && (
-                  <div style={{ background:'rgba(220,60,60,.2)', border:'1px solid rgba(220,60,60,.4)', borderRadius:'10px', padding:'.6rem .75rem', marginBottom:'12px', fontSize:'11px', color:'white', lineHeight:'1.4' }}>
+                  <div style={{ background:COLORS.status.critico.soft, border:`1px solid ${COLORS.status.critico.color}`, borderRadius:'10px', padding:'.6rem .75rem', marginBottom:'12px', ...FONT_SCALE.label, color:COLORS.textPrimary, lineHeight:'1.4' }}>
                     ⚠️ São necessários pelo menos {TAMANHO_RODADA} desafios ativos neste foco para uma sessão completa funcionar. Atualmente: {desafiosDisponiveis}.
                   </div>
                 )}
 
                 <div style={{ marginBottom:'14px' }}>
-                  <div style={{ display:'flex', justifyContent:'space-between', fontSize:'11px', color:'rgba(255,255,255,.8)', marginBottom:'4px' }}>
+                  <div style={{ display:'flex', justifyContent:'space-between', ...FONT_SCALE.label, color:COLORS.textPrimary, marginBottom:'4px' }}>
                     <span>Multiplicador de recuperação</span>
-                    <span style={{ fontWeight:'700', color:'white' }}>{recuperacaoConfig.multiplicador}x</span>
+                    <span style={{ fontWeight:'800', color:COLORS.textPrimary }}>{recuperacaoConfig.multiplicador}x</span>
                   </div>
                   <input type="range" min="1" max="3" step="0.5" value={recuperacaoConfig.multiplicador}
                     onChange={e => {
@@ -857,13 +857,13 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
                       setRecuperacaoConfig(newConfig);
                       configuracoesApi.setRecuperacao(newConfig).catch(() => {});
                     }}
-                    style={{ width:'100%', accentColor:'white' }}/>
+                    style={{ width:'100%', accentColor:COLORS.indigo }}/>
                 </div>
 
                 <div>
-                  <div style={{ display:'flex', justifyContent:'space-between', fontSize:'11px', color:'rgba(255,255,255,.8)', marginBottom:'4px' }}>
+                  <div style={{ display:'flex', justifyContent:'space-between', ...FONT_SCALE.label, color:COLORS.textPrimary, marginBottom:'4px' }}>
                     <span>Voltas extras de desafios</span>
-                    <span style={{ fontWeight:'700', color:'white' }}>{recuperacaoConfig.desafios_extras}</span>
+                    <span style={{ fontWeight:'800', color:COLORS.textPrimary }}>{recuperacaoConfig.desafios_extras}</span>
                   </div>
                   <input type="range" min="0" max={Math.max(voltasMaxSemRepetir, 5)} step="1" value={recuperacaoConfig.desafios_extras}
                     onChange={e => {
@@ -871,8 +871,8 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
                       setRecuperacaoConfig(newConfig);
                       configuracoesApi.setRecuperacao(newConfig).catch(() => {});
                     }}
-                    style={{ width:'100%', accentColor:'white' }}/>
-                  <div style={{ fontSize:'10px', color:'rgba(255,255,255,.5)', marginTop:'4px' }}>
+                    style={{ width:'100%', accentColor:COLORS.indigo }}/>
+                  <div style={{ ...FONT_SCALE.caption, color:COLORS.textMuted, marginTop:'4px' }}>
                     {voltasMaxSemRepetir > 0
                       ? `Máximo sem repetir desafios: ${voltasMaxSemRepetir} volta(s), com ${desafiosDisponiveis} desafios cadastrados.`
                       : `Com ${desafiosDisponiveis} desafio(s) cadastrado(s), qualquer volta extra vai repetir os mesmos desafios.`}
@@ -896,12 +896,12 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
                 <span style={styles.metaTag}>🏫 {nomeTurma(ch.turma_id)}</span>
                 <span style={styles.metaTag}>{focusLabel[ch.focus]}</span>
                 <span style={styles.metaTag}>{INTERVENTIONS[ch.intervencao]?.label}</span>
-                <span style={{...styles.metaTag, color: ch.active?'#32C878':'rgba(255,255,255,.4)'}}>{ch.active?'● Ativo':'○ Inativo'}</span>
+                <span style={{...styles.metaTag, color: ch.active?COLORS.status.saudavel.color:COLORS.textMuted}}>{ch.active?'● Ativo':'○ Inativo'}</span>
               </div>
               <div style={styles.challengeQ}>{ch.question}</div>
               <div style={styles.challengeOpts}>
                 {ch.options.map((opt,i)=>(
-                  <div key={i} style={{...styles.challengeOpt,...(ch.correct===i?{color:'#32C878',fontWeight:'600'}:{})}}>
+                  <div key={i} style={{...styles.challengeOpt,...(ch.correct===i?{color:COLORS.status.saudavel.color,fontWeight:'700'}:{})}}>
                     {String.fromCharCode(65+i)}. {opt} {ch.correct===i?'✓':''}
                   </div>
                 ))}
@@ -928,10 +928,10 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
             🔬 Crie cenários fisiológicos alterados. Ao clicar em <strong>🚀 Lançar para Turma</strong>, os parâmetros do animal de todos os alunos serão atualizados. Cada simulação tem sua própria quantidade de cuidados liberados, definida ao criar/editar.
           </div>
           {simulations.map(sim=>(
-            <div key={sim.id} style={{...styles.challengeCard, border: sim.active ? '1px solid rgba(255,200,50,.5)' : '1px solid rgba(255,255,255,.18)'}}>
+            <div key={sim.id} style={{...styles.challengeCard, border: sim.active ? `1px solid ${COLORS.status.debilitado.color}` : `1px solid ${COLORS.border}`}}>
               <div style={styles.challengeTop}>
                 <div style={styles.challengeTitle}>🔬 {sim.title}</div>
-                <span style={{...styles.metaTag, color: sim.active?'#FFD700':'rgba(255,255,255,.4)', fontWeight:'700'}}>{sim.active?'● ATIVA':'○ Inativa'}</span>
+                <span style={{...styles.metaTag, color: sim.active?COLORS.status.debilitado.color:COLORS.textMuted, fontWeight:'700'}}>{sim.active?'● ATIVA':'○ Inativa'}</span>
               </div>
               <div style={styles.challengeMeta}>
                 <span style={styles.metaTag}>🏫 {nomeTurma(sim.turma_id)}</span>
@@ -944,7 +944,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
                   const val = sim.params[p.id];
                   const inRange = val >= p.normal[0] && val <= p.normal[1];
                   return (
-                    <div key={p.id} style={{ ...styles.simPreviewTag, color: inRange ? '#32C878' : '#E24B4A' }}>
+                    <div key={p.id} style={{ ...styles.simPreviewTag, color: inRange ? COLORS.status.saudavel.color : COLORS.status.critico.color }}>
                       {p.icon} {Math.round(val)}
                     </div>
                   );
@@ -971,11 +971,11 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
                 const paramsAtivos = parametrosList.filter(p => p.ativo);
                 const faltaPreencher = paramsAtivos.some(p => valoresLancamento[p.id] === undefined || valoresLancamento[p.id] === '');
                 return (
-                  <div style={{ marginTop:'10px', padding:'10px', background:'rgba(255,255,255,.06)', borderRadius:'10px' }}>
+                  <div style={{ marginTop:'10px', padding:'10px', background:COLORS.surfaceMuted, borderRadius:'10px' }}>
                     <div style={styles.fieldLabel}>Valores desta sessão</div>
                     {paramsAtivos.map(p => (
                       <div key={p.id} style={{ marginBottom:'8px' }}>
-                        <div style={{ fontSize:'11px', color:'rgba(255,255,255,.7)', marginBottom:'4px' }}>
+                        <div style={{ ...FONT_SCALE.label, color:COLORS.textMuted, marginBottom:'4px' }}>
                           {p.nome}{p.unidade ? ` (${p.unidade})` : ''} · esperado {p.valor_min}–{p.valor_max}
                         </div>
                         <input type="number" style={styles.input} value={valoresLancamento[p.id] ?? ''}
@@ -1014,7 +1014,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
             📊 Parâmetros extras pra acompanhar durante a simulação — só exibição, não afetam saúde, física ou XP. Antes de lançar uma simulação, você digita o valor daquela sessão pra cada parâmetro ativo.
           </div>
           {parametrosList.length === 0 ? (
-            <div style={{ margin:'0 1rem', background:'rgba(255,255,255,.08)', borderRadius:'14px', padding:'2rem', textAlign:'center', color:'rgba(255,255,255,.4)', fontSize:'13px' }}>
+            <div style={{ margin:'0 1rem', background:COLORS.surfaceMuted, borderRadius:'14px', padding:'2rem', textAlign:'center', color:COLORS.textMuted, fontSize:'13px' }}>
               Nenhum parâmetro customizado cadastrado ainda.
             </div>
           ) : (
@@ -1022,7 +1022,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
               <div key={p.id} style={{...styles.challengeCard,...(!p.ativo?{opacity:.5}:{})}}>
                 <div style={styles.challengeTop}>
                   <div style={styles.challengeTitle}>📊 {p.nome}</div>
-                  <span style={{...styles.metaTag, color: p.ativo?'#32C878':'rgba(255,255,255,.4)'}}>{p.ativo?'● Ativo':'○ Inativo'}</span>
+                  <span style={{...styles.metaTag, color: p.ativo?COLORS.status.saudavel.color:COLORS.textMuted}}>{p.ativo?'● Ativo':'○ Inativo'}</span>
                 </div>
                 <div style={styles.challengeMeta}>
                   {p.unidade && <span style={styles.metaTag}>Unidade: {p.unidade}</span>}
@@ -1060,11 +1060,11 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
 
           {/* Status de atualização */}
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 1rem .5rem' }}>
-            <div style={{ fontSize:'10px', color:'rgba(255,255,255,.4)' }}>
+            <div style={{ ...FONT_SCALE.caption, color:COLORS.textMuted }}>
               {lastUpdate ? `Atualizado às ${lastUpdate}` : 'Carregando...'}
             </div>
             <button
-              style={{ fontSize:'10px', background:'rgba(255,255,255,.15)', border:'1px solid rgba(255,255,255,.25)', color:'white', padding:'3px 10px', borderRadius:'10px', cursor:'pointer', fontFamily:'inherit' }}
+              style={{ ...FONT_SCALE.caption, background:COLORS.surfaceMuted, border:`1px solid ${COLORS.border}`, color:COLORS.textPrimary, padding:'3px 10px', borderRadius:'10px', cursor:'pointer', fontFamily:'inherit' }}
               onClick={fetchStudents}
             >
               🔄 Atualizar
@@ -1074,34 +1074,36 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
           {/* Ranking */}
           <div style={styles.sectionTitle}>🏆 ranking da simulação atual</div>
           {students.length === 0 ? (
-            <div style={{ margin:'0 1rem', background:'rgba(255,255,255,.08)', borderRadius:'14px', padding:'2rem', textAlign:'center', color:'rgba(255,255,255,.4)', fontSize:'13px' }}>
+            <div style={{ margin:'0 1rem', background:COLORS.surfaceMuted, borderRadius:'14px', padding:'2rem', textAlign:'center', color:COLORS.textMuted, fontSize:'13px' }}>
               Nenhum aluno no ranking ainda.<br/>Use 🗑️ Zerar e 🚀 Lançar para começar uma nova simulação.
             </div>
           ) : (
             students.map((student, idx) => {
               const xp = Number(student.xp_total || 0);
               const saude = Number(student.media_saude || 0);
-              const saudeColor = saude >= 75 ? '#32C878' : saude >= 40 ? '#EF9F27' : '#E24B4A';
+              const saudeColor = saude >= 75 ? COLORS.status.saudavel.color : saude >= 40 ? COLORS.status.debilitado.color : COLORS.status.critico.color;
               const medal = MEDAL[idx] || `#${idx+1}`;
+              const medalColor = idx === 0 ? '#E8A83C' : idx === 1 ? '#9599B8' : '#C07A45';
               return (
                 <div key={student.id} style={{
                   margin:'0 1rem .5rem',
-                  background: idx === 0 ? 'rgba(255,215,0,.15)' : idx === 1 ? 'rgba(192,192,192,.12)' : idx === 2 ? 'rgba(205,127,50,.12)' : 'rgba(255,255,255,.08)',
-                  border: idx === 0 ? '1px solid rgba(255,215,0,.4)' : '1px solid rgba(255,255,255,.12)',
+                  background: COLORS.surface,
+                  boxShadow: SHADOW_CARD,
+                  borderLeft: idx < 3 ? `4px solid ${medalColor}` : `4px solid transparent`,
                   borderRadius:'12px', padding:'.75rem 1rem',
                   display:'flex', alignItems:'center', gap:'12px',
                 }}>
-                  <div style={{ fontSize: idx < 3 ? '22px' : '14px', fontWeight:'700', color:'white', width:'28px', textAlign:'center' }}>{medal}</div>
+                  <div style={{ fontSize: idx < 3 ? '22px' : '14px', fontWeight:'800', color:COLORS.textPrimary, width:'28px', textAlign:'center' }}>{medal}</div>
                   <div style={{ flex:1 }}>
-                    <div style={{ fontSize:'13px', fontWeight:'700', color:'white' }}>{student.nome}</div>
-                    <div style={{ fontSize:'10px', color:'rgba(255,255,255,.45)', marginTop:'2px' }}>{student.matricula} · {student.sessoes} sessão(ões)</div>
+                    <div style={{ ...FONT_SCALE.bodyBold, color:COLORS.textPrimary }}>{student.nome}</div>
+                    <div style={{ ...FONT_SCALE.caption, color:COLORS.textMuted, marginTop:'2px' }}>{student.matricula} · {student.sessoes} sessão(ões)</div>
                   </div>
                   <div style={{ textAlign:'right' }}>
-                    <div style={{ fontSize:'16px', fontWeight:'700', color:'#FFD700' }}>⭐ {xp}</div>
-                    <div style={{ fontSize:'10px', color: saudeColor, fontWeight:'600' }}>❤️ {saude.toFixed(0)}%</div>
+                    <div style={{ fontSize:'16px', fontWeight:'800', color:'#E8A83C' }}>⭐ {xp}</div>
+                    <div style={{ fontSize:'10px', color: saudeColor, fontWeight:'700' }}>❤️ {saude.toFixed(0)}%</div>
                   </div>
                   <div style={{ textAlign:'right', minWidth:'52px' }}>
-                    <div style={{ fontSize:'9px', color:'rgba(255,255,255,.4)', marginBottom:'2px' }}>nota</div>
+                    <div style={{ ...FONT_SCALE.caption, color:COLORS.textMuted, marginBottom:'2px' }}>nota</div>
                     <input style={styles.notaInput} type="number" min="0" max="10" step="0.1"
                       value={manualGrades[student.id] || ''}
                       onChange={e=>setManualGrades(g=>({...g,[student.id]:Number(e.target.value)}))}
@@ -1117,12 +1119,12 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
                   </div>
                   <button
                     onClick={() => handleResetarSenhaAluno(student.id, student.nome)}
-                    style={{ background:'rgba(100,149,237,.2)', border:'1px solid rgba(100,149,237,.3)', color:'#85B7EB', borderRadius:'8px', padding:'4px 8px', cursor:'pointer', fontSize:'12px', fontFamily:'inherit' }}
+                    style={{ background:COLORS.iconChipBg, border:`1px solid ${COLORS.border}`, color:COLORS.blue, borderRadius:'8px', padding:'4px 8px', cursor:'pointer', fontSize:'12px', fontFamily:'inherit' }}
                     title="Resetar senha"
                   >🔑</button>
                   <button
                     onClick={() => handleDeletarAluno(student.id, student.nome)}
-                    style={{ background:'rgba(220,60,60,.2)', border:'1px solid rgba(220,60,60,.3)', color:'#FF8080', borderRadius:'8px', padding:'4px 8px', cursor:'pointer', fontSize:'12px', fontFamily:'inherit' }}
+                    style={{ background:COLORS.status.critico.soft, border:`1px solid ${COLORS.status.critico.color}`, color:COLORS.status.critico.color, borderRadius:'8px', padding:'4px 8px', cursor:'pointer', fontSize:'12px', fontFamily:'inherit' }}
                     title="Remover aluno"
                   >🗑️</button>
                 </div>
@@ -1141,7 +1143,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
             📝 Esta lista é ordenada pela nota final que você lançou para cada aluno (independente do XP/ranking do jogo). Alunos sem nota lançada aparecem por último.
           </div>
           {students.length === 0 ? (
-            <div style={{ margin:'0 1rem', background:'rgba(255,255,255,.08)', borderRadius:'14px', padding:'2rem', textAlign:'center', color:'rgba(255,255,255,.4)', fontSize:'13px' }}>
+            <div style={{ margin:'0 1rem', background:COLORS.surfaceMuted, borderRadius:'14px', padding:'2rem', textAlign:'center', color:COLORS.textMuted, fontSize:'13px' }}>
               Nenhum aluno cadastrado ainda.
             </div>
           ) : (
@@ -1162,23 +1164,24 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
                 return (
                   <div key={student.id} style={{
                     margin:'0 1rem .5rem',
-                    background: idx === 0 && temNota ? 'rgba(255,215,0,.15)' : 'rgba(255,255,255,.08)',
-                    border: idx === 0 && temNota ? '1px solid rgba(255,215,0,.4)' : '1px solid rgba(255,255,255,.12)',
+                    background: COLORS.surface,
+                    boxShadow: SHADOW_CARD,
+                    borderLeft: idx === 0 && temNota ? '4px solid #E8A83C' : '4px solid transparent',
                     borderRadius:'12px', padding:'.75rem 1rem',
                     display:'flex', alignItems:'center', gap:'12px',
                   }}>
-                    <div style={{ fontSize:'14px', fontWeight:'700', color:'white', width:'24px', textAlign:'center' }}>
+                    <div style={{ fontSize:'14px', fontWeight:'800', color:COLORS.textPrimary, width:'24px', textAlign:'center' }}>
                       {temNota ? idx + 1 : '—'}
                     </div>
                     <div style={{ flex:1 }}>
-                      <div style={{ fontSize:'13px', fontWeight:'700', color:'white' }}>{student.nome}</div>
-                      <div style={{ fontSize:'10px', color:'rgba(255,255,255,.45)', marginTop:'2px' }}>{student.matricula}</div>
+                      <div style={{ ...FONT_SCALE.bodyBold, color:COLORS.textPrimary }}>{student.nome}</div>
+                      <div style={{ ...FONT_SCALE.caption, color:COLORS.textMuted, marginTop:'2px' }}>{student.matricula}</div>
                     </div>
                     <div style={{ textAlign:'right' }}>
                       {temNota ? (
-                        <div style={{ fontSize:'18px', fontWeight:'700', color:'#FFD700' }}>{Number(nota).toFixed(1)}</div>
+                        <div style={{ fontSize:'18px', fontWeight:'800', color:'#E8A83C' }}>{Number(nota).toFixed(1)}</div>
                       ) : (
-                        <div style={{ fontSize:'11px', color:'rgba(255,255,255,.4)', fontStyle:'italic' }}>Sem nota</div>
+                        <div style={{ ...FONT_SCALE.label, color:COLORS.textMuted, fontStyle:'italic' }}>Sem nota</div>
                       )}
                     </div>
                   </div>
@@ -1241,7 +1244,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
             );
           })}
           <div style={{ margin:'0 1rem .5rem', display:'flex', flexDirection:'column', gap:'8px' }}>
-            <button style={{ ...styles.newBtn, width:'100%', padding:'10px', borderRadius:'10px', background:'#32C878', color:'white' }}
+            <button style={{ ...styles.newBtn, width:'100%', padding:'10px', borderRadius:'10px', background:COLORS.status.saudavel.color, color:'white' }}
               onClick={async () => {
                 try {
                   await req('/api/mensagens', {
@@ -1273,7 +1276,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
             🐭 Configure quantos dias dura cada fase do animal.
           </div>
           <div style={styles.challengeCard}>
-            <div style={{ fontSize:'13px', fontWeight:'700', color:'white', marginBottom:'12px' }}>📅 Idade atual do animal</div>
+            <div style={{ ...FONT_SCALE.bodyBold, color:COLORS.textPrimary, marginBottom:'12px' }}>📅 Idade atual do animal</div>
             <div style={{ display:'flex', alignItems:'center', gap:'12px', marginBottom:'8px' }}>
               <input type="range" min="0" max="365" step="1" value={ageDays || 90}
                 onChange={async e => {
@@ -1283,19 +1286,19 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
                     await req('/api/animal/age', { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ age_days: newAge }) });
                   } catch(e) {}
                 }}
-                style={{ flex:1, accentColor:'white' }}
+                style={{ flex:1, accentColor:COLORS.indigo }}
               />
-              <div style={{ fontSize:'16px', fontWeight:'700', color:'white', width:'60px', textAlign:'right' }}>{ageDays || 90} dias</div>
+              <div style={{ fontSize:'16px', fontWeight:'800', color:COLORS.textPrimary, width:'60px', textAlign:'right' }}>{ageDays || 90} dias</div>
             </div>
             <div style={{ display:'flex', gap:'6px' }}>
               {[
-                { label:'🐣 Recém-nascido', days:10,  color:'#FFD700' },
-                { label:'🐭 Juvenil',       days:90,  color:'#85B7EB' },
-                { label:'🐀 Adulto',        days:200, color:'#32C878' },
+                { label:'🐣 Recém-nascido', days:10,  color:'#E8A83C' },
+                { label:'🐭 Juvenil',       days:90,  color:COLORS.blue },
+                { label:'🐀 Adulto',        days:200, color:COLORS.status.saudavel.color },
                 { label:'🦳 Idoso',         days:600, color:'#9B59B6' },
               ].map(preset => (
                 <div key={preset.days}
-                  style={{ flex:1, background:`${preset.color}22`, border:`1px solid ${preset.color}55`, borderRadius:'8px', padding:'6px 4px', textAlign:'center', cursor:'pointer', fontSize:'10px', color:'white' }}
+                  style={{ flex:1, background:`${preset.color}22`, border:`1px solid ${preset.color}55`, borderRadius:'8px', padding:'6px 4px', textAlign:'center', cursor:'pointer', fontSize:'10px', fontWeight:'700', color:COLORS.textPrimary }}
                   onClick={async () => {
                     if (setAgeDays) setAgeDays(preset.days);
                     try {
@@ -1309,18 +1312,18 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
             </div>
           </div>
           <div style={styles.challengeCard}>
-            <div style={{ fontSize:'13px', fontWeight:'700', color:'white', marginBottom:'8px' }}>📋 Fases e limites</div>
+            <div style={{ ...FONT_SCALE.bodyBold, color:COLORS.textPrimary, marginBottom:'8px' }}>📋 Fases e limites</div>
             {[
-              { icon:'🐣', label:'Recém-nascido', range:'0–30 dias',    color:'#FFD700', desc:'Cabeça grande, sem cauda, olhos enormes' },
-              { icon:'🐭', label:'Juvenil',       range:'31–180 dias',  color:'#85B7EB', desc:'Tamanho médio, orelhas maiores, braços aparecem' },
-              { icon:'🐀', label:'Adulto',        range:'181–540 dias', color:'#32C878', desc:'Tamanho completo, bigodes visíveis, cauda longa' },
+              { icon:'🐣', label:'Recém-nascido', range:'0–30 dias',    color:'#E8A83C', desc:'Cabeça grande, sem cauda, olhos enormes' },
+              { icon:'🐭', label:'Juvenil',       range:'31–180 dias',  color:COLORS.blue, desc:'Tamanho médio, orelhas maiores, braços aparecem' },
+              { icon:'🐀', label:'Adulto',        range:'181–540 dias', color:COLORS.status.saudavel.color, desc:'Tamanho completo, bigodes visíveis, cauda longa' },
               { icon:'🦳', label:'Idoso',         range:'541+ dias',    color:'#9B59B6', desc:'Maior vulnerabilidade fisiológica, menor capacidade compensatória' },
             ].map(fase => (
               <div key={fase.label} style={{ display:'flex', gap:'10px', alignItems:'flex-start', marginBottom:'10px' }}>
                 <div style={{ fontSize:'20px' }}>{fase.icon}</div>
                 <div style={{ flex:1 }}>
                   <div style={{ fontSize:'12px', fontWeight:'700', color: fase.color }}>{fase.label} – {fase.range}</div>
-                  <div style={{ fontSize:'10px', color:'rgba(255,255,255,.6)', marginTop:'2px' }}>{fase.desc}</div>
+                  <div style={{ ...FONT_SCALE.caption, color:COLORS.textMuted, marginTop:'2px' }}>{fase.desc}</div>
                 </div>
               </div>
             ))}
