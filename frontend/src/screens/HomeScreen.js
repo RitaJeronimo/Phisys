@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { animal as animalApi, simulacoes as simulacoesApi } from '../api';
 import { PRIMARY_PARAMS, calcularSaude, calcularEnergiaModulada, getAgePANormal, getAgeStage, getMascotStatus, STATUS, DAILY_CARES } from '../engine/mascotEngine';
 import { COLORS, FONT_FAMILY, SHADOW_CARD, FONT_SCALE } from '../theme';
+import { MASCOT_IMAGES } from '../assets/mascote';
 
 // ─── FASES DE CRESCIMENTO ────────────────────────────────────────────────
 export const GROWTH_STAGES = {
@@ -273,10 +274,11 @@ function StatusCard({ saude, status, stage, onOpenSaude }) {
   const statusLabel = status === STATUS.SAUDAVEL ? 'Saudável' : status === STATUS.DEBILITADO ? 'Debilitado' : 'Crítico';
   return (
     <div style={styles.statusCard}>
-      <div style={styles.mascotPlaceholder}>
-        <div style={styles.mascotEmoji}>🐭</div>
-        <div style={styles.mascotCaption}>mascote em breve</div>
-      </div>
+      <img
+        src={MASCOT_IMAGES[stage.id][status]}
+        alt={`Phisys — ${stage.label}, ${statusLabel}`}
+        style={styles.mascotImage}
+      />
 
       <div style={{ cursor:'pointer' }} onClick={onOpenSaude} title="Sobre a Homeostase">
         <HomeostaseRing pct={saude}/>
@@ -585,12 +587,7 @@ const styles = {
 
   statusCard:       { background:'#FFFFFF', borderRadius:'28px', padding:'18px 15px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:'8px', boxShadow:'0 2px 6px rgba(43,43,118,.06), 0 10px 24px rgba(43,43,118,.09)' },
 
-  mascotPlaceholder:{ width:'104px', height:'104px', borderRadius:'20px', border:`2px dashed ${COLORS.borderDashed}`, background:COLORS.surfaceMuted, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'3px', flexShrink:0,
-                       // preparado pra receber a foto real da mascote (object-fit: contain) -
-                       // ver frontend/src/assets/mascote quando as 12 imagens estiverem prontas
-                     },
-  mascotEmoji:      { fontSize:'32px', lineHeight:1 },
-  mascotCaption:    { fontSize:'7.5px', fontWeight:'800', letterSpacing:'.03em', textTransform:'uppercase', color:COLORS.textMuted, textAlign:'center', padding:'0 4px', lineHeight:1.3 },
+  mascotImage:      { width:'104px', height:'104px', objectFit:'contain', borderRadius:'20px', flexShrink:0 },
 
   ringWrap:         { position:'relative', width:'128px', height:'128px', flexShrink:0 },
   ringCenter:       { position:'absolute', inset:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'3px' },
