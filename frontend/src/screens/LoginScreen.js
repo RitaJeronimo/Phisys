@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { auth, setToken, turmas } from "../api";
-import { COLORS, FONT_FAMILY } from "../theme";
+import { COLORS, FONT_FAMILY, FONT_SCALE } from "../theme";
 
 function ChibiMascot({ size = 76 }) {
   return (
@@ -109,19 +109,19 @@ function LoginScreen({ onLogin }) {
   const s = {
     wrap: { display:"flex", justifyContent:"center", alignItems:"center", minHeight:"100vh", background:COLORS.bg, padding:"2rem 1rem", boxSizing:"border-box", fontFamily:FONT_FAMILY },
     card: { background:COLORS.surface, borderRadius:"26px", padding:"2.5rem 2rem", width:"100%", maxWidth:"370px", display:"flex", flexDirection:"column", alignItems:"center", gap:"1.25rem", boxShadow:"0 10px 30px rgba(43,43,118,.25)", margin:"0 auto", boxSizing:"border-box" },
-    brandName: { fontSize:"34px", fontWeight:"800", fontFamily:FONT_FAMILY, color:COLORS.textPrimary },
-    brandSub: { fontSize:"11px", letterSpacing:"0.08em", textTransform:"uppercase", color:COLORS.textMuted, fontWeight:"700" },
+    brandName: { ...FONT_SCALE.display, fontFamily:FONT_FAMILY, color:COLORS.textPrimary },
+    brandSub: { ...FONT_SCALE.label, letterSpacing:"0.08em", textTransform:"uppercase", color:COLORS.textMuted },
     divider: { width:"100%", height:"2px", borderRadius:"2px", background:COLORS.border },
     modeToggle: { display:"flex", gap:"8px", width:"100%" },
-    modeBtn: { flex:1, padding:"9px", borderRadius:"10px", fontSize:"12px", fontWeight:"600", cursor:"pointer", fontFamily:"inherit" },
+    modeBtn: { flex:1, padding:"9px", borderRadius:"10px", ...FONT_SCALE.body, cursor:"pointer", fontFamily:"inherit" },
     modeBtnActive: { background:COLORS.indigo, color:"white", border:`1.5px solid ${COLORS.indigo}`, fontWeight:"800" },
     modeBtnInactive: { border:`1.5px solid ${COLORS.border}`, background:"transparent", color:COLORS.textMuted },
     formGroup: { width:"100%", display:"flex", flexDirection:"column", gap:"0.4rem", boxSizing:"border-box" },
-    label: { fontSize:"11px", color:COLORS.textMuted, letterSpacing:"0.05em", textTransform:"uppercase", fontWeight:"700" },
+    label: { ...FONT_SCALE.label, color:COLORS.textMuted, letterSpacing:"0.05em", textTransform:"uppercase" },
     input: { width:"100%", padding:"11px 14px", borderRadius:"10px", fontSize:"14px", border:`1.5px solid ${COLORS.border}`, background:COLORS.surfaceMuted, color:COLORS.textPrimary, fontFamily:"inherit", outline:"none", boxSizing:"border-box" },
-    error: { width:"100%", fontSize:"12px", color:COLORS.status.critico.color, backgroundColor:COLORS.status.critico.soft, border:`1.5px solid ${COLORS.status.critico.color}`, borderRadius:"10px", padding:"8px 12px" },
+    error: { width:"100%", ...FONT_SCALE.body, color:COLORS.status.critico.color, backgroundColor:COLORS.status.critico.soft, border:`1.5px solid ${COLORS.status.critico.color}`, borderRadius:"10px", padding:"8px 12px" },
     submitBtn: { width:"100%", padding:"13px", borderRadius:"12px", border:"none", backgroundColor:COLORS.indigo, color:"white", fontSize:"14px", fontWeight:"800", cursor:"pointer", fontFamily:"inherit" },
-    footerNote: { fontSize:"10px", color:COLORS.textMuted, textAlign:"center", lineHeight:"1.6" },
+    footerNote: { ...FONT_SCALE.caption, color:COLORS.textMuted, textAlign:"center", lineHeight:"1.6" },
   };
 
   return (
@@ -133,7 +133,7 @@ function LoginScreen({ onLogin }) {
         <div style={s.divider}/>
         {showReset ? (
           <>
-            <div style={{ fontSize:'12px', color:COLORS.textMuted, textAlign:'center', lineHeight:'1.5' }}>
+            <div style={{ ...FONT_SCALE.body, color:COLORS.textMuted, textAlign:'center', lineHeight:'1.5' }}>
               Peça ao seu professor o código de 6 dígitos mostrado em sala e defina uma senha nova.
             </div>
             <div style={s.formGroup}>
@@ -150,7 +150,7 @@ function LoginScreen({ onLogin }) {
             </div>
             {resetError?<div style={s.error}>{resetError}</div>:null}
             <button style={{...s.submitBtn,opacity:resetLoading?0.7:1}} onClick={handleResetSubmit} disabled={resetLoading}>{resetLoading?"Enviando...":"Definir nova senha"}</button>
-            <div style={{ fontSize:'11px', color:COLORS.indigo, cursor:'pointer', textDecoration:'underline', fontWeight:'600' }} onClick={() => { setShowReset(false); setResetError(''); }}>Voltar para o login</div>
+            <div style={{ ...FONT_SCALE.label, color:COLORS.indigo, cursor:'pointer', textDecoration:'underline' }} onClick={() => { setShowReset(false); setResetError(''); }}>Voltar para o login</div>
           </>
         ) : (
           <>
@@ -179,7 +179,7 @@ function LoginScreen({ onLogin }) {
             {error?<div style={s.error}>{error}</div>:null}
             <button style={{...s.submitBtn,opacity:loading?0.7:1}} onClick={handleSubmit} disabled={loading}>{loading?"Entrando...":"Entrar no Phisys"}</button>
             {mode==="aluno" && (
-              <div style={{ fontSize:'11px', color:COLORS.indigo, cursor:'pointer', textDecoration:'underline', fontWeight:'600' }} onClick={() => { setShowReset(true); setError(''); }}>Esqueceu a senha?</div>
+              <div style={{ ...FONT_SCALE.label, color:COLORS.indigo, cursor:'pointer', textDecoration:'underline' }} onClick={() => { setShowReset(true); setError(''); }}>Esqueceu a senha?</div>
             )}
           </>
         )}
