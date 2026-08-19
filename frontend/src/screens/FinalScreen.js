@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { calculateFinalGrade } from '../engine/mascotEngine';
 import { configuracoes as configuracoesApi } from '../api';
-import { COLORS, FONT_FAMILY, SHADOW_CARD } from '../theme';
+import { COLORS, FONT_FAMILY, SHADOW_CARD, FONT_SCALE } from '../theme';
 
 function FinalScreen({ user, score, saude, seconds, solvedChallenges, totalChallenges, errors, paramHistory, onBack }) {
 
@@ -131,7 +131,7 @@ function FinalScreen({ user, score, saude, seconds, solvedChallenges, totalChall
       {/* GRÁFICO DE EVOLUÇÃO */}
       <div style={styles.sectionLabel}>evolucao dos parametros</div>
       <div style={styles.chartCard}>
-        <div style={{ fontSize:'10px', color:COLORS.textMuted, textAlign:'center', marginBottom:'4px', fontWeight:'600' }}>
+        <div style={{ ...FONT_SCALE.caption, color:COLORS.textMuted, textAlign:'center', marginBottom:'4px' }}>
           Valores normalizados em % do máximo fisiológico de cada parâmetro
         </div>
         <svg width={chartW} height={chartH}>
@@ -195,25 +195,25 @@ function FinalScreen({ user, score, saude, seconds, solvedChallenges, totalChall
 const styles = {
   screen:       { width:'100%', minHeight:'100vh', display:'flex', flexDirection:'column', background:COLORS.surface, margin:'0 auto', overflowX:'hidden', fontFamily:FONT_FAMILY, color:COLORS.textPrimary },
   topbar:       { background:COLORS.bg, padding:'1.5rem 1rem 1rem', display:'flex', justifyContent:'center' },
-  title:        { fontSize:'20px', fontWeight:'800', color:'white' },
+  title:        { ...FONT_SCALE.heading, color:'white' },
   msgCard:      { margin:'0 1rem .75rem', background:COLORS.surfaceMuted, border:`1px solid ${COLORS.border}`, borderRadius:'16px', padding:'1rem' },
-  msgText:      { fontSize:'13px', color:COLORS.textPrimary, lineHeight:'1.6', textAlign:'center', fontWeight:'600' },
+  msgText:      { ...FONT_SCALE.bodyBold, color:COLORS.textPrimary, lineHeight:'1.6', textAlign:'center' },
   summaryGrid:  { margin:'0 1rem .75rem', display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'8px' },
   summaryCard:  { background:COLORS.surface, boxShadow:SHADOW_CARD, borderRadius:'14px', padding:'.875rem .5rem', display:'flex', flexDirection:'column', alignItems:'center', gap:'4px' },
   summaryIcon:  { fontSize:'20px' },
-  summaryVal:   { fontSize:'18px', fontWeight:'800', color:COLORS.indigo },
-  summaryLbl:   { fontSize:'9px', color:COLORS.textMuted, textTransform:'uppercase', letterSpacing:'.05em', textAlign:'center', fontWeight:'700' },
-  sectionLabel: { padding:'.25rem 1rem', fontSize:'10px', color:COLORS.textMuted, letterSpacing:'.08em', textTransform:'uppercase', fontWeight:'700' },
+  summaryVal:   { ...FONT_SCALE.value, color:COLORS.indigo },
+  summaryLbl:   { ...FONT_SCALE.caption, color:COLORS.textMuted, textTransform:'uppercase', letterSpacing:'.05em', textAlign:'center' },
+  sectionLabel: { padding:'.25rem 1rem', ...FONT_SCALE.label, color:COLORS.textMuted, letterSpacing:'.08em', textTransform:'uppercase' },
   perfCard:     { margin:'0 1rem .75rem', background:COLORS.surface, boxShadow:SHADOW_CARD, borderRadius:'14px', padding:'1rem' },
   perfRow:      { display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'8px' },
-  perfLabel:    { fontSize:'12px', color:COLORS.textMuted, fontWeight:'600' },
-  perfVal:      { fontSize:'13px', fontWeight:'800', color:COLORS.textPrimary },
+  perfLabel:    { ...FONT_SCALE.body, color:COLORS.textMuted },
+  perfVal:      { ...FONT_SCALE.bodyBold, color:COLORS.textPrimary },
   perfBarWrap:  { height:'6px', background:COLORS.border, borderRadius:'3px', overflow:'hidden' },
   perfBar:      { height:'100%', borderRadius:'3px', transition:'width .3s' },
   chartCard:    { margin:'0 1rem .75rem', background:COLORS.surface, boxShadow:SHADOW_CARD, borderRadius:'14px', padding:'1rem', overflowX:'auto' },
   chartLegend:  { display:'flex', flexWrap:'wrap', gap:'8px', marginTop:'8px', justifyContent:'center' },
   legendItem:   { display:'flex', alignItems:'center', gap:'4px' },
-  legendLabel:  { fontSize:'10px', color:COLORS.textMuted, fontWeight:'600' },
+  legendLabel:  { ...FONT_SCALE.caption, color:COLORS.textMuted },
   backBtn:      { width:'100%', padding:'13px', borderRadius:'12px', border:'none', background:COLORS.indigo, color:'white', fontSize:'14px', fontWeight:'800', cursor:'pointer', fontFamily:'inherit' },
 };
 
