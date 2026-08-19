@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { PARAMS, getDefaultValues, getMascotStatus, calculateFinalGrade, STATUS, calcularSaude, calcularEnergiaModulada, embaralharArray } from '../engine/mascotEngine';
 import { ranking as rankingApi, getToken, desafios as desafiosApi, configuracoes as configuracoesApi, simulacoes as simulacoesApi } from '../api';
+import { COLORS, FONT_FAMILY, SHADOW_CARD } from '../theme';
 
 const MOCK_CHALLENGES = [
   {
@@ -423,7 +424,7 @@ useEffect(() => {
   if (loadingChallenges) {
     return (
       <div style={{ ...styles.screen, justifyContent:'center', alignItems:'center' }}>
-        <div style={{ color:'white', fontSize:'16px', fontWeight:'600' }}>Carregando desafios...</div>
+        <div style={{ color:COLORS.textMuted, fontSize:'16px', fontWeight:'700' }}>Carregando desafios...</div>
       </div>
     );
   }
@@ -451,12 +452,12 @@ useEffect(() => {
       <div className="app-screen" style={styles.screen}>
         <div style={{ padding:'3rem 1.5rem', display:'flex', flexDirection:'column', alignItems:'center', gap:'1.5rem' }}>
           <ChibiMascot status={STATUS.SAUDAVEL} size={90}/>
-          <div style={{ fontSize:'22px', fontWeight:'700', color:'white', textAlign:'center' }}>Sessão concluída!</div>
+          <div style={{ fontSize:'22px', fontWeight:'800', color:COLORS.textPrimary, textAlign:'center' }}>Sessão concluída!</div>
           <div style={{ display:'flex', gap:'12px', width:'100%' }}>
             {[{ val: Math.round(score), lbl: 'Pontos' }, { val: grade, lbl: 'Nota' }, { val: `${solvedCount}/${totalRespondidos}`, lbl: 'Acertos' }].map(item => (
-              <div key={item.lbl} style={{ flex:1, background:'rgba(255,255,255,0.15)', borderRadius:'12px', padding:'1rem', textAlign:'center' }}>
-                <div style={{ fontSize:'24px', fontWeight:'700', color:'white' }}>{item.val}</div>
-                <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.6)', textTransform:'uppercase', letterSpacing:'0.05em' }}>{item.lbl}</div>
+              <div key={item.lbl} style={{ flex:1, background:COLORS.surface, boxShadow:SHADOW_CARD, borderRadius:'14px', padding:'1rem', textAlign:'center' }}>
+                <div style={{ fontSize:'24px', fontWeight:'800', color:COLORS.indigo }}>{item.val}</div>
+                <div style={{ fontSize:'11px', color:COLORS.textMuted, textTransform:'uppercase', letterSpacing:'0.05em', fontWeight:'700' }}>{item.lbl}</div>
               </div>
             ))}
           </div>
@@ -539,16 +540,16 @@ useEffect(() => {
       </div>
 
       {!answered && attempts === 1 && (
-        <div style={{ margin:'0 1.5rem .5rem', background:'rgba(239,159,39,.2)', border:'1px solid rgba(239,159,39,.5)', borderRadius:'12px', padding:'.75rem', fontSize:'12px', color:'white', textAlign:'center' }}>
+        <div style={{ margin:'0 1.5rem .5rem', background:COLORS.status.debilitado.soft, border:`1px solid ${COLORS.status.debilitado.color}`, borderRadius:'12px', padding:'.75rem', fontSize:'12px', color:COLORS.textPrimary, fontWeight:'600', textAlign:'center' }}>
           ⚠️ Resposta incorreta! Você tem mais uma tentativa.
         </div>
       )}
 
       {answered && (
         <div style={{ padding:'0 1.5rem' }}>
-          <div style={{ background:'rgba(255,255,255,.12)', border:'1px solid rgba(255,255,255,.25)', borderRadius:'12px', padding:'1rem', marginBottom:'10px' }}>
-            <div style={{ fontSize:'10px', color:'#FFD700', fontWeight:'700', marginBottom:'4px', letterSpacing:'.06em', textTransform:'uppercase' }}>💡 Explicação Fisiológica</div>
-            <div style={{ fontSize:'12px', color:'rgba(255,255,255,.9)', lineHeight:'1.6' }}>{challenge.explanation}</div>
+          <div style={{ background:COLORS.surface, boxShadow:SHADOW_CARD, borderRadius:'14px', padding:'1rem', marginBottom:'10px' }}>
+            <div style={{ fontSize:'10px', color:COLORS.accent, fontWeight:'800', marginBottom:'4px', letterSpacing:'.06em', textTransform:'uppercase' }}>💡 Explicação Fisiológica</div>
+            <div style={{ fontSize:'12px', color:COLORS.textPrimary, lineHeight:'1.6' }}>{challenge.explanation}</div>
           </div>
           <button style={styles.nextBtn} onClick={handleNext}>
             {currentIdx + 1 >= challenges.length ? 'Ver resultado' : 'Próximo desafio →'}
@@ -559,42 +560,40 @@ useEffect(() => {
   );
 }
 
-const GRADIENT = 'linear-gradient(160deg, #1B4FCC 0%, #7B2FBE 50%, #CC1B1B 100%)';
-
 const styles = {
-  screen:             { width:'100%', minHeight:'100vh', display:'flex', flexDirection:'column', background:GRADIENT, margin:'0 auto' },
-  topbar:             { padding:'1.25rem 1.5rem 0.75rem', display:'flex', justifyContent:'space-between', alignItems:'center' },
+  screen:             { width:'100%', minHeight:'100vh', display:'flex', flexDirection:'column', background:COLORS.surface, margin:'0 auto', fontFamily:FONT_FAMILY, color:COLORS.textPrimary },
+  topbar:             { background:COLORS.bg, padding:'1.25rem 1.5rem 0.75rem', display:'flex', justifyContent:'space-between', alignItems:'center', gap:'8px', flexWrap:'wrap' },
   backBtn:            { fontSize:'20px', cursor:'pointer', background:'none', border:'none', color:'white' },
-  scoreBadge:         { background:'rgba(255,255,255,0.15)', border:'1px solid rgba(255,255,255,0.25)', borderRadius:'20px', padding:'4px 14px', fontSize:'12px', color:'white', fontWeight:'600' },
-  timerBadge:         { background:'rgba(255,255,255,0.15)', border:'1px solid rgba(255,255,255,0.25)', borderRadius:'20px', padding:'4px 14px', fontSize:'12px', color:'white', fontWeight:'600' },
-  mascotSection:      { padding:'0.5rem 1.5rem 0', display:'flex', alignItems:'center', gap:'1rem' },
-  paramsPanel:        { flex:1, display:'flex', flexDirection:'column', gap:'6px' },
+  scoreBadge:         { background:'rgba(255,255,255,0.15)', border:'1px solid rgba(255,255,255,0.25)', borderRadius:'20px', padding:'4px 14px', fontSize:'12px', color:'white', fontWeight:'700' },
+  timerBadge:         { background:'rgba(255,255,255,0.15)', border:'1px solid rgba(255,255,255,0.25)', borderRadius:'20px', padding:'4px 14px', fontSize:'12px', color:'white', fontWeight:'700' },
+  mascotSection:      { padding:'1rem 1.5rem 0', display:'flex', alignItems:'center', gap:'1rem' },
+  paramsPanel:        { flex:1, display:'flex', flexDirection:'column', gap:'8px' },
   paramItem:          { display:'flex', alignItems:'center', gap:'8px' },
-  paramLabel:         { fontSize:'13px', color:'rgba(255,255,255,0.75)', width:'65px' },
-  paramTrack:         { flex:1, height:'6px', background:'rgba(255,255,255,0.15)', borderRadius:'3px', overflow:'hidden', position:'relative' },
-  paramNormal:        { position:'absolute', height:'100%', background:'rgba(255,255,255,0.2)', borderRadius:'3px' },
+  paramLabel:         { fontSize:'13px', color:COLORS.textMuted, fontWeight:'700', width:'65px' },
+  paramTrack:         { flex:1, height:'6px', background:COLORS.border, borderRadius:'3px', overflow:'hidden', position:'relative' },
+  paramNormal:        { position:'absolute', height:'100%', background:'rgba(58,49,168,0.12)', borderRadius:'3px' },
   paramFill:          { position:'absolute', height:'100%', borderRadius:'3px', transition:'width 0.3s' },
-  paramVal:           { fontSize:'13px', color:'white', fontWeight:'600', width:'40px', textAlign:'right' },
+  paramVal:           { fontSize:'13px', color:COLORS.textPrimary, fontWeight:'800', width:'40px', textAlign:'right' },
   statusBar:          { margin:'0.75rem 1.5rem', display:'flex', gap:'8px' },
-  statusPill:         { flex:1, background:'rgba(255,255,255,0.1)', border:'1px solid rgba(255,255,255,0.15)', borderRadius:'10px', padding:'8px', textAlign:'center' },
-  statusPillVal:      { fontSize:'14px', fontWeight:'700', color:'white' },
-  statusPillLbl:      { fontSize:'9px', color:'rgba(255,255,255,0.55)', textTransform:'uppercase', letterSpacing:'0.05em' },
-  challengeCard:      { margin:'0 1.5rem', background:'rgba(255,255,255,0.12)', border:'1px solid rgba(255,255,255,0.25)', borderRadius:'16px', padding:'1.25rem' },
+  statusPill:         { flex:1, background:COLORS.surface, boxShadow:SHADOW_CARD, borderRadius:'12px', padding:'8px', textAlign:'center' },
+  statusPillVal:      { fontSize:'14px', fontWeight:'800', color:COLORS.indigo },
+  statusPillLbl:      { fontSize:'9px', color:COLORS.textMuted, textTransform:'uppercase', letterSpacing:'0.05em', fontWeight:'700' },
+  challengeCard:      { margin:'0 1.5rem', background:COLORS.surface, boxShadow:SHADOW_CARD, borderRadius:'18px', padding:'1.25rem' },
   challengeHeader:    { display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'0.75rem' },
-  challengeTag:       { fontSize:'10px', fontWeight:'700', letterSpacing:'0.08em', textTransform:'uppercase', background:'rgba(255,255,255,0.2)', color:'white', padding:'3px 10px', borderRadius:'20px' },
-  challengeFocus:     { fontSize:'10px', color:'rgba(255,255,255,0.55)' },
-  challengeText:      { fontSize:'14px', color:'white', lineHeight:'1.6', fontWeight:'500' },
-  optionsTitle:       { padding:'0.75rem 1.5rem 0.5rem', fontSize:'11px', color:'rgba(255,255,255,0.6)', letterSpacing:'0.08em', textTransform:'uppercase' },
+  challengeTag:       { fontSize:'10px', fontWeight:'800', letterSpacing:'0.08em', textTransform:'uppercase', background:COLORS.iconChipBg, color:COLORS.indigo, padding:'3px 10px', borderRadius:'20px' },
+  challengeFocus:     { fontSize:'10px', color:COLORS.textMuted, fontWeight:'700' },
+  challengeText:      { fontSize:'14px', color:COLORS.textPrimary, lineHeight:'1.6', fontWeight:'600' },
+  optionsTitle:       { padding:'0.75rem 1.5rem 0.5rem', fontSize:'11px', color:COLORS.textMuted, letterSpacing:'0.08em', textTransform:'uppercase', fontWeight:'700' },
   options:            { padding:'0 1.5rem', display:'flex', flexDirection:'column', gap:'10px' },
-  option:             { background:'rgba(255,255,255,0.12)', border:'1.5px solid rgba(255,255,255,0.2)', borderRadius:'12px', padding:'1rem 1.25rem', cursor:'pointer', display:'flex', alignItems:'center', gap:'12px' },
-  optionCorrect:      { background:'rgba(50,200,120,0.25)', borderColor:'#32C878' },
-  optionWrong:        { background:'rgba(220,60,60,0.25)', borderColor:'#DC3C3C' },
-  optionLetter:       { width:'26px', height:'26px', borderRadius:'50%', background:'rgba(255,255,255,0.2)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'12px', fontWeight:'700', color:'white', flexShrink:0 },
-  optionLetterCorrect:{ background:'#32C878' },
-  optionLetterWrong:  { background:'#DC3C3C' },
-  optionText:         { fontSize:'13px', color:'white', lineHeight:'1.4' },
-  nextBtn:            { width:'100%', padding:'13px', borderRadius:'10px', border:'none', backgroundColor:'white', color:'#7B2FBE', fontSize:'14px', fontWeight:'700', cursor:'pointer', fontFamily:'inherit' },
-  modeBadge:          { background:'rgba(255,255,255,0.15)', border:'1px solid rgba(255,255,255,0.25)', borderRadius:'20px', padding:'4px 10px', fontSize:'11px', color:'white', fontWeight:'600' },
+  option:             { background:COLORS.surface, boxShadow:SHADOW_CARD, border:`1.5px solid ${COLORS.border}`, borderRadius:'14px', padding:'1rem 1.25rem', cursor:'pointer', display:'flex', alignItems:'center', gap:'12px' },
+  optionCorrect:      { background:COLORS.status.saudavel.soft, borderColor:COLORS.status.saudavel.color },
+  optionWrong:        { background:COLORS.status.critico.soft, borderColor:COLORS.status.critico.color },
+  optionLetter:       { width:'26px', height:'26px', borderRadius:'50%', background:COLORS.iconChipBg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'12px', fontWeight:'800', color:COLORS.indigo, flexShrink:0 },
+  optionLetterCorrect:{ background:COLORS.status.saudavel.color, color:'white' },
+  optionLetterWrong:  { background:COLORS.status.critico.color, color:'white' },
+  optionText:         { fontSize:'13px', color:COLORS.textPrimary, lineHeight:'1.4', fontWeight:'600' },
+  nextBtn:            { width:'100%', padding:'13px', borderRadius:'12px', border:'none', backgroundColor:COLORS.indigo, color:'white', fontSize:'14px', fontWeight:'800', cursor:'pointer', fontFamily:'inherit' },
+  modeBadge:          { background:'rgba(255,255,255,0.15)', border:'1px solid rgba(255,255,255,0.25)', borderRadius:'20px', padding:'4px 10px', fontSize:'11px', color:'white', fontWeight:'700' },
 };
 
 export default GameScreen;
