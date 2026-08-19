@@ -5,8 +5,7 @@ import {
   calcularImpactoNoPrimario,
   PRIMARY_PARAMS,
 } from '../engine/mascotEngine';
-
-const GRADIENT = 'linear-gradient(160deg, #1B4FCC 0%, #7B2FBE 50%, #CC1B1B 100%)';
+import { COLORS, FONT_FAMILY, SHADOW_CARD } from '../theme';
 
 const CATEGORIA_LABELS = {
   0: { label: 'Baixo', color: '#85B7EB' },
@@ -67,10 +66,10 @@ function CategoriaSlider({ param, value, onChange, highlight }) {
           {[0,1,2].map(v => (
             <div key={v}
               style={{ flex:1, padding:'6px', borderRadius:'8px', textAlign:'center', cursor:'pointer',
-                background: value === v ? CATEGORIA_LABELS[v].color + '33' : 'rgba(255,255,255,.1)',
-                border: `1px solid ${value === v ? CATEGORIA_LABELS[v].color : 'rgba(255,255,255,.2)'}`,
-                color: value === v ? CATEGORIA_LABELS[v].color : 'rgba(255,255,255,.6)',
-                fontSize:'11px', fontWeight: value === v ? '700' : '400' }}
+                background: value === v ? CATEGORIA_LABELS[v].color + '22' : COLORS.surfaceMuted,
+                border: `1px solid ${value === v ? CATEGORIA_LABELS[v].color : COLORS.border}`,
+                color: value === v ? CATEGORIA_LABELS[v].color : COLORS.textMuted,
+                fontSize:'11px', fontWeight: value === v ? '700' : '600' }}
               onClick={() => onChange(param.id, v)}>
               {CATEGORIA_LABELS[v].label}
             </div>
@@ -219,13 +218,13 @@ function SecondaryScreen({ values, onBack }) {
   { titulo: 'Insuficiência Renal', texto: '↓ Função renal → ↓ eliminação urinária + alteração do equilíbrio hídrico/osmótico' },
 ].map((item, i) => (
           <div key={i} style={styles.correlRow}>
-    <div style={{ fontSize:'9px', color:'rgba(255,255,255,.5)', textTransform:'uppercase', letterSpacing:'.05em', marginBottom:'2px' }}>{item.titulo}</div>
+    <div style={{ fontSize:'9px', color:COLORS.textMuted, textTransform:'uppercase', letterSpacing:'.05em', marginBottom:'2px', fontWeight:'700' }}>{item.titulo}</div>
     <span style={styles.correlText}>{item.texto}</span>
   </div>
         ))}
       </div>
 <div style={styles.sectionLabel}>tabela de referência didática</div>
-<div style={{ margin:'0 1rem .75rem', background:'rgba(255,255,255,.08)', border:'1px solid rgba(255,255,255,.15)', borderRadius:'14px', overflow:'hidden' }}>
+<div style={{ margin:'0 1rem .75rem', background:COLORS.surface, boxShadow:SHADOW_CARD, borderRadius:'16px', overflow:'hidden' }}>
   {[
     { param:'⚡ Energia',           func:'Disposição para ações e desafios',        obs:'Baixa energia limita ações e sinaliza necessidade de cuidado' },
     { param:'💧 Hidratação',        func:'Equilíbrio hídrico',                       obs:'Desidratação reduz volemia e gera ↑ FC compensatória' },
@@ -238,10 +237,10 @@ function SecondaryScreen({ values, onBack }) {
     { param:'🩸 RVP',               func:'Resistência dos vasos',                    obs:'Categorias: baixa/normal/alta. Influencia PA' },
     { param:'🔄 Débito Cardíaco',   func:'Volume bombeado por minuto',               obs:'DC = FC × VS. Normal: 80–120 mL/min' },
   ].map((row, i) => (
-    <div key={i} style={{ display:'grid', gridTemplateColumns:'1.2fr 1.5fr 2fr', padding:'8px 12px', borderTop: i > 0 ? '1px solid rgba(255,255,255,.08)' : 'none', background: i % 2 === 0 ? 'rgba(255,255,255,.04)' : 'transparent' }}>
-      <div style={{ fontSize:'10px', fontWeight:'700', color:'white' }}>{row.param}</div>
-      <div style={{ fontSize:'9px', color:'rgba(255,255,255,.7)', paddingLeft:'6px' }}>{row.func}</div>
-      <div style={{ fontSize:'9px', color:'rgba(255,255,255,.55)', paddingLeft:'6px', fontStyle:'italic' }}>{row.obs}</div>
+    <div key={i} style={{ display:'grid', gridTemplateColumns:'1.2fr 1.5fr 2fr', padding:'8px 12px', borderTop: i > 0 ? `1px solid ${COLORS.border}` : 'none', background: i % 2 === 0 ? COLORS.surfaceMuted : 'transparent' }}>
+      <div style={{ fontSize:'10px', fontWeight:'800', color:COLORS.textPrimary }}>{row.param}</div>
+      <div style={{ fontSize:'9px', color:COLORS.textMuted, paddingLeft:'6px', fontWeight:'600' }}>{row.func}</div>
+      <div style={{ fontSize:'9px', color:COLORS.textMuted, paddingLeft:'6px', fontStyle:'italic' }}>{row.obs}</div>
     </div>
   ))}
 </div>
@@ -251,41 +250,41 @@ function SecondaryScreen({ values, onBack }) {
 }
 
 const styles = {
-  screen:           { width:'100%', minHeight:'100vh', display:'flex', flexDirection:'column', background:GRADIENT, margin:'0 auto', overflowY:'auto' },
-  topbar:           { padding:'1rem', display:'flex', alignItems:'center', justifyContent:'space-between' },
-  backBtn:          { background:'rgba(255,255,255,.15)', border:'1px solid rgba(255,255,255,.3)', borderRadius:'20px', padding:'6px 14px', color:'white', fontSize:'12px', cursor:'pointer', fontFamily:'inherit' },
-  title:            { fontSize:'14px', fontWeight:'700', color:'white' },
-  resetBtn:         { background:'rgba(255,255,255,.15)', border:'1px solid rgba(255,255,255,.3)', borderRadius:'20px', padding:'6px 14px', color:'white', fontSize:'12px', cursor:'pointer', fontFamily:'inherit' },
-  notice:           { margin:'0 1rem .75rem', background:'rgba(255,255,255,.1)', border:'1px solid rgba(255,255,255,.2)', borderRadius:'12px', padding:'.75rem', display:'flex', gap:'8px', alignItems:'flex-start' },
+  screen:           { width:'100%', minHeight:'100vh', display:'flex', flexDirection:'column', background:COLORS.surface, margin:'0 auto', overflowY:'auto', fontFamily:FONT_FAMILY, color:COLORS.textPrimary },
+  topbar:           { background:COLORS.bg, padding:'1rem', display:'flex', alignItems:'center', justifyContent:'space-between' },
+  backBtn:          { background:'rgba(255,255,255,.15)', border:'1px solid rgba(255,255,255,.3)', borderRadius:'20px', padding:'6px 14px', color:'white', fontSize:'12px', cursor:'pointer', fontFamily:'inherit', fontWeight:'600' },
+  title:            { fontSize:'14px', fontWeight:'800', color:'white' },
+  resetBtn:         { background:'rgba(255,255,255,.15)', border:'1px solid rgba(255,255,255,.3)', borderRadius:'20px', padding:'6px 14px', color:'white', fontSize:'12px', cursor:'pointer', fontFamily:'inherit', fontWeight:'600' },
+  notice:           { margin:'1rem 1rem .75rem', background:COLORS.iconChipBg, borderRadius:'14px', padding:'.75rem', display:'flex', gap:'8px', alignItems:'flex-start' },
   noticeIcon:       { fontSize:'16px', flexShrink:0 },
-  noticeText:       { fontSize:'11px', color:'rgba(255,255,255,.75)', lineHeight:'1.5' },
-  activeCorrel:     { margin:'0 1rem .5rem', background:'rgba(255,255,100,.12)', border:'1px solid rgba(255,255,100,.3)', borderRadius:'12px', padding:'.75rem' },
-  activeCorrelLabel:{ fontSize:'10px', color:'rgba(255,255,100,.8)', letterSpacing:'.06em', textTransform:'uppercase', marginBottom:'4px' },
-  activeCorrelText: { fontSize:'12px', color:'white', fontWeight:'600', lineHeight:'1.5' },
-  sectionLabel:     { padding:'.25rem 1rem', fontSize:'10px', color:'rgba(255,255,255,.55)', letterSpacing:'.08em', textTransform:'uppercase', marginTop:'.5rem' },
+  noticeText:       { fontSize:'11px', color:COLORS.indigo, lineHeight:'1.5', fontWeight:'600' },
+  activeCorrel:     { margin:'0 1rem .5rem', background:COLORS.status.debilitado.soft, border:`1px solid ${COLORS.status.debilitado.color}`, borderRadius:'12px', padding:'.75rem' },
+  activeCorrelLabel:{ fontSize:'10px', color:COLORS.status.debilitado.color, letterSpacing:'.06em', textTransform:'uppercase', marginBottom:'4px', fontWeight:'700' },
+  activeCorrelText: { fontSize:'12px', color:COLORS.textPrimary, fontWeight:'600', lineHeight:'1.5' },
+  sectionLabel:     { padding:'.25rem 1rem', fontSize:'10px', color:COLORS.textMuted, letterSpacing:'.08em', textTransform:'uppercase', marginTop:'.5rem', fontWeight:'700' },
   realGrid:         { padding:'0 1rem .5rem', display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'8px' },
-  realCard:         { background:'rgba(255,255,255,.12)', border:'1px solid rgba(255,255,255,.2)', borderRadius:'12px', padding:'.75rem .5rem', display:'flex', flexDirection:'column', alignItems:'center', gap:'3px' },
+  realCard:         { background:COLORS.surface, boxShadow:SHADOW_CARD, borderRadius:'14px', padding:'.75rem .5rem', display:'flex', flexDirection:'column', alignItems:'center', gap:'3px' },
   realIcon:         { fontSize:'20px' },
-  realVal:          { fontSize:'14px', fontWeight:'700' },
-  realUnit:         { fontSize:'8px', color:'rgba(255,255,255,.5)', textAlign:'center' },
-  realName:         { fontSize:'9px', color:'rgba(255,255,255,.6)', textAlign:'center' },
-  sliderCard:       { margin:'0 1rem .75rem', background:'rgba(255,255,255,.1)', border:'1px solid rgba(255,255,255,.18)', borderRadius:'14px', padding:'1rem', transition:'border .2s, background .2s' },
+  realVal:          { fontSize:'14px', fontWeight:'800' },
+  realUnit:         { fontSize:'8px', color:COLORS.textMuted, textAlign:'center' },
+  realName:         { fontSize:'9px', color:COLORS.textMuted, textAlign:'center', fontWeight:'600' },
+  sliderCard:       { margin:'0 1rem .75rem', background:COLORS.surface, boxShadow:SHADOW_CARD, borderRadius:'16px', padding:'1rem', transition:'border .2s, background .2s' },
   sliderHeader:     { display:'flex', alignItems:'center', gap:'10px', marginBottom:'8px' },
   sliderIcon:       { fontSize:'22px' },
   sliderInfo:       { flex:1 },
-  sliderName:       { fontSize:'13px', fontWeight:'600', color:'white' },
-  sliderVal:        { fontSize:'18px', fontWeight:'700' },
+  sliderName:       { fontSize:'13px', fontWeight:'700', color:COLORS.textPrimary },
+  sliderVal:        { fontSize:'18px', fontWeight:'800' },
   sliderTrackWrap:  { marginBottom:'8px' },
-  sliderDesc:       { fontSize:'10px', color:'rgba(255,255,255,.5)', lineHeight:'1.4' },
-  impactCard:       { margin:'0 1rem .75rem', background:'rgba(255,255,255,.1)', border:'1px solid rgba(255,255,255,.18)', borderRadius:'14px', padding:'1rem', minHeight:'60px' },
+  sliderDesc:       { fontSize:'10px', color:COLORS.textMuted, lineHeight:'1.4' },
+  impactCard:       { margin:'0 1rem .75rem', background:COLORS.surface, boxShadow:SHADOW_CARD, borderRadius:'16px', padding:'1rem', minHeight:'60px' },
   impactRow:        { display:'flex', alignItems:'center', gap:'8px', marginBottom:'8px' },
   impactIcon:       { fontSize:'16px' },
-  impactName:       { flex:1, fontSize:'12px', color:'rgba(255,255,255,.8)' },
-  impactDelta:      { fontSize:'13px', fontWeight:'700' },
-  noImpact:         { fontSize:'11px', color:'rgba(255,255,255,.4)', textAlign:'center', padding:'.5rem 0' },
-  correlCard:       { margin:'0 1rem .75rem', background:'rgba(255,255,255,.1)', border:'1px solid rgba(255,255,255,.18)', borderRadius:'14px', padding:'1rem', display:'flex', flexDirection:'column', gap:'8px' },
-  correlRow:        { background:'rgba(255,255,255,.08)', borderRadius:'8px', padding:'6px 10px' },
-  correlText:       { fontSize:'10px', color:'rgba(255,255,255,.85)', lineHeight:'1.5' },
+  impactName:       { flex:1, fontSize:'12px', color:COLORS.textPrimary, fontWeight:'600' },
+  impactDelta:      { fontSize:'13px', fontWeight:'800' },
+  noImpact:         { fontSize:'11px', color:COLORS.textMuted, textAlign:'center', padding:'.5rem 0' },
+  correlCard:       { margin:'0 1rem .75rem', background:COLORS.surface, boxShadow:SHADOW_CARD, borderRadius:'16px', padding:'1rem', display:'flex', flexDirection:'column', gap:'8px' },
+  correlRow:        { background:COLORS.surfaceMuted, borderRadius:'10px', padding:'6px 10px' },
+  correlText:       { fontSize:'10px', color:COLORS.textPrimary, lineHeight:'1.5', fontWeight:'600' },
 };
 
 export default SecondaryScreen;
