@@ -215,7 +215,7 @@ function App() {
 
   if (screen === 'game')
     return <GameScreen user={user} mode={mode} values={values} setValues={setValues}
-      score={score} setScore={setScore} onBack={handleBack} onFinish={handleGameFinish}/>;
+      score={score} setScore={setScore} onBack={handleBack} onFinish={handleGameFinish} ageDays={ageDays}/>;
 
   if (screen === 'final') {
     const saude = calcularSaude({ ...values, age_days: ageDays });

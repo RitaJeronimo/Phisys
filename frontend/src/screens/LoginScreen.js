@@ -1,31 +1,15 @@
 import React, { useState } from "react";
 import { auth, setToken, turmas } from "../api";
 import { COLORS, FONT_FAMILY, FONT_SCALE } from "../theme";
+import { MASCOT_IMAGES } from "../assets/mascote";
 
 function ChibiMascot({ size = 76 }) {
   return (
-    <svg viewBox="0 0 400 380" width={size} height={size}>
-      <ellipse cx="166" cy="335" rx="22" ry="13" fill="#D4D4D4"/>
-      <ellipse cx="234" cy="335" rx="22" ry="13" fill="#D4D4D4"/>
-      <ellipse cx="200" cy="285" rx="82" ry="78" fill="#D4D4D4"/>
-      <ellipse cx="110" cy="135" rx="38" ry="48" fill="#D4D4D4"/>
-      <ellipse cx="110" cy="135" rx="24" ry="34" fill="#FFD0DC"/>
-      <ellipse cx="290" cy="135" rx="38" ry="48" fill="#D4D4D4"/>
-      <ellipse cx="290" cy="135" rx="24" ry="34" fill="#FFD0DC"/>
-      <ellipse cx="200" cy="158" rx="82" ry="78" fill="#D4D4D4"/>
-      <ellipse cx="136" cy="170" rx="20" ry="14" fill="#FFB0C8" opacity=".6"/>
-      <ellipse cx="264" cy="170" rx="20" ry="14" fill="#FFB0C8" opacity=".6"/>
-      <ellipse cx="168" cy="152" rx="22" ry="26" fill="white"/>
-      <ellipse cx="168" cy="155" rx="16" ry="20" fill="#7B2FBE"/>
-      <ellipse cx="168" cy="155" rx="8" ry="10" fill="#3A1A6A"/>
-      <ellipse cx="176" cy="144" rx="6" ry="7" fill="white" opacity=".9"/>
-      <ellipse cx="232" cy="152" rx="22" ry="26" fill="white"/>
-      <ellipse cx="232" cy="155" rx="16" ry="20" fill="#7B2FBE"/>
-      <ellipse cx="232" cy="155" rx="8" ry="10" fill="#3A1A6A"/>
-      <ellipse cx="240" cy="144" rx="6" ry="7" fill="white" opacity=".9"/>
-      <ellipse cx="200" cy="175" rx="8" ry="6" fill="#FF8FAA"/>
-      <path d="M188 184 Q200 196 212 184" stroke="#666" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
-    </svg>
+    <img
+      src={MASCOT_IMAGES.ADULTO.saudavel}
+      alt="Phisys"
+      style={{ width:size, height:size, objectFit:'contain', borderRadius:'12px' }}
+    />
   );
 }
 

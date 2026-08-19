@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { PARAMS, getDefaultValues, getMascotStatus, calculateFinalGrade, STATUS, calcularSaude, calcularEnergiaModulada, embaralharArray } from '../engine/mascotEngine';
+import { PARAMS, getDefaultValues, getMascotStatus, calculateFinalGrade, STATUS, calcularSaude, calcularEnergiaModulada, embaralharArray, getAgeStage } from '../engine/mascotEngine';
 import { ranking as rankingApi, getToken, desafios as desafiosApi, configuracoes as configuracoesApi, simulacoes as simulacoesApi } from '../api';
 import { COLORS, FONT_FAMILY, SHADOW_CARD, FONT_SCALE } from '../theme';
+import { MASCOT_IMAGES } from '../assets/mascote';
 
 const MOCK_CHALLENGES = [
   {
@@ -50,54 +51,14 @@ const MOCK_CHALLENGES = [
 // codigo depois, dando a falsa impressao de que a "crise" descrita ali era
 // aplicada ao animal. O que realmente e aplicado sao sempre delta_acerto/delta_erro.
 
-function ChibiMascot({ status, size = 72 }) {
-  const bodyColor = status === STATUS.SAUDAVEL ? '#D4D4D4' : status === STATUS.DEBILITADO ? '#FAC775' : '#F09595';
-  const earIn     = status === STATUS.SAUDAVEL ? '#FFD0DC' : status === STATUS.DEBILITADO ? '#F5CC80' : '#FFB0B0';
-  const eyeOuter  = status === STATUS.SAUDAVEL ? '#7B2FBE' : status === STATUS.DEBILITADO ? '#633806' : '#791F1F';
-  const eyeInner  = status === STATUS.SAUDAVEL ? '#3A1A6A' : status === STATUS.DEBILITADO ? '#3A1A00' : '#3A0000';
-  const cheek     = status === STATUS.SAUDAVEL ? '#FFB0C8' : status === STATUS.DEBILITADO ? '#F5CC80' : '#FFB0B0';
-
-  const mouth = status === STATUS.SAUDAVEL
-    ? <path d="M188 184 Q200 196 212 184" stroke="#666" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
-    : status === STATUS.DEBILITADO
-    ? <path d="M188 188 Q200 188 212 188" stroke="#888" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
-    : <path d="M188 192 Q200 182 212 192" stroke="#AA4444" strokeWidth="2.5" fill="none" strokeLinecap="round"/>;
-
-  const eyeL = status === STATUS.CRITICO
-    ? <><ellipse cx="168" cy="152" rx="22" ry="22" fill="white"/><line x1="158" y1="142" x2="178" y2="162" stroke={eyeOuter} strokeWidth="4" strokeLinecap="round"/><line x1="178" y1="142" x2="158" y2="162" stroke={eyeOuter} strokeWidth="4" strokeLinecap="round"/></>
-    : status === STATUS.DEBILITADO
-    ? <><ellipse cx="168" cy="152" rx="22" ry="22" fill="white"/><ellipse cx="168" cy="156" rx="16" ry="10" fill={eyeOuter}/><ellipse cx="168" cy="156" rx="8" ry="5" fill={eyeInner}/><path d="M148 148 Q168 138 188 148" stroke="#999" strokeWidth="2" fill="none"/><ellipse cx="176" cy="150" rx="5" ry="3" fill="white" opacity=".8"/></>
-    : <><ellipse cx="168" cy="152" rx="22" ry="26" fill="white"/><ellipse cx="168" cy="155" rx="16" ry="20" fill={eyeOuter}/><ellipse cx="168" cy="155" rx="8" ry="10" fill={eyeInner}/><ellipse cx="176" cy="144" rx="6" ry="7" fill="white" opacity=".9"/></>;
-
-  const eyeR = status === STATUS.CRITICO
-    ? <><ellipse cx="232" cy="152" rx="22" ry="22" fill="white"/><line x1="222" y1="142" x2="242" y2="162" stroke={eyeOuter} strokeWidth="4" strokeLinecap="round"/><line x1="242" y1="142" x2="222" y2="162" stroke={eyeOuter} strokeWidth="4" strokeLinecap="round"/></>
-    : status === STATUS.DEBILITADO
-    ? <><ellipse cx="232" cy="152" rx="22" ry="22" fill="white"/><ellipse cx="232" cy="156" rx="16" ry="10" fill={eyeOuter}/><ellipse cx="232" cy="156" rx="8" ry="5" fill={eyeInner}/><path d="M212 148 Q232 138 252 148" stroke="#999" strokeWidth="2" fill="none"/><ellipse cx="240" cy="150" rx="5" ry="3" fill="white" opacity=".8"/></>
-    : <><ellipse cx="232" cy="152" rx="22" ry="26" fill="white"/><ellipse cx="232" cy="155" rx="16" ry="20" fill={eyeOuter}/><ellipse cx="232" cy="155" rx="8" ry="10" fill={eyeInner}/><ellipse cx="240" cy="144" rx="6" ry="7" fill="white" opacity=".9"/></>;
-
+function ChibiMascot({ status, ageDays, size = 72 }) {
+  const stageKey = getAgeStage(ageDays ?? 90).key;
   return (
-    <svg viewBox="0 0 400 380" width={size} height={size}>
-      <path d="M188 350 Q162 358 148 340 Q136 322 144 308 Q152 295 164 305" stroke="#C8C8C8" strokeWidth="7" fill="none" strokeLinecap="round"/>
-      <ellipse cx="166" cy="335" rx="22" ry="13" fill={bodyColor}/>
-      <ellipse cx="234" cy="335" rx="22" ry="13" fill={bodyColor}/>
-      <ellipse cx="200" cy="285" rx="82" ry="78" fill={bodyColor}/>
-      <ellipse cx="200" cy="295" rx="48" ry="50" fill="white" opacity=".2"/>
-      <ellipse cx="118" cy="268" rx="22" ry="15" fill={bodyColor} transform="rotate(-20,118,268)"/>
-      <ellipse cx="282" cy="268" rx="22" ry="15" fill={bodyColor} transform="rotate(20,282,268)"/>
-      <ellipse cx="110" cy="135" rx="38" ry="48" fill={bodyColor}/>
-      <ellipse cx="110" cy="135" rx="24" ry="34" fill={earIn}/>
-      <ellipse cx="290" cy="135" rx="38" ry="48" fill={bodyColor}/>
-      <ellipse cx="290" cy="135" rx="24" ry="34" fill={earIn}/>
-      <ellipse cx="200" cy="158" rx="82" ry="78" fill={bodyColor}/>
-      <ellipse cx="136" cy="170" rx="20" ry="14" fill={cheek} opacity=".6"/>
-      <ellipse cx="264" cy="170" rx="20" ry="14" fill={cheek} opacity=".6"/>
-      {eyeL}
-      {eyeR}
-      <ellipse cx="200" cy="175" rx="8" ry="6" fill="#FF8FAA"/>
-      {mouth}
-      {status !== STATUS.SAUDAVEL && (<ellipse cx="290" cy="120" rx="7" ry="11" fill="#85B7EB" opacity=".8"/>)}
-      {status === STATUS.SAUDAVEL && (<><text x="316" y="100" fontSize="18" fill="white" opacity=".9">✦</text><text x="72" y="112" fontSize="12" fill="white" opacity=".8">✦</text></>)}
-    </svg>
+    <img
+      src={MASCOT_IMAGES[stageKey][status]}
+      alt={`Phisys — ${status}`}
+      style={{ width:size, height:size, objectFit:'contain', borderRadius:'12px', flexShrink:0 }}
+    />
   );
 }
 
@@ -121,7 +82,7 @@ function ParamBar({ param, value }) {
   );
 }
 
-function GameScreen({ user, mode, values: initialValues, score: initialScore, onBack, onFinish }) {
+function GameScreen({ user, mode, values: initialValues, score: initialScore, onBack, onFinish, ageDays }) {
   const [values, setValues] = useState(initialValues || getDefaultValues());
   const [score, setScore] = useState(initialScore ?? 100);
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -451,7 +412,7 @@ useEffect(() => {
     return (
       <div className="app-screen" style={styles.screen}>
         <div style={{ padding:'3rem 1.5rem', display:'flex', flexDirection:'column', alignItems:'center', gap:'1.5rem' }}>
-          <ChibiMascot status={STATUS.SAUDAVEL} size={90}/>
+          <ChibiMascot status={STATUS.SAUDAVEL} ageDays={ageDays} size={90}/>
           <div style={{ ...FONT_SCALE.heading, color:COLORS.textPrimary, textAlign:'center' }}>Sessão concluída!</div>
           <div style={{ display:'flex', gap:'12px', width:'100%' }}>
             {[{ val: Math.round(score), lbl: 'Pontos' }, { val: grade, lbl: 'Nota' }, { val: `${solvedCount}/${totalRespondidos}`, lbl: 'Acertos' }].map(item => (
@@ -477,7 +438,7 @@ useEffect(() => {
       </div>
 
       <div style={styles.mascotSection}>
-        <ChibiMascot status={status} size={72}/>
+        <ChibiMascot status={status} ageDays={ageDays} size={72}/>
         <div style={styles.paramsPanel}>
           {/* CORRECAO: a energia exibida aqui era o valor bruto (values.energia),
               enquanto a HomeScreen ja aplicava calcularEnergiaModulada (reduz a
