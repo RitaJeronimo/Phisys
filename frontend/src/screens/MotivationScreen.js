@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { COLORS, FONT_FAMILY, FONT_SCALE } from '../theme';
+import { MASCOT_IMAGES } from '../assets/mascote';
 
 const LEVELS = [
   { value: 1, emoji: '😞', label: 'Muito desmotivado', color: '#E24B4A' },
@@ -35,34 +36,11 @@ function MotivationScreen({ user, onContinue, customMessages }) {
     <div style={styles.screen}>
       <div style={styles.card}>
 
-        <svg viewBox="0 0 400 380" style={{ width:'100px', height:'100px' }}>
-          <path d="M188 350 Q162 358 148 340 Q136 322 144 308 Q152 295 164 305" stroke="#C8C8C8" strokeWidth="7" fill="none" strokeLinecap="round"/>
-          <ellipse cx="166" cy="335" rx="22" ry="13" fill="#D4D4D4"/>
-          <ellipse cx="234" cy="335" rx="22" ry="13" fill="#D4D4D4"/>
-          <ellipse cx="200" cy="285" rx="82" ry="78" fill="#D4D4D4"/>
-          <ellipse cx="200" cy="295" rx="48" ry="50" fill="white" opacity=".2"/>
-          <ellipse cx="118" cy="268" rx="22" ry="15" fill="#D4D4D4" transform="rotate(-20,118,268)"/>
-          <ellipse cx="282" cy="268" rx="22" ry="15" fill="#D4D4D4" transform="rotate(20,282,268)"/>
-          <ellipse cx="110" cy="135" rx="38" ry="48" fill="#D4D4D4"/>
-          <ellipse cx="110" cy="135" rx="24" ry="34" fill="#FFD0DC"/>
-          <ellipse cx="290" cy="135" rx="38" ry="48" fill="#D4D4D4"/>
-          <ellipse cx="290" cy="135" rx="24" ry="34" fill="#FFD0DC"/>
-          <ellipse cx="200" cy="158" rx="82" ry="78" fill="#D4D4D4"/>
-          <ellipse cx="136" cy="170" rx="20" ry="14" fill="#FFB0C8" opacity=".6"/>
-          <ellipse cx="264" cy="170" rx="20" ry="14" fill="#FFB0C8" opacity=".6"/>
-          <ellipse cx="168" cy="152" rx="22" ry="26" fill="white"/>
-          <ellipse cx="168" cy="155" rx="16" ry="20" fill="#7B2FBE"/>
-          <ellipse cx="168" cy="155" rx="8"  ry="10" fill="#3A1A6A"/>
-          <ellipse cx="176" cy="144" rx="6"  ry="7"  fill="white" opacity=".9"/>
-          <ellipse cx="232" cy="152" rx="22" ry="26" fill="white"/>
-          <ellipse cx="232" cy="155" rx="16" ry="20" fill="#7B2FBE"/>
-          <ellipse cx="232" cy="155" rx="8"  ry="10" fill="#3A1A6A"/>
-          <ellipse cx="240" cy="144" rx="6"  ry="7"  fill="white" opacity=".9"/>
-          <ellipse cx="200" cy="175" rx="8" ry="6" fill="#FF8FAA"/>
-          <path d="M188 184 Q200 196 212 184" stroke="#666" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
-          <text x="316" y="100" fontSize="18" fill="white" opacity=".9">✦</text>
-          <text x="72"  y="112" fontSize="12" fill="white" opacity=".8">✦</text>
-        </svg>
+        <img
+          src={MASCOT_IMAGES.ADULTO.saudavel}
+          alt="Phisys"
+          style={{ width:'100px', height:'100px', objectFit:'contain', borderRadius:'14px' }}
+        />
 
         <div style={styles.greeting}>Olá, {user.name.split(' ')[0]}! 👋</div>
         <div style={styles.question}>Como você está se sentindo hoje?</div>
