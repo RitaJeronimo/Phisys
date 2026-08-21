@@ -39,7 +39,12 @@ router.post('/login', authLimiter, async (req, res) => {
     );
 
     if (result.rows.length === 0) {
-      return res.status(401).json({ erro: 'Matricula ou senha invalidos.' });
+      // Mesma mensagem visivel de sempre (matricula nao e segredo nesse app -
+      // ja aparece publica no ranking, GET /api/ranking - entao nao ha risco
+      // real de enumeration em distinguir os dois casos), mas com um campo
+      // extra pro frontend oferecer "criar conta" em vez de so um erro seco
+      // (pedido da Rita, 21/08/2026, depois do teste da Samela).
+      return res.status(401).json({ erro: 'Matricula ou senha invalidos.', motivo: 'conta_nao_encontrada' });
     }
 
     const usuario = result.rows[0];
@@ -74,7 +79,7 @@ router.post('/login', authLimiter, async (req, res) => {
 
 // POST /api/auth/registro
 router.post('/registro', authLimiter, async (req, res) => {
-  const { nome, matricula, senha, modo, codigo_turma } = req.body;
+  const { nome, matricula, senha, modo, codigo_turma, curso } = req.body;
 
   if (!nome || !matricula || !senha || !modo) {
     return res.status(400).json({ erro: 'Todos os campos sao obrigatorios.' });
@@ -84,6 +89,10 @@ router.post('/registro', authLimiter, async (req, res) => {
   if (!codigo_turma) {
     return res.status(400).json({ erro: 'Codigo de turma e obrigatorio.' });
   }
+
+  // Curso/instituicao e texto livre e opcional - so trunca pro limite da
+  // coluna (VARCHAR(255)) pra nunca estourar o INSERT abaixo.
+  const cursoLimpo = (curso || '').trim().slice(0, 255) || null;
 
   try {
     const existe = await pool.query(
@@ -123,8 +132,8 @@ router.post('/registro', authLimiter, async (req, res) => {
     const senha_hash = await bcrypt.hash(senha, 10);
 
     const result = await pool.query(
-      'INSERT INTO usuarios (nome, matricula, senha_hash, modo, turma_id, senha_definida_pelo_aluno) VALUES ($1, $2, $3, $4, $5, true) RETURNING id, nome, matricula, modo, turma_id',
-      [nome, matricula, senha_hash, modo, turma_id]
+      'INSERT INTO usuarios (nome, matricula, senha_hash, modo, turma_id, senha_definida_pelo_aluno, curso) VALUES ($1, $2, $3, $4, $5, true, $6) RETURNING id, nome, matricula, modo, turma_id, curso',
+      [nome, matricula, senha_hash, modo, turma_id, cursoLimpo]
     );
 
     const usuario = result.rows[0];
@@ -155,6 +164,7 @@ router.post('/registro', authLimiter, async (req, res) => {
         matricula: usuario.matricula,
         modo: usuario.modo,
         turma_id: usuario.turma_id,
+        curso: usuario.curso,
       }
     });
 

@@ -128,6 +128,11 @@ async function adicionarColunas() {
     // proxima tentativa de login de cada uma, a definicao de uma senha real via
     // POST /api/auth/registro (ver comentario la). Contas novas ja nascem com TRUE.
     await pool.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS senha_definida_pelo_aluno BOOLEAN DEFAULT false`);
+    // Curso/instituicao do usuario (pedido da Rita/Samela, 21/08/2026): texto
+    // livre, capturado no cadastro (aluno e professor), so identificacao -
+    // nao entra em nenhuma regra de negocio. Contas existentes ficam com
+    // curso NULL.
+    await pool.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS curso VARCHAR(255)`);
     await pool.query(`ALTER TABLE animal ADD COLUMN IF NOT EXISTS age_days INTEGER DEFAULT 90`);
     await pool.query(`UPDATE animal SET fc = 370 WHERE fc = 75`);
     await pool.query(`ALTER TABLE desafios ADD COLUMN IF NOT EXISTS delta_acerto JSONB DEFAULT '{}'`);

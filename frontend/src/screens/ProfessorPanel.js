@@ -1096,7 +1096,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
                   <div style={{ fontSize: idx < 3 ? '22px' : '14px', fontWeight:'800', color:COLORS.textPrimary, width:'28px', textAlign:'center' }}>{medal}</div>
                   <div style={{ flex:1 }}>
                     <div style={{ ...FONT_SCALE.bodyBold, color:COLORS.textPrimary }}>{student.nome}</div>
-                    <div style={{ ...FONT_SCALE.caption, color:COLORS.textMuted, marginTop:'2px' }}>{student.matricula} · {student.sessoes} sessão(ões)</div>
+                    <div style={{ ...FONT_SCALE.caption, color:COLORS.textMuted, marginTop:'2px' }}>{student.matricula} · {student.sessoes} sessão(ões){student.curso ? ` · ${student.curso}` : ''}</div>
                   </div>
                   <div style={{ textAlign:'right' }}>
                     <div style={{ fontSize:'16px', fontWeight:'800', color:'#E8A83C' }}>⭐ {xp}</div>

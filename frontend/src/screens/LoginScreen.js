@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { auth, setToken, turmas } from "../api";
+import { auth, setToken } from "../api";
 import { COLORS, FONT_FAMILY, FONT_SCALE } from "../theme";
 import { MASCOT_IMAGES } from "../assets/mascote";
 
@@ -15,11 +15,14 @@ function ChibiMascot({ size = 76 }) {
 
 function LoginScreen({ onLogin }) {
   const [mode, setMode] = useState("aluno");
+  const [isNewAccount, setIsNewAccount] = useState(true);
   const [name, setName] = useState("");
   const [credential, setCredential] = useState("");
   const [alunoSenha, setAlunoSenha] = useState("");
+  const [curso, setCurso] = useState("");
   const [codigoTurma, setCodigoTurma] = useState("");
   const [error, setError] = useState("");
+  const [contaNaoEncontrada, setContaNaoEncontrada] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showReset, setShowReset] = useState(false);
   const [resetMatricula, setResetMatricula] = useState("");
@@ -28,46 +31,86 @@ function LoginScreen({ onLogin }) {
   const [resetError, setResetError] = useState("");
   const [resetLoading, setResetLoading] = useState(false);
 
+  function resetFormFields() {
+    setCredential("");
+    setAlunoSenha("");
+    setCurso("");
+    setCodigoTurma("");
+    setError("");
+    setContaNaoEncontrada(false);
+  }
+
+  function handleModeChange(novoModo) {
+    setMode(novoModo);
+    resetFormFields();
+  }
+
+  function handleIntentChange(novoIsNewAccount) {
+    setIsNewAccount(novoIsNewAccount);
+    resetFormFields();
+  }
+
+  // Atalho do "Essa conta nao existe, quer criar uma?": troca pra cadastro
+  // SEM limpar os campos - a pessoa ja digitou nome/matricula/senha tentando
+  // logar, nao faz sentido perder isso (pedido da Rita, 21/08/2026).
+  function handleOfferCadastro() {
+    setIsNewAccount(true);
+    setError("");
+    setContaNaoEncontrada(false);
+  }
+
+  // Nome so e obrigatorio quando serve pra alguma coisa: professor usa o
+  // nome como identificador de login (a matricula dele e derivada dele, ver
+  // abaixo), e cadastro de aluno precisa do nome pra criar a conta. Aluno
+  // que ja tem conta loga so com matricula+senha, sem precisar redigitar o
+  // nome toda vez.
+  const precisaNome = mode === "professor" || isNewAccount;
+
   async function handleSubmit() {
-    if (!name.trim()) { setError("Por favor, informe seu nome completo."); return; }
-    if (name.trim().split(/\s+/).length < 2) { setError("Por favor, digite seu nome completo (nome e sobrenome)."); return; }
-    if (!credential.trim()) { setError(mode === "aluno" ? "Por favor, informe sua matricula." : "Por favor, informe sua senha."); return; }
-    if (mode === "aluno" && !/^\d{6,}$/.test(credential.trim())) {
-      setError("Matricula invalida. Use apenas numeros com no minimo 6 digitos.");
-      return;
+    if (precisaNome) {
+      if (!name.trim()) { setError("Por favor, informe seu nome completo."); return; }
+      if (name.trim().split(/\s+/).length < 2) { setError("Por favor, digite seu nome completo (nome e sobrenome)."); return; }
     }
     if (mode === "aluno") {
+      if (!credential.trim()) { setError("Por favor, informe sua matricula."); return; }
+      if (!/^\d{6,}$/.test(credential.trim())) {
+        setError("Matricula invalida. Use apenas numeros com no minimo 6 digitos.");
+        return;
+      }
       if (!alunoSenha.trim()) { setError("Por favor, informe sua senha."); return; }
-      if (alunoSenha.trim().length < 4) { setError("A senha deve ter pelo menos 4 caracteres."); return; }
+      if (isNewAccount && alunoSenha.trim().length < 4) { setError("A senha deve ter pelo menos 4 caracteres."); return; }
+    } else if (!credential.trim()) {
+      setError("Por favor, informe sua senha.");
+      return;
     }
-    if (!codigoTurma.trim()) {
+    if (isNewAccount && !codigoTurma.trim()) {
       setError(mode === "professor" ? "Por favor, informe o codigo de professor." : "Por favor, informe o codigo da turma.");
       return;
     }
     setError("");
+    setContaNaoEncontrada(false);
     setLoading(true);
-
-    let turmaValidada;
-    try {
-      turmaValidada = await turmas.validar(codigoTurma.trim(), mode);
-    } catch (err) {
-      setError(mode === "professor" ? "Codigo de professor invalido ou turma inativa." : "Codigo de turma invalido ou turma inativa.");
-      setLoading(false);
-      return;
-    }
 
     const matricula = mode === "aluno"
       ? credential.trim()
       : "prof_" + name.trim().toLowerCase().replace(/[^a-z0-9]/g, "_");
     const senha = mode === "aluno" ? alunoSenha.trim() : credential.trim();
+
     try {
       let data;
-      try { data = await auth.login(matricula, senha, mode); }
-      catch { data = await auth.registro(name.trim(), matricula, senha, mode, codigoTurma.trim()); }
+      if (isNewAccount) {
+        data = await auth.registro(name.trim(), matricula, senha, mode, codigoTurma.trim(), curso.trim());
+      } else {
+        data = await auth.login(matricula, senha, mode);
+      }
       setToken(data.token);
-      onLogin({ ...data.usuario, turma_nome: turmaValidada.nome });
+      onLogin({ ...data.usuario });
     } catch (err) {
       setError(err.message || "Erro ao entrar. Tente novamente.");
+      // So oferece "criar conta" quando o backend confirma que a conta nao
+      // existe (motivo=conta_nao_encontrada) - nao quando a senha esta so
+      // errada, pra nao incentivar recadastro por cima de uma conta real.
+      setContaNaoEncontrada(!isNewAccount && err?.data?.motivo === "conta_nao_encontrada");
     } finally {
       setLoading(false);
     }
@@ -100,10 +143,17 @@ function LoginScreen({ onLogin }) {
     modeBtn: { flex:1, padding:"9px", borderRadius:"10px", ...FONT_SCALE.body, cursor:"pointer", fontFamily:"inherit" },
     modeBtnActive: { background:COLORS.indigo, color:"white", border:`1.5px solid ${COLORS.indigo}`, fontWeight:"800" },
     modeBtnInactive: { border:`1.5px solid ${COLORS.border}`, background:"transparent", color:COLORS.textMuted },
+    intentToggle: { display:"flex", width:"100%", borderBottom:`1.5px solid ${COLORS.border}` },
+    intentBtn: { flex:1, padding:"9px 4px", ...FONT_SCALE.body, cursor:"pointer", fontFamily:"inherit", background:"none", border:"none", borderBottom:"2.5px solid transparent", marginBottom:"-1.5px" },
+    intentBtnActive: { color:COLORS.indigo, fontWeight:"800", borderBottomColor:COLORS.indigo },
+    intentBtnInactive: { color:COLORS.textMuted },
+    sectionHint: { width:"100%", ...FONT_SCALE.caption, color:COLORS.textMuted, textAlign:"center", lineHeight:"1.5" },
     formGroup: { width:"100%", display:"flex", flexDirection:"column", gap:"0.4rem", boxSizing:"border-box" },
     label: { ...FONT_SCALE.label, color:COLORS.textMuted, letterSpacing:"0.05em", textTransform:"uppercase" },
+    fieldHint: { ...FONT_SCALE.caption, color:COLORS.textMuted, lineHeight:"1.4" },
     input: { width:"100%", padding:"11px 14px", borderRadius:"10px", fontSize:"14px", border:`1.5px solid ${COLORS.border}`, background:COLORS.surfaceMuted, color:COLORS.textPrimary, fontFamily:"inherit", outline:"none", boxSizing:"border-box" },
     error: { width:"100%", ...FONT_SCALE.body, color:COLORS.status.critico.color, backgroundColor:COLORS.status.critico.soft, border:`1.5px solid ${COLORS.status.critico.color}`, borderRadius:"10px", padding:"8px 12px" },
+    inlineLink: { color:COLORS.indigo, textDecoration:"underline", cursor:"pointer", fontWeight:"700" },
     submitBtn: { width:"100%", padding:"13px", borderRadius:"12px", border:"none", backgroundColor:COLORS.indigo, color:"white", fontSize:"14px", fontWeight:"800", cursor:"pointer", fontFamily:"inherit" },
     footerNote: { ...FONT_SCALE.caption, color:COLORS.textMuted, textAlign:"center", lineHeight:"1.6" },
   };
@@ -139,35 +189,84 @@ function LoginScreen({ onLogin }) {
         ) : (
           <>
             <div style={s.modeToggle}>
-              <button style={{...s.modeBtn,...(mode==="aluno"?s.modeBtnActive:s.modeBtnInactive)}} onClick={()=>{setMode("aluno");setCredential("");setAlunoSenha("");setError("");}}>Sou aluno</button>
-              <button style={{...s.modeBtn,...(mode==="professor"?s.modeBtnActive:s.modeBtnInactive)}} onClick={()=>{setMode("professor");setCredential("");setAlunoSenha("");setError("");}}>Sou professor</button>
+              <button style={{...s.modeBtn,...(mode==="aluno"?s.modeBtnActive:s.modeBtnInactive)}} onClick={()=>handleModeChange("aluno")}>Sou aluno</button>
+              <button style={{...s.modeBtn,...(mode==="professor"?s.modeBtnActive:s.modeBtnInactive)}} onClick={()=>handleModeChange("professor")}>Sou professor</button>
             </div>
-            <div style={s.formGroup}>
-      <label style={s.label}>nome completo</label>
-      <input style={s.input} type="text" placeholder="Ex: Ana Paula Silva" value={name} onChange={e=>{setName(e.target.value);setError('');}}/>
-    </div>
-            <div style={s.formGroup}>
-              <label style={s.label}>{mode==="aluno"?"matricula":"senha"}</label>
-              <input style={s.input} type={mode==="professor"?"password":"text"} placeholder={mode==="aluno"?"Ex: 2024001234":"Sua senha de professor"} value={credential} onChange={e=>{setCredential(e.target.value);setError("");}}/>
+
+            <div style={s.intentToggle}>
+              <button style={{...s.intentBtn,...(!isNewAccount?s.intentBtnActive:s.intentBtnInactive)}} onClick={()=>handleIntentChange(false)}>Já tenho conta</button>
+              <button style={{...s.intentBtn,...(isNewAccount?s.intentBtnActive:s.intentBtnInactive)}} onClick={()=>handleIntentChange(true)}>Primeira vez aqui</button>
             </div>
-            {mode==="aluno" && (
+            <div style={s.sectionHint}>
+              {isNewAccount
+                ? (mode === "aluno" ? "Criando uma conta nova de aluno. Preencha seus dados abaixo." : "Criando uma conta nova de professor. Preencha seus dados abaixo.")
+                : (mode === "aluno" ? "Entrando com uma conta de aluno já cadastrada." : "Entrando com uma conta de professor já cadastrada.")}
+            </div>
+
+            {precisaNome && (
               <div style={s.formGroup}>
-                <label style={s.label}>senha</label>
-                <input style={s.input} type="password" placeholder="Sua senha (defina uma na primeira vez)" value={alunoSenha} onChange={e=>{setAlunoSenha(e.target.value);setError("");}}/>
+                <label style={s.label}>nome completo</label>
+                <input style={s.input} type="text" placeholder="Ex: Ana Paula Silva" value={name} onChange={e=>{setName(e.target.value);setError('');}}/>
+                {mode==="professor" && !isNewAccount && (
+                  <div style={s.fieldHint}>Use exatamente o mesmo nome do seu cadastro — ele funciona como seu identificador de login.</div>
+                )}
               </div>
             )}
-            <div style={s.formGroup}>
-              <label style={s.label}>{mode==="professor" ? "codigo de professor" : "codigo da turma"}</label>
-              <input style={s.input} type="text" placeholder={mode==="professor" ? "Codigo de professor da turma" : "Codigo fornecido pelo professor"} value={codigoTurma} onChange={e=>{setCodigoTurma(e.target.value);setError("");}}/>
-            </div>
-            {error?<div style={s.error}>{error}</div>:null}
-            <button style={{...s.submitBtn,opacity:loading?0.7:1}} onClick={handleSubmit} disabled={loading}>{loading?"Entrando...":"Entrar no Phisys"}</button>
+
             {mode==="aluno" && (
+              <div style={s.formGroup}>
+                <label style={s.label}>matricula</label>
+                <input style={s.input} type="text" placeholder="Ex: 2024001234" value={credential} onChange={e=>{setCredential(e.target.value);setError("");}}/>
+              </div>
+            )}
+
+            <div style={s.formGroup}>
+              <label style={s.label}>senha</label>
+              <input
+                style={s.input}
+                type="password"
+                placeholder={isNewAccount ? "Crie uma senha (mínimo 4 caracteres)" : "Sua senha"}
+                value={mode==="aluno" ? alunoSenha : credential}
+                onChange={e => { mode==="aluno" ? setAlunoSenha(e.target.value) : setCredential(e.target.value); setError(""); }}
+              />
+            </div>
+
+            {isNewAccount && (
+              <div style={s.formGroup}>
+                <label style={s.label}>curso / instituição (opcional)</label>
+                <input style={s.input} type="text" placeholder="Ex: Enfermagem – UFPE" value={curso} onChange={e=>setCurso(e.target.value)}/>
+                <div style={s.fieldHint}>Ajuda o professor a identificar de onde você é, quando a turma reúne alunos de mais de uma instituição.</div>
+              </div>
+            )}
+
+            {isNewAccount && (
+              <div style={s.formGroup}>
+                <label style={s.label}>{mode==="professor" ? "codigo de professor" : "codigo da turma"}</label>
+                <input style={s.input} type="text" placeholder={mode==="professor" ? "Codigo de professor da turma" : "Codigo fornecido pelo professor"} value={codigoTurma} onChange={e=>{setCodigoTurma(e.target.value);setError("");}}/>
+                <div style={s.fieldHint}>
+                  {mode==="professor"
+                    ? "Diferente do código de aluno. Só quem já é professor desta turma pode te repassar esse código."
+                    : "Peça este código ao seu professor — é o mesmo para todos os alunos da turma."}
+                </div>
+              </div>
+            )}
+
+            {error?(
+              <div style={s.error}>
+                {contaNaoEncontrada ? (
+                  <>Essa conta ainda não existe. <span style={s.inlineLink} onClick={handleOfferCadastro}>Quer criar uma?</span></>
+                ) : error}
+              </div>
+            ):null}
+            <button style={{...s.submitBtn,opacity:loading?0.7:1}} onClick={handleSubmit} disabled={loading}>
+              {loading ? (isNewAccount ? "Criando conta..." : "Entrando...") : (isNewAccount ? "Criar conta" : "Entrar no Phisys")}
+            </button>
+            {mode==="aluno" && !isNewAccount && (
               <div style={{ ...FONT_SCALE.label, color:COLORS.indigo, cursor:'pointer', textDecoration:'underline' }} onClick={() => { setShowReset(true); setError(''); }}>Esqueceu a senha?</div>
             )}
           </>
         )}
-<div style={s.footerNote}>Seus dados sao usados apenas para registro de desempenho e nao sao compartilhados.</div>
+        <div style={s.footerNote}>Seus dados sao usados apenas para registro de desempenho e nao sao compartilhados.</div>
       </div>
     </div>
   );

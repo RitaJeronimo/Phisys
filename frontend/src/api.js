@@ -6,7 +6,11 @@ async function req(path, options = {}) {
     ...restOptions,
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.erro || 'Erro na requisicao');
+  if (!res.ok) {
+    const err = new Error(data.erro || 'Erro na requisicao');
+    err.data = data;
+    throw err;
+  }
   return data;
 }
 export function getToken()    { return localStorage.getItem('phisys_token'); }
@@ -16,8 +20,8 @@ export function authHeaders() { return { Authorization: `Bearer ${getToken()}` }
 export const auth = {
   login: (matricula, senha, modo) =>
     req('/api/auth/login', { method: 'POST', body: JSON.stringify({ matricula, senha, modo }) }),
-  registro: (nome, matricula, senha, modo, codigo_turma) =>
-    req('/api/auth/registro', { method: 'POST', body: JSON.stringify({ nome, matricula, senha, modo, codigo_turma }) }),
+  registro: (nome, matricula, senha, modo, codigo_turma, curso) =>
+    req('/api/auth/registro', { method: 'POST', body: JSON.stringify({ nome, matricula, senha, modo, codigo_turma, curso }) }),
   resetarSenha: (matricula, codigo, nova_senha) =>
     req('/api/auth/resetar-senha', { method: 'POST', body: JSON.stringify({ matricula, codigo, nova_senha }) }),
 };

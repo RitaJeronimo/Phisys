@@ -10,7 +10,7 @@ const { requireProfessor, mesmaTurmaDoRecurso } = require('../middleware/turmaOw
 router.get('/', auth, requireProfessor, async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT u.id, u.nome, u.matricula, u.modo, u.criado_em,
+      `SELECT u.id, u.nome, u.matricula, u.modo, u.criado_em, u.curso,
               r.xp_total, r.sessoes, r.media_saude
        FROM usuarios u
        LEFT JOIN ranking r ON r.usuario_id = u.id
@@ -30,7 +30,7 @@ router.get('/:id', auth, requireProfessor, mesmaTurmaDoRecurso('usuarios'), asyn
   const { id } = req.params;
   try {
     const result = await pool.query(
-      `SELECT u.id, u.nome, u.matricula, u.modo, u.criado_em,
+      `SELECT u.id, u.nome, u.matricula, u.modo, u.criado_em, u.curso,
               r.xp_total, r.sessoes, r.media_saude
        FROM usuarios u
        LEFT JOIN ranking r ON r.usuario_id = u.id
