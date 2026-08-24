@@ -17,6 +17,17 @@ export function getToken()    { return localStorage.getItem('phisys_token'); }
 export function setToken(t)   { localStorage.setItem('phisys_token', t); }
 export function removeToken() { localStorage.removeItem('phisys_token'); }
 export function authHeaders() { return { Authorization: `Bearer ${getToken()}` }; }
+// Decodifica o payload do JWT (base64url) como UTF-8 de verdade. atob() puro
+// devolve uma "binary string" de 1 byte por caractere - nomes acentuados
+// (ex: "Sâmela") saiam corrompidos ("SÃ¢mela") ao restaurar sessão do token
+// salvo, so apos reload de pagina (login fresco usa o nome vindo direto da
+// resposta HTTP, que o fetch().json() ja decodifica certo).
+export function decodeToken(token) {
+  let base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+  base64 += '='.repeat((4 - base64.length % 4) % 4);
+  const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+  return JSON.parse(new TextDecoder('utf-8').decode(bytes));
+}
 export const auth = {
   login: (matricula, senha, modo) =>
     req('/api/auth/login', { method: 'POST', body: JSON.stringify({ matricula, senha, modo }) }),

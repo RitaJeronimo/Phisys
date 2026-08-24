@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { PARAMS, getDefaultValues, getMascotStatus, calculateFinalGrade, STATUS, calcularSaude, calcularEnergiaModulada, embaralharArray, getAgeStage } from '../engine/mascotEngine';
-import { ranking as rankingApi, getToken, desafios as desafiosApi, configuracoes as configuracoesApi, simulacoes as simulacoesApi } from '../api';
+import { ranking as rankingApi, getToken, decodeToken, desafios as desafiosApi, configuracoes as configuracoesApi, simulacoes as simulacoesApi } from '../api';
 import { COLORS, FONT_FAMILY, SHADOW_CARD, FONT_SCALE } from '../theme';
 import { MASCOT_IMAGES } from '../assets/mascote';
 
@@ -212,7 +212,7 @@ useEffect(() => {
       if (!Array.isArray(data)) return;
       const token = getToken();
       if (!token) return;
-      const payload = JSON.parse(atob(token.split('.')[1]));
+      const payload = decodeToken(token);
       const idx = data.findIndex(r => r.id === payload.id || r.nome === payload.nome);
       if (idx >= 0) setMyRank('#' + (idx + 1));
     }).catch(() => {});

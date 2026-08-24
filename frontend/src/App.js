@@ -7,7 +7,7 @@ import ProfessorPanel from './screens/ProfessorPanel';
 import SecondaryScreen from './screens/SecondaryScreen';
 import FinalScreen from './screens/FinalScreen';
 import { getDefaultPrimaryValues, calcularSaude } from './engine/mascotEngine';
-import { animal as animalApi, ranking as rankingApi, sessoes as sessoesApi, mensagens as mensagensApi, getToken, removeToken } from './api';
+import { animal as animalApi, ranking as rankingApi, sessoes as sessoesApi, mensagens as mensagensApi, getToken, removeToken, decodeToken } from './api';
 import { COLORS, FONT_FAMILY, FONT_SCALE } from './theme';
 import { MASCOT_IMAGES } from './assets/mascote';
 import React, { useState, useEffect } from 'react';
@@ -56,7 +56,7 @@ function App() {
     const token = getToken();
     if (!token) return;
     try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
+      const payload = decodeToken(token);
       if (payload.exp * 1000 < Date.now()) return;
       const loggedUser = { id: payload.id, name: payload.nome, nome: payload.nome, matricula: payload.matricula, mode: payload.modo, modo: payload.modo };
       setUser(loggedUser);
