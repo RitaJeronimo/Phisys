@@ -261,8 +261,10 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
       setCadastrandoAluno(false);
       fetchStudents();
       // Reaproveita o mesmo card de "código pra mostrar em sala" que o reset
-      // de senha ja usa - e literalmente o mesmo mecanismo (item 4).
-      setResetCodeInfo({ nome: data.nome, codigo: data.codigo, expiraEmMinutos: data.expira_em_minutos });
+      // de senha ja usa - e literalmente o mesmo mecanismo (item 4). Esse
+      // codigo nao expira em minutos - fica valido ate a turma ser
+      // desativada (pedido da Rita, 24/08/2026).
+      setResetCodeInfo({ nome: data.nome, codigo: data.codigo, expiraComTurma: true });
     } catch(e) {
       alert('Erro ao cadastrar aluno: ' + e.message);
     }
@@ -824,7 +826,11 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
         <div style={styles.resetCodeCard}>
           <div style={styles.resetCodeLabel}>🔑 Código para <b>{resetCodeInfo.nome}</b></div>
           <div style={styles.resetCodeValue}>{resetCodeInfo.codigo}</div>
-          <div style={styles.resetCodeHint}>Válido por {resetCodeInfo.expiraEmMinutos} minutos · uso único</div>
+          <div style={styles.resetCodeHint}>
+            {resetCodeInfo.expiraComTurma
+              ? 'Válido até a turma ser desativada · uso único'
+              : `Válido por ${resetCodeInfo.expiraEmMinutos} minutos · uso único`}
+          </div>
           <div style={styles.resetCodeActions}>
             <button style={styles.resetCodeCopyBtn} onClick={handleCopyResetCode}>Copiar</button>
             <button style={styles.resetCodeCloseBtn} onClick={() => setResetCodeInfo(null)}>Fechar</button>

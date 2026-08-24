@@ -6,21 +6,32 @@ const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const { requireProfessor, mesmaTurmaDoRecurso, resolveTurmaId } = require('../middleware/turmaOwnership');
 
-// Gera e grava um codigo de 6 digitos de uso unico (10 min) pra um aluno
+// Gera e grava um codigo de 6 digitos de uso unico pra um aluno
 // definir/redefinir a propria senha em POST /api/auth/resetar-senha.
 // Compartilhado entre o cadastro manual (POST /, item 4) e o reset de senha
 // (PUT /:id/resetar-senha, ja existia desde o A2 da auditoria de seguranca) -
 // sao o mesmo mecanismo: "conta sem senha utilizavel, so codigo destrava".
-async function gerarCodigoAcesso(usuario_id) {
+//
+// expiraComTurma=true (usado so no cadastro manual, 24/08/2026): o codigo de
+// primeiro acesso fica valido enquanto a turma continuar ativa, em vez de
+// expirar em 10 minutos - o professor costuma cadastrar varios alunos de uma
+// vez e entregar os codigos em sala depois. expira_em ainda grava um valor
+// bem no futuro, so como rede de seguranca (nunca fica "eterno" de verdade);
+// quem decide de verdade e o POST /api/auth/resetar-senha conferindo
+// turmas.ativa quando expira_com_turma=true. O reset tradicional (aluno ja
+// ativo, com progresso real) continua sem essa flag, sempre 10 minutos -
+// esticar a validade la reabriria a mesma janela de ataque que o A2 fechou.
+async function gerarCodigoAcesso(usuario_id, { expiraComTurma = false } = {}) {
   const codigo = String(crypto.randomInt(0, 1000000)).padStart(6, '0');
   const codigo_hash = await bcrypt.hash(codigo, 10);
   // So um codigo valido por vez por aluno - gerar um novo mata qualquer
   // codigo anterior ainda nao usado.
   await pool.query(`DELETE FROM reset_senha_tokens WHERE usuario_id = $1 AND usado_em IS NULL`, [usuario_id]);
+  const intervalo = expiraComTurma ? '10 years' : '10 minutes';
   await pool.query(
-    `INSERT INTO reset_senha_tokens (usuario_id, codigo_hash, expira_em)
-     VALUES ($1, $2, NOW() + INTERVAL '10 minutes')`,
-    [usuario_id, codigo_hash]
+    `INSERT INTO reset_senha_tokens (usuario_id, codigo_hash, expira_em, expira_com_turma)
+     VALUES ($1, $2, NOW() + INTERVAL '${intervalo}', $3)`,
+    [usuario_id, codigo_hash, expiraComTurma]
   );
   return codigo;
 }
@@ -64,15 +75,15 @@ router.post('/', auth, requireProfessor, resolveTurmaId, async (req, res) => {
     await pool.query('INSERT INTO animal (usuario_id) VALUES ($1)', [usuario.id]);
     await pool.query('INSERT INTO ranking (usuario_id) VALUES ($1)', [usuario.id]);
 
-    const codigo = await gerarCodigoAcesso(usuario.id);
+    const codigo = await gerarCodigoAcesso(usuario.id, { expiraComTurma: true });
 
     res.status(201).json({
       id: usuario.id,
       nome: usuario.nome,
       matricula: usuario.matricula,
       codigo,
-      expira_em_minutos: 10,
-      mensagem: 'Aluno cadastrado. Mostre o codigo a ele - tem 10 minutos para definir a propria senha.',
+      expira_com_turma: true,
+      mensagem: 'Aluno cadastrado. Mostre o codigo a ele - fica valido ate a turma ser desativada.',
     });
   } catch (err) {
     console.error('Erro ao cadastrar aluno:', err.message);

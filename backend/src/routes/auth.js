@@ -187,7 +187,7 @@ router.post('/resetar-senha', authLimiter, async (req, res) => {
 
   try {
     const usuarioResult = await pool.query(
-      `SELECT id FROM usuarios WHERE matricula = $1 AND modo = 'aluno'`,
+      `SELECT id, turma_id FROM usuarios WHERE matricula = $1 AND modo = 'aluno'`,
       [matricula]
     );
     if (usuarioResult.rows.length === 0) {
@@ -196,7 +196,7 @@ router.post('/resetar-senha', authLimiter, async (req, res) => {
     const usuario_id = usuarioResult.rows[0].id;
 
     const tokenResult = await pool.query(
-      `SELECT id, codigo_hash FROM reset_senha_tokens
+      `SELECT id, codigo_hash, expira_com_turma FROM reset_senha_tokens
        WHERE usuario_id = $1 AND usado_em IS NULL AND expira_em > NOW()
        ORDER BY criado_em DESC LIMIT 1`,
       [usuario_id]
@@ -205,6 +205,17 @@ router.post('/resetar-senha', authLimiter, async (req, res) => {
       return res.status(401).json(erroGenerico);
     }
     const tokenRow = tokenResult.rows[0];
+
+    // Codigo de primeiro acesso (item 4, 24/08/2026): nao expira num prazo
+    // fixo, so quando a turma for desativada - conferido aqui, ao vivo,
+    // contra o estado atual da turma (mesmo padrao do middleware do item 2:
+    // se a turma reativar depois, o codigo volta a funcionar sozinho).
+    if (tokenRow.expira_com_turma) {
+      const turma = await pool.query('SELECT ativa FROM turmas WHERE id = $1', [usuarioResult.rows[0].turma_id]);
+      if (turma.rows.length === 0 || !turma.rows[0].ativa) {
+        return res.status(401).json(erroGenerico);
+      }
+    }
 
     const codigoValido = await bcrypt.compare(codigo, tokenRow.codigo_hash);
     if (!codigoValido) {

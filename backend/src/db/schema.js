@@ -335,6 +335,17 @@ async function adicionarColunas() {
     // compartilhar a mesma turma se soubessem o mesmo codigo_professor dela.
     await pool.query(`ALTER TABLE turmas DROP COLUMN IF EXISTS codigo_professor`);
 
+    // Codigo de primeiro acesso (cadastro manual de aluno, item 4) deixa de
+    // expirar em 10 minutos - pedido da Rita apos conversar com Marcia/Samela,
+    // 24/08/2026: na pratica o professor cadastra varios alunos de uma vez e
+    // entrega os codigos em sala depois, nao da tempo de cada um usar em 10min.
+    // So marca os tokens de primeiro acesso (expira_com_turma=true); o reset
+    // de senha tradicional (PUT /api/usuarios/:id/resetar-senha, aluno ja
+    // ativo com progresso real) continua em 10 minutos, sem essa flag - o
+    // codigo curto + uso unico ja bastam, esticar a validade so nesse caso
+    // reabriria a mesma janela de ataque que o A2 fechou.
+    await pool.query(`ALTER TABLE reset_senha_tokens ADD COLUMN IF NOT EXISTS expira_com_turma BOOLEAN DEFAULT false`);
+
     console.log('Colunas e tabelas adicionadas com sucesso!');
   } catch (err) {
     console.error('Erro ao adicionar colunas:', err.message);
