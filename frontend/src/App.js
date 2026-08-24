@@ -132,6 +132,20 @@ function App() {
   }
 
   function handleLogout() { removeToken(); setUser(null); setMode(null); setScreen('home'); setValues(getDefaultPrimaryValues()); setScore(100); setSessionData(null); }
+
+  // Aluno com a turma desativada pelo professor (item 2, 24/08/2026): o
+  // token ja e limpo em api.js na hora que qualquer chamada autenticada
+  // detecta o bloqueio, mas o estado do React (`user`) so muda aqui - um
+  // unico listener central cobre qualquer tela/chamada que dispare o
+  // evento, sem precisar tratar caso a caso em cada .catch() do app.
+  useEffect(() => {
+    function onTurmaDesativada() {
+      handleLogout();
+      alert('Sua turma foi desativada pelo professor. Fale com ele se achar que isso é um engano.');
+    }
+    window.addEventListener('phisys:turma-desativada', onTurmaDesativada);
+    return () => window.removeEventListener('phisys:turma-desativada', onTurmaDesativada);
+  }, []);
   function handleBack() { setMode(null); setScreen('home'); }
   function handleSelectMode(m) {
     setMode(m);

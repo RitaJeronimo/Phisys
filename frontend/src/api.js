@@ -7,6 +7,16 @@ async function req(path, options = {}) {
   });
   const data = await res.json();
   if (!res.ok) {
+    // Aluno com a turma desativada (item 2, 24/08/2026): o backend corta
+    // acesso em toda chamada autenticada, nao só no login - detectado aqui,
+    // num unico lugar central, em vez de em cada .catch() espalhado pelas
+    // telas (App.js, HomeScreen.js, GameScreen.js, ...). Limpa o token e
+    // avisa o resto do app via evento; quem estiver ouvindo (App.js) decide
+    // o que fazer (logout + mensagem).
+    if (data.motivo === 'turma_desativada') {
+      removeToken();
+      window.dispatchEvent(new CustomEvent('phisys:turma-desativada'));
+    }
     const err = new Error(data.erro || 'Erro na requisicao');
     err.data = data;
     throw err;

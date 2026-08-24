@@ -54,6 +54,18 @@ router.post('/login', authLimiter, async (req, res) => {
       return res.status(401).json({ erro: 'Matricula ou senha invalidos.' });
     }
 
+    // Aluno so consegue logar se a propria turma continuar ativa (item 2 do
+    // pedido da Marcia/Rita, 24/08/2026) - desativar uma turma bloqueia
+    // acesso de aluno (Modo Livre e Modo Sessao, ver auth.js middleware para
+    // o corte de sessoes ja abertas). Professor nunca passa por essa
+    // checagem, mantem acesso normal mesmo com a turma desativada.
+    if (usuario.modo === 'aluno') {
+      const turma = await pool.query('SELECT ativa FROM turmas WHERE id = $1', [usuario.turma_id]);
+      if (turma.rows.length === 0 || !turma.rows[0].ativa) {
+        return res.status(403).json({ erro: 'Sua turma foi desativada pelo professor.', motivo: 'turma_desativada' });
+      }
+    }
+
     const token = jwt.sign(
       { id: usuario.id, nome: usuario.nome, matricula: usuario.matricula, modo: usuario.modo, turma_id: usuario.turma_id },
       process.env.JWT_SECRET,
