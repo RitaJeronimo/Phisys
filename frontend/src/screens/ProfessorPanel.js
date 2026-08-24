@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { DEFAULT_MOTIVATION_MESSAGES } from './MotivationScreen';
 import { DEFAULT_WEIGHTS, INTERVENTIONS, PRIMARY_PARAMS } from '../engine/mascotEngine';
-import { ranking as rankingApi, authHeaders, simulacoes as simulacoesApi, usuarios as usuariosApi, configuracoes as configuracoesApi, turmas as turmasApi, parametros as parametrosApi } from '../api';
+import { ranking as rankingApi, authHeaders, simulacoes as simulacoesApi, usuarios as usuariosApi, configuracoes as configuracoesApi, turmas as turmasApi, parametros as parametrosApi, desafios as desafiosApi, animal as animalApi } from '../api';
 import { COLORS, FONT_FAMILY, FONT_SCALE, SHADOW_CARD } from '../theme';
 
 const BASE = process.env.REACT_APP_API_URL || 'https://phisys-production.up.railway.app';
@@ -56,19 +56,36 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
     response_time: DEFAULT_WEIGHTS.response_time * 100,
   });
 
+  // Turma que as outras abas (Desafios, Simulações, Parâmetros, Alunos, Notas,
+  // Pesos, Crescimento) enxergam agora - desde o item 3 (24/08/2026) o
+  // professor pode ser dono de várias turmas, então precisa escolher qual.
+  // Persistido pra sobreviver a um reload (mesmo padrão de phisys_sessao_config).
+  const [turmaAtualId, setTurmaAtualId] = useState(() => {
+    const salvo = Number(localStorage.getItem('phisys_turma_atual_id'));
+    return Number.isInteger(salvo) && salvo > 0 ? salvo : null;
+  });
+
+  function selecionarTurma(id) {
+    setTurmaAtualId(id);
+    if (id) localStorage.setItem('phisys_turma_atual_id', String(id));
+    else localStorage.removeItem('phisys_turma_atual_id');
+  }
+
   useEffect(() => {
-    configuracoesApi.getPesos()
+    if (!turmaAtualId) return;
+    configuracoesApi.getPesos(turmaAtualId)
       .then(data => setWeights(data))
       .catch(() => {});
-  }, []);
+  }, [turmaAtualId]);
   const [manualGrades, setManualGrades] = useState({});
   const [recuperacaoConfig, setRecuperacaoConfig] = useState({ multiplicador: 1, desafios_extras: 0 });
 
   useEffect(() => {
-    configuracoesApi.getRecuperacao()
+    if (!turmaAtualId) return;
+    configuracoesApi.getRecuperacao(turmaAtualId)
       .then(data => setRecuperacaoConfig(data))
       .catch(() => {});
-  }, []);
+  }, [turmaAtualId]);
 
   const [sessaoFoco, setSessaoFoco] = useState(() => {
     try {
@@ -84,7 +101,19 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
 
   const fetchTurmas = useCallback(() => {
     turmasApi.listar()
-      .then(data => { if (Array.isArray(data)) setTurmasList(data); })
+      .then(data => {
+        if (!Array.isArray(data)) return;
+        setTurmasList(data);
+        // Se a turma selecionada não existe mais na lista (ou nenhuma foi
+        // escolhida ainda), cai pra primeira disponível.
+        setTurmaAtualId(atual => {
+          if (data.some(t => t.id === atual)) return atual;
+          const proxima = data[0]?.id || null;
+          if (proxima) localStorage.setItem('phisys_turma_atual_id', String(proxima));
+          else localStorage.removeItem('phisys_turma_atual_id');
+          return proxima;
+        });
+      })
       .catch(() => setTurmasList([]));
   }, []);
 
@@ -101,17 +130,19 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
   const [valoresLancamento, setValoresLancamento] = useState({});
 
   const fetchParametros = useCallback(() => {
-    parametrosApi.listar()
+    if (!turmaAtualId) { setParametrosList([]); return; }
+    parametrosApi.listar(turmaAtualId)
       .then(data => { if (Array.isArray(data)) setParametrosList(data); })
       .catch(() => setParametrosList([]));
-  }, []);
+  }, [turmaAtualId]);
 
   useEffect(() => {
     fetchParametros();
   }, [fetchParametros]);
 
   const fetchStudents = useCallback(() => {
-    rankingApi.get()
+    if (!turmaAtualId) { setStudents([]); return; }
+    rankingApi.get(turmaAtualId)
       .then(data => {
         if (Array.isArray(data)) {
           setStudents(data);
@@ -126,7 +157,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
         }
       })
       .catch(() => setStudents([]));
-  }, []);
+  }, [turmaAtualId]);
 
   useEffect(() => {
     fetchStudents();
@@ -140,7 +171,8 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
   }, [tab, fetchStudents]);
 
   useEffect(() => {
-    req('/api/desafios', { headers: authHeaders() })
+    if (!turmaAtualId) { setChallenges([]); return; }
+    desafiosApi.get(turmaAtualId)
       .then(data => {
         if (Array.isArray(data) && data.length > 0) {
           const formatted = data.map(d => ({
@@ -167,7 +199,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
         }
       })
       .catch(() => setChallenges([]));
-  }, []);
+  }, [turmaAtualId]);
 
   useEffect(() => {
     // Removido o fallback para INITIAL_SIMULATIONS quando o banco esta vazio -
@@ -176,7 +208,8 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
     // tentar lancar para a turma. Agora, se nao houver simulacoes reais
     // cadastradas, a lista aparece vazia de verdade, incentivando o professor
     // a criar uma nova.
-    req('/api/simulacoes', { headers: authHeaders() })
+    if (!turmaAtualId) { setSimulations([]); return; }
+    simulacoesApi.listar(turmaAtualId)
       .then(data => {
         if (Array.isArray(data) && data.length > 0) {
           const formatted = data.map(d => ({
@@ -196,7 +229,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
         }
       })
       .catch(() => setSimulations([]));
-  }, []);
+  }, [turmaAtualId]);
 
   useEffect(() => {
     req('/api/mensagens', { headers: authHeaders() })
@@ -237,7 +270,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
     if (!window.confirm('⚠️ Isso vai DELETAR todos os alunos cadastrados permanentemente. Eles precisarão se cadastrar novamente. Confirma?')) return;
     if (!window.confirm('Tem certeza absoluta? Essa ação não pode ser desfeita.')) return;
     try {
-      await usuariosApi.limparTodos();
+      await usuariosApi.limparTodos(turmaAtualId);
       setStudents([]);
       setManualGrades({});
       alert('✅ Todos os alunos foram removidos. A turma está pronta para novo cadastro.');
@@ -250,7 +283,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
     if (!window.confirm('⚠️ ATENÇÃO: Isso vai zerar o ranking, sessões e animais de TODOS os alunos da sua turma. Essa ação não pode ser desfeita. Confirma?')) return;
     if (!window.confirm('Tem certeza absoluta? Todos os dados de desempenho serão perdidos.')) return;
     try {
-      await rankingApi.reset();
+      await rankingApi.reset(turmaAtualId);
       fetchStudents();
       alert('✅ Turma zerada com sucesso!');
     } catch(e) {
@@ -260,7 +293,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
 
   async function handleExport() {
     try {
-      const data = await rankingApi.get();
+      const data = await rankingApi.get(turmaAtualId);
       const header = 'Posicao,Nome,Matricula,XP Total,Sessoes,Media Saude,Nota Final\n';
       const rows = data.map((r, i) =>
         `${i+1},${r.nome},${r.matricula},${r.xp_total},${r.sessoes},${Number(r.media_saude).toFixed(1)},${manualGrades[r.id] || '-'}`
@@ -278,16 +311,20 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
   }
 
   // ── TURMAS ──
-  function handleNewTurma() { setEditingTurma('new'); setTurmaForm({ nome:'', codigo:'', codigo_professor:'', ativa:true }); }
+  function handleNewTurma() { setEditingTurma('new'); setTurmaForm({ nome:'', codigo:'', ativa:true }); }
   function handleEditTurma(t) { setEditingTurma(t.id); setTurmaForm({ ...t }); }
   async function handleSaveTurma() {
     if (!turmaForm.nome || !turmaForm.codigo) return;
     try {
       if (editingTurma === 'new') {
-        const created = await turmasApi.criar({ nome: turmaForm.nome, codigo: turmaForm.codigo, codigo_professor: turmaForm.codigo_professor || null });
+        const created = await turmasApi.criar({ nome: turmaForm.nome, codigo: turmaForm.codigo });
         setTurmasList(prev => [created, ...prev]);
+        // Turma recem-criada vira a selecionada automaticamente - se era a
+        // primeira do professor, ele nao precisa procurar o seletor pra
+        // conseguir usar as outras abas em seguida.
+        selecionarTurma(created.id);
       } else {
-        const updated = await turmasApi.editar(editingTurma, { nome: turmaForm.nome, codigo: turmaForm.codigo, codigo_professor: turmaForm.codigo_professor || null });
+        const updated = await turmasApi.editar(editingTurma, { nome: turmaForm.nome, codigo: turmaForm.codigo });
         setTurmasList(prev => prev.map(t => t.id === editingTurma ? updated : t));
       }
       setEditingTurma(null); setTurmaForm(null);
@@ -317,7 +354,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
         valor_max: Number(parametroForm.valor_max),
       };
       if (editingParametro === 'new') {
-        const created = await parametrosApi.criar(payload);
+        const created = await parametrosApi.criar(payload, turmaAtualId);
         setParametrosList(prev => [created, ...prev]);
       } else {
         const updated = await parametrosApi.editar(editingParametro, payload);
@@ -366,21 +403,17 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
     if (!form.title || !form.question || form.options.some(o=>!o)) return;
     try {
       if (editing === 'new') {
-        const created = await req('/api/desafios', {
-          method: 'POST',
-          headers: authHeaders(),
-          body: JSON.stringify({
-            titulo: form.title,
-            pergunta: form.question,
-            opcoes: form.options,
-            correta: form.correct,
-            foco: form.focus,
-            dificuldade: form.difficulty,
-            intervencao: form.intervencao,
-            delta_acerto: form.delta_acerto || {},
-            delta_erro:   form.delta_erro   || {},
-          }),
-        });
+        const created = await desafiosApi.criar({
+          titulo: form.title,
+          pergunta: form.question,
+          opcoes: form.options,
+          correta: form.correct,
+          foco: form.focus,
+          dificuldade: form.difficulty,
+          intervencao: form.intervencao,
+          delta_acerto: form.delta_acerto || {},
+          delta_erro:   form.delta_erro   || {},
+        }, turmaAtualId);
         setChallenges(prev => [...prev, { ...form, id: created.id, turma_id: created.turma_id }]);
       } else {
         await req(`/api/desafios/${editing}`, {
@@ -442,18 +475,14 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
     if (!simForm.title) return;
     try {
       if (editing === 'new') {
-        const created = await req('/api/simulacoes', {
-          method: 'POST',
-          headers: authHeaders(),
-          body: JSON.stringify({
-            titulo: simForm.title,
-            descricao: simForm.description,
-            foco: simForm.focus,
-            params: simForm.params,
-            cuidados_por_sessao: simForm.cuidadosPorSessao,
-            intervencao: simForm.intervencao,
-          }),
-        });
+        const created = await simulacoesApi.criar({
+          titulo: simForm.title,
+          descricao: simForm.description,
+          foco: simForm.focus,
+          params: simForm.params,
+          cuidados_por_sessao: simForm.cuidadosPorSessao,
+          intervencao: simForm.intervencao,
+        }, turmaAtualId);
         setSimulations(prev => [...prev, { ...simForm, id: created.id, turma_id: created.turma_id }]);
       } else {
         await req(`/api/simulacoes/${editing}`, {
@@ -683,9 +712,6 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
           <div style={styles.fieldLabel}>Código de acesso (alunos)</div>
           <input style={styles.input} value={turmaForm.codigo} onChange={e=>setTurmaForm(f=>({...f,codigo:e.target.value.toUpperCase()}))} placeholder="Ex: TURMA2026A"/>
           <div style={styles.fieldHint}>Alunos usarão este código para entrar nesta turma.</div>
-          <div style={styles.fieldLabel}>Código de professor</div>
-          <input style={styles.input} value={turmaForm.codigo_professor || ''} onChange={e=>setTurmaForm(f=>({...f,codigo_professor:e.target.value.toUpperCase()}))} placeholder="Ex: PROF2026A"/>
-          <div style={styles.fieldHint}>Compartilhe apenas com outros professores desta turma. Quem souber só o código de alunos não consegue mais se cadastrar como professor.</div>
           <div style={{height:'2rem'}}/>
         </div>
       </div>
@@ -747,6 +773,33 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
         </div>
       )}
 
+      {/* Seletor de turma - todas as outras abas (exceto Mensagens, que e
+          global) mostram dados desta turma. Desde o item 3 (24/08/2026) um
+          professor pode ter varias, entao precisa escolher qual esta vendo. */}
+      {turmasList.length > 0 ? (
+        <div style={{ display:'flex', gap:'8px', overflowX:'auto', padding:'0 1rem .75rem' }}>
+          {turmasList.map(t => (
+            <div key={t.id}
+              onClick={() => selecionarTurma(t.id)}
+              style={{
+                flexShrink:0, padding:'6px 12px', borderRadius:'10px', cursor:'pointer',
+                whiteSpace:'nowrap', ...FONT_SCALE.label, fontWeight:'700',
+                background: t.id===turmaAtualId ? COLORS.indigo : COLORS.surface,
+                border: `1.5px solid ${t.id===turmaAtualId ? COLORS.indigo : COLORS.border}`,
+                color: t.id===turmaAtualId ? 'white' : COLORS.textMuted,
+                opacity: t.ativa ? 1 : .6,
+              }}
+            >
+              🏫 {t.nome}{!t.ativa ? ' (inativa)' : ''}
+            </div>
+          ))}
+        </div>
+      ) : tab !== 'turmas' && tab !== 'mensagens' ? (
+        <div style={{ margin:'0 1rem .75rem', background:COLORS.status.debilitado.soft, border:`1px solid ${COLORS.status.debilitado.color}`, borderRadius:'12px', padding:'.75rem 1rem', ...FONT_SCALE.label, color:COLORS.textPrimary }}>
+          Você ainda não tem nenhuma turma. Crie uma na aba 🏫 Turmas para usar as outras abas.
+        </div>
+      ) : null}
+
       <div style={styles.tabs}>
         {[['turmas','🏫 Turmas'],['desafios','🎯 Desafios'],['simulacoes','🔬 Simulações'],['parametros','📊 Parâmetros'],['alunos','👥 Alunos'],['notas','📝 Notas'],['pesos','⚖️ Pesos'],['mensagens','💬 Mensagens'],['crescimento','🐭 Crescimento']].map(([id,label])=>(
           <div key={id} style={{...styles.tab,...(tab===id?styles.tabActive:{})}} onClick={()=>setTab(id)}>{label}</div>
@@ -761,7 +814,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
             <button style={styles.newBtn} onClick={handleNewTurma}>+ Nova</button>
           </div>
           <div style={styles.simInfo}>
-            🏫 Cada turma tem um código de acesso para alunos e um código separado para professores. Só quem tiver o código de professor consegue se cadastrar como professor dessa turma. Desafios, simulações e ranking ficam isolados por turma.
+            🏫 Cada turma tem seu próprio código de acesso para alunos. Desafios, simulações, parâmetros e ranking ficam isolados por turma - só você vê e edita as turmas que você mesmo criou.
           </div>
           {turmasList.length === 0 ? (
             <div style={{ margin:'0 1rem', background:COLORS.surfaceMuted, borderRadius:'14px', padding:'2rem', textAlign:'center', color:COLORS.textMuted, fontSize:'13px' }}>
@@ -769,18 +822,20 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
             </div>
           ) : (
             turmasList.map(t=>(
-              <div key={t.id} style={{...styles.challengeCard,...(!t.ativa?{opacity:.5}:{})}}>
+              <div key={t.id} style={{...styles.challengeCard,...(!t.ativa?{opacity:.5}:{}),...(t.id===turmaAtualId?{border:`2px solid ${COLORS.indigo}`}:{})}}>
                 <div style={styles.challengeTop}>
                   <div style={styles.challengeTitle}>🏫 {t.nome}</div>
                   <span style={{...styles.metaTag, color: t.ativa?COLORS.status.saudavel.color:COLORS.textMuted}}>{t.ativa?'● Ativa':'○ Inativa'}</span>
                 </div>
                 <div style={styles.challengeMeta}>
                   <span style={styles.metaTag}>Código alunos: {t.codigo}</span>
-                  {t.codigo_professor
-                    ? <span style={styles.metaTag}>Código professor: {t.codigo_professor}</span>
-                    : <span style={{...styles.metaTag, color:COLORS.status.critico.color}}>⚠️ Sem código de professor</span>}
                 </div>
                 <div style={styles.challengeActions}>
+                  {t.id===turmaAtualId ? (
+                    <span style={{...styles.metaTag, color:COLORS.indigo, fontWeight:'800'}}>✓ Selecionada</span>
+                  ) : (
+                    <button style={styles.editBtn} onClick={()=>selecionarTurma(t.id)}>Selecionar</button>
+                  )}
                   <button style={styles.editBtn} onClick={()=>handleEditTurma(t)}>✏️ Editar</button>
                   <button style={styles.toggleBtn} onClick={()=>handleToggleTurma(t)}>{t.ativa?'Desativar':'Ativar'}</button>
                 </div>
@@ -855,7 +910,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
                     onChange={e => {
                       const newConfig = { ...recuperacaoConfig, multiplicador: Number(e.target.value) };
                       setRecuperacaoConfig(newConfig);
-                      configuracoesApi.setRecuperacao(newConfig).catch(() => {});
+                      configuracoesApi.setRecuperacao(newConfig, turmaAtualId).catch(() => {});
                     }}
                     style={{ width:'100%', accentColor:COLORS.indigo }}/>
                 </div>
@@ -869,7 +924,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
                     onChange={e => {
                       const newConfig = { ...recuperacaoConfig, desafios_extras: Number(e.target.value) };
                       setRecuperacaoConfig(newConfig);
-                      configuracoesApi.setRecuperacao(newConfig).catch(() => {});
+                      configuracoesApi.setRecuperacao(newConfig, turmaAtualId).catch(() => {});
                     }}
                     style={{ width:'100%', accentColor:COLORS.indigo }}/>
                   <div style={{ ...FONT_SCALE.caption, color:COLORS.textMuted, marginTop:'4px' }}>
@@ -1209,7 +1264,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
                   onChange={e => {
                     const newWeights = { ...weights, [w.key]: Number(e.target.value) };
                     setWeights(newWeights);
-                    configuracoesApi.setPesos(newWeights).catch(() => {});
+                    configuracoesApi.setPesos(newWeights, turmaAtualId).catch(() => {});
                   }}
                   style={styles.weightSlider}/>
                 <div style={styles.weightVal}>{weights[w.key]}%</div>
@@ -1283,7 +1338,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
                   const newAge = Number(e.target.value);
                   if (setAgeDays) setAgeDays(newAge);
                   try {
-                    await req('/api/animal/age', { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ age_days: newAge }) });
+                    await animalApi.setAge(newAge, turmaAtualId);
                   } catch(e) {}
                 }}
                 style={{ flex:1, accentColor:COLORS.indigo }}
@@ -1302,7 +1357,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
                   onClick={async () => {
                     if (setAgeDays) setAgeDays(preset.days);
                     try {
-                      await req('/api/animal/age', { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ age_days: preset.days }) });
+                      await animalApi.setAge(preset.days, turmaAtualId);
                     } catch(e) {}
                   }}
                 >

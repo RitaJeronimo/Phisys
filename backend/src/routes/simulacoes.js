@@ -2,14 +2,14 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db/connection');
 const auth = require('../middleware/auth');
-const { requireProfessor, mesmaTurmaDoRecurso } = require('../middleware/turmaOwnership');
+const { requireProfessor, mesmaTurmaDoRecurso, resolveTurmaId } = require('../middleware/turmaOwnership');
 
 // GET /api/simulacoes/ativa – retorna a simulação ativa da turma do usuario logado
-router.get('/ativa', auth, async (req, res) => {
+router.get('/ativa', auth, resolveTurmaId, async (req, res) => {
   try {
     const result = await pool.query(
       'SELECT * FROM simulacoes WHERE ativo = TRUE AND turma_id = $1 ORDER BY criado_em DESC LIMIT 1',
-      [req.usuario.turma_id]
+      [req.turmaId]
     );
     if (result.rows.length === 0) return res.json(null);
     const sim = result.rows[0];
@@ -33,11 +33,11 @@ router.get('/ativa', auth, async (req, res) => {
 });
 
 // GET /api/simulacoes – lista as simulações da turma do usuario logado
-router.get('/', auth, async (req, res) => {
+router.get('/', auth, resolveTurmaId, async (req, res) => {
   try {
     const result = await pool.query(
       'SELECT * FROM simulacoes WHERE turma_id = $1 ORDER BY criado_em DESC',
-      [req.usuario.turma_id]
+      [req.turmaId]
     );
     res.json(result.rows);
   } catch (err) {
@@ -45,14 +45,14 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
-// POST /api/simulacoes – cria nova simulação na turma do professor logado
-router.post('/', auth, requireProfessor, async (req, res) => {
+// POST /api/simulacoes – cria nova simulação numa turma do professor logado
+router.post('/', auth, requireProfessor, resolveTurmaId, async (req, res) => {
   const { titulo, descricao, foco, params, cuidados_por_sessao, intervencao } = req.body;
   try {
     const result = await pool.query(
       `INSERT INTO simulacoes (titulo, descricao, foco, params, cuidados_por_sessao, intervencao, turma_id)
        VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-      [titulo, descricao, foco, JSON.stringify(params), cuidados_por_sessao ?? 3, intervencao || null, req.usuario.turma_id]
+      [titulo, descricao, foco, JSON.stringify(params), cuidados_por_sessao ?? 3, intervencao || null, req.turmaId]
     );    res.status(201).json(result.rows[0]);
   } catch (err) {
     res.status(500).json({ erro: 'Erro interno.' });

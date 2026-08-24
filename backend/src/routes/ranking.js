@@ -2,10 +2,11 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db/connection');
 const auth = require('../middleware/auth');
-const { requireProfessor, mesmaTurmaDoRecurso } = require('../middleware/turmaOwnership');
+const { requireProfessor, mesmaTurmaDoRecurso, resolveTurmaId } = require('../middleware/turmaOwnership');
 
-// GET /api/ranking – ranking da turma do usuario logado (aluno ou professor)
-router.get('/', auth, async (req, res) => {
+// GET /api/ranking – ranking da turma do usuario logado (aluno) ou de uma
+// turma escolhida do professor logado (turma_id explicito desde o item 3)
+router.get('/', auth, resolveTurmaId, async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT u.id, u.nome, u.matricula,
@@ -16,7 +17,7 @@ router.get('/', auth, async (req, res) => {
        WHERE u.modo = 'aluno' AND u.turma_id = $1
        ORDER BY r.xp_total DESC
        LIMIT 50`,
-      [req.usuario.turma_id]
+      [req.turmaId]
     );
     res.json(result.rows);
   } catch (err) {
@@ -42,9 +43,9 @@ router.put('/:id/nota', auth, requireProfessor, mesmaTurmaDoRecurso('usuarios'),
   }
 });
 
-// POST /api/ranking/reset – professor zera a propria turma (ranking + sessões + animais)
-router.post('/reset', auth, requireProfessor, async (req, res) => {
-  const turma_id = req.usuario.turma_id;
+// POST /api/ranking/reset – professor zera uma turma dele (ranking + sessões + animais)
+router.post('/reset', auth, requireProfessor, resolveTurmaId, async (req, res) => {
+  const turma_id = req.turmaId;
   const client = await pool.connect();
   // Erros de conexao emitidos por um client "checked-out" (ex: Neon encerrando
   // a conexao por administrador, plano free) nao passam pelo pool.on('error')

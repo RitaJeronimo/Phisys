@@ -2,20 +2,20 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db/connection');
 const auth = require('../middleware/auth');
-const { requireProfessor, mesmaTurmaDoRecurso } = require('../middleware/turmaOwnership');
+const { requireProfessor, mesmaTurmaDoRecurso, resolveTurmaId } = require('../middleware/turmaOwnership');
 const {
   PRIMARY_PARAMS, getAgeStage, getAgePANormal, getAgeRecoveryPenalty,
   aplicarDeltaComFreio, calcularSaude, applyBonus,
 } = require('../engine/mascotEngine');
 
 // GET /api/desafios – lista desafios da turma do usuario logado (aluno ou professor)
-router.get('/', auth, async (req, res) => {
+router.get('/', auth, resolveTurmaId, async (req, res) => {
   try {
     const isProfessor = req.usuario.modo === 'professor';
     const query = isProfessor
       ? 'SELECT * FROM desafios WHERE turma_id = $1 ORDER BY criado_em ASC'
       : 'SELECT * FROM desafios WHERE ativo = TRUE AND turma_id = $1 ORDER BY criado_em ASC';
-    const result = await pool.query(query, [req.usuario.turma_id]);
+    const result = await pool.query(query, [req.turmaId]);
     // Alunos nao recebem a resposta certa de antemao (item A1-bis da auditoria
     // de seguranca) - so o professor, que precisa dela para editar o desafio.
     const linhas = isProfessor
@@ -147,8 +147,8 @@ router.post('/:id/checar', auth, async (req, res) => {
   }
 });
 
-// POST /api/desafios – cria novo desafio na turma do professor logado
-router.post('/', auth, requireProfessor, async (req, res) => {
+// POST /api/desafios – cria novo desafio numa turma do professor logado
+router.post('/', auth, requireProfessor, resolveTurmaId, async (req, res) => {
   const { titulo, pergunta, opcoes, correta, foco, dificuldade, intervencao, delta_acerto, delta_erro } = req.body;
   if (!titulo || !pergunta || !opcoes || correta === undefined) {
     return res.status(400).json({ erro: 'Campos obrigatorios ausentes.' });
@@ -161,7 +161,7 @@ router.post('/', auth, requireProfessor, async (req, res) => {
         titulo, pergunta, JSON.stringify(opcoes), correta, foco, dificuldade, intervencao,
         JSON.stringify(delta_acerto || {}),
         JSON.stringify(delta_erro || {}),
-        req.usuario.turma_id,
+        req.turmaId,
       ]
     );
     res.status(201).json(result.rows[0]);

@@ -326,6 +326,15 @@ async function adicionarColunas() {
       )
     `);
 
+    // Codigo de professor deixa de ser por turma (item 3 do pedido da
+    // Marcia/Rita, 24/08/2026): agora e um unico codigo GLOBAL (env var
+    // CODIGO_PROFESSOR_GLOBAL, ver auth.js), nao vinculado a turma nenhuma -
+    // qualquer professor pode criar quantas turmas quiser (dentro do limite
+    // do M2), sem "herdar" turma de ninguem no cadastro. Isola de vez turmas
+    // entre professores diferentes: antes, dois professores podiam
+    // compartilhar a mesma turma se soubessem o mesmo codigo_professor dela.
+    await pool.query(`ALTER TABLE turmas DROP COLUMN IF EXISTS codigo_professor`);
+
     console.log('Colunas e tabelas adicionadas com sucesso!');
   } catch (err) {
     console.error('Erro ao adicionar colunas:', err.message);

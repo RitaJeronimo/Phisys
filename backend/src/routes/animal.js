@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db/connection');
 const auth = require('../middleware/auth');
-const { requireProfessor } = require('../middleware/turmaOwnership');
+const { requireProfessor, resolveTurmaId } = require('../middleware/turmaOwnership');
 
 const COOLDOWN_HORAS_MODO_LIVRE = 2;
 
@@ -214,14 +214,14 @@ router.post('/cuidado', auth, async (req, res) => {
   }
 });
 
-// PUT /api/animal/age — professor atualiza idade de todos os alunos da propria turma
-router.put('/age', auth, requireProfessor, async (req, res) => {
+// PUT /api/animal/age — professor atualiza idade de todos os alunos de uma turma dele
+router.put('/age', auth, requireProfessor, resolveTurmaId, async (req, res) => {
   const { age_days } = req.body;
   try {
     await pool.query(
       `UPDATE animal SET age_days = $1, atualizado_em = NOW()
        WHERE usuario_id IN (SELECT id FROM usuarios WHERE modo = 'aluno' AND turma_id = $2)`,
-      [age_days, req.usuario.turma_id]
+      [age_days, req.turmaId]
     );
     res.json({ ok: true });
   } catch (err) {

@@ -242,10 +242,10 @@ function LoginScreen({ onLogin }) {
             {isNewAccount && (
               <div style={s.formGroup}>
                 <label style={s.label}>{mode==="professor" ? "codigo de professor" : "codigo da turma"}</label>
-                <input style={s.input} type="text" placeholder={mode==="professor" ? "Codigo de professor da turma" : "Codigo fornecido pelo professor"} value={codigoTurma} onChange={e=>{setCodigoTurma(e.target.value);setError("");}}/>
+                <input style={s.input} type="text" placeholder={mode==="professor" ? "Codigo de professor" : "Codigo fornecido pelo professor"} value={codigoTurma} onChange={e=>{setCodigoTurma(e.target.value);setError("");}}/>
                 <div style={s.fieldHint}>
                   {mode==="professor"
-                    ? "Diferente do código de aluno. Só quem já é professor desta turma pode te repassar esse código."
+                    ? "Único para todo o Phisys, não é por turma. Você cria a(s) sua(s) turma(s) depois de entrar, na aba Turmas do painel."
                     : "Peça este código ao seu professor — é o mesmo para todos os alunos da turma."}
                 </div>
               </div>

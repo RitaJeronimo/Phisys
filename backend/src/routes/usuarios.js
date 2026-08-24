@@ -4,10 +4,11 @@ const pool = require('../db/connection');
 const auth = require('../middleware/auth');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
-const { requireProfessor, mesmaTurmaDoRecurso } = require('../middleware/turmaOwnership');
+const { requireProfessor, mesmaTurmaDoRecurso, resolveTurmaId } = require('../middleware/turmaOwnership');
 
-// GET /api/usuarios – lista os alunos da turma do professor logado
-router.get('/', auth, requireProfessor, async (req, res) => {
+// GET /api/usuarios – lista os alunos de uma turma do professor logado
+// (precisa de turma_id explicito desde o item 3 - professor pode ter varias)
+router.get('/', auth, requireProfessor, resolveTurmaId, async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT u.id, u.nome, u.matricula, u.modo, u.criado_em, u.curso,
@@ -16,7 +17,7 @@ router.get('/', auth, requireProfessor, async (req, res) => {
        LEFT JOIN ranking r ON r.usuario_id = u.id
        WHERE u.modo = 'aluno' AND u.turma_id = $1
        ORDER BY r.xp_total DESC NULLS LAST`,
-      [req.usuario.turma_id]
+      [req.turmaId]
     );
     res.json(result.rows);
   } catch (err) {
@@ -98,10 +99,10 @@ router.delete('/:id', auth, requireProfessor, mesmaTurmaDoRecurso('usuarios'), a
   }
 });
 
-// DELETE /api/usuarios – professor limpa todos os alunos da propria turma
-router.delete('/', auth, requireProfessor, async (req, res) => {
+// DELETE /api/usuarios – professor limpa todos os alunos de uma turma dele
+router.delete('/', auth, requireProfessor, resolveTurmaId, async (req, res) => {
   try {
-    await pool.query('DELETE FROM usuarios WHERE modo = $1 AND turma_id = $2', ['aluno', req.usuario.turma_id]);
+    await pool.query('DELETE FROM usuarios WHERE modo = $1 AND turma_id = $2', ['aluno', req.turmaId]);
     res.json({ ok: true, mensagem: 'Todos os alunos da turma foram removidos com sucesso.' });
   } catch (err) {
     console.error('Erro ao limpar alunos:', err.message);

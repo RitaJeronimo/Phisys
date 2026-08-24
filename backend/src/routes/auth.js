@@ -111,23 +111,27 @@ router.post('/registro', authLimiter, async (req, res) => {
       });
     }
 
-    // Alunos usam o codigo publico da turma; professores usam um codigo
-    // separado (codigo_professor), conhecido apenas pelos professores da
-    // turma - evita que qualquer aluno vire professor com o mesmo codigo
-    // que a turma inteira recebe.
-    const campoCodigo = modo === 'professor' ? 'codigo_professor' : 'codigo';
-    const turma = await pool.query(
-      `SELECT id FROM turmas WHERE ${campoCodigo} = $1 AND ativa = true`,
-      [codigo_turma]
-    );
-    if (turma.rows.length === 0) {
-      return res.status(400).json({
-        erro: modo === 'professor'
-          ? 'Codigo de professor invalido ou turma inativa.'
-          : 'Codigo de turma invalido ou turma inativa.'
-      });
+    // Professor usa um codigo GLOBAL, unico para o app inteiro (env var,
+    // item 3 do pedido da Marcia/Rita, 24/08/2026) - nao vinculado a turma
+    // nenhuma. Ele cria a(s) propria(s) turma(s) depois, ja logado, pelo
+    // Painel (aba Turmas); cada turma criada pertence so a ele
+    // (turmas.criado_por), nunca compartilhada com outro professor. Aluno
+    // continua usando o codigo publico da propria turma, como antes.
+    let turma_id = null;
+    if (modo === 'professor') {
+      if (codigo_turma !== process.env.CODIGO_PROFESSOR_GLOBAL) {
+        return res.status(400).json({ erro: 'Codigo de professor invalido.' });
+      }
+    } else {
+      const turma = await pool.query(
+        'SELECT id FROM turmas WHERE codigo = $1 AND ativa = true',
+        [codigo_turma]
+      );
+      if (turma.rows.length === 0) {
+        return res.status(400).json({ erro: 'Codigo de turma invalido ou turma inativa.' });
+      }
+      turma_id = turma.rows[0].id;
     }
-    const turma_id = turma.rows[0].id;
 
     const senha_hash = await bcrypt.hash(senha, 10);
 
