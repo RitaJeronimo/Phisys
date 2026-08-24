@@ -9,7 +9,11 @@ const { requireProfessor, mesmaTurmaDoRecurso } = require('../middleware/turmaOw
 // deliberada - o app vai ser usado por professores de varias universidades,
 // uma allowlist viraria gargalo de aprovacao manual), mas um professor
 // comprometido ou mal-intencionado nao pode gerar turmas sem limite.
-const MAX_TURMAS_POR_PROFESSOR_POR_DIA = 5;
+// Trocado de "5 a cada 24h" para teto vitalicio de turmas ATIVAS (item 1 do
+// pedido da Marcia/Rita, 24/08/2026): so libera uma vaga nova desativando
+// uma turma existente (item 2, ja em prod) - nao e mais sobre velocidade de
+// criacao, e sobre quantas turmas o professor mantem abertas ao mesmo tempo.
+const MAX_TURMAS_ATIVAS_POR_PROFESSOR = 5;
 
 // GET /api/turmas – lista todas as turmas do professor logado (pode ser dono
 // de varias desde o item 3, 24/08/2026 - antes era sempre uma so)
@@ -27,20 +31,20 @@ router.get('/', auth, requireProfessor, async (req, res) => {
 });
 
 // POST /api/turmas – cria uma nova turma (apenas professor; ver
-// MAX_TURMAS_POR_PROFESSOR_POR_DIA acima pro limite de governanca do M2)
+// MAX_TURMAS_ATIVAS_POR_PROFESSOR acima pro limite de governanca do M2/item 1)
 router.post('/', auth, requireProfessor, async (req, res) => {
   const { nome, codigo } = req.body;
   if (!nome || !codigo) {
     return res.status(400).json({ erro: 'Nome e codigo sao obrigatorios.' });
   }
   try {
-    const criadasHoje = await pool.query(
-      `SELECT count(*) FROM turmas WHERE criado_por = $1 AND criado_em > NOW() - INTERVAL '24 hours'`,
+    const ativasAgora = await pool.query(
+      `SELECT count(*) FROM turmas WHERE criado_por = $1 AND ativa = true`,
       [req.usuario.id]
     );
-    if (Number(criadasHoje.rows[0].count) >= MAX_TURMAS_POR_PROFESSOR_POR_DIA) {
+    if (Number(ativasAgora.rows[0].count) >= MAX_TURMAS_ATIVAS_POR_PROFESSOR) {
       return res.status(429).json({
-        erro: `Limite de ${MAX_TURMAS_POR_PROFESSOR_POR_DIA} turmas criadas por dia atingido. Tente novamente mais tarde.`,
+        erro: `Limite de ${MAX_TURMAS_ATIVAS_POR_PROFESSOR} turmas ativas atingido. Desative uma turma existente para criar outra.`,
       });
     }
 
