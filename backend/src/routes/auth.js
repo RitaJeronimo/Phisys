@@ -97,9 +97,19 @@ router.post('/registro', authLimiter, async (req, res) => {
     return res.status(400).json({ erro: 'Todos os campos sao obrigatorios.' });
   }
 
-  // Codigo de turma obrigatorio para alunos e professores
+  // Autocadastro de aluno foi removido (item 4 do pedido da Marcia/Rita,
+  // 24/08/2026): o professor cadastra cada aluno manualmente pelo Painel
+  // (POST /api/usuarios), com um codigo de acesso de uso unico entregue em
+  // sala - o codigo publico da turma nunca mais chega ao aluno diretamente.
+  if (modo === 'aluno') {
+    return res.status(400).json({ erro: 'Cadastro de aluno agora e feito pelo professor. Peca para ele te cadastrar.' });
+  }
+
+  // Daqui pra baixo so sobra o caminho de professor - codigo_turma carrega o
+  // codigo global (CODIGO_PROFESSOR_GLOBAL), nome de campo legado do modelo
+  // antigo (por turma), sem mudanca de contrato com o frontend (item 3).
   if (!codigo_turma) {
-    return res.status(400).json({ erro: 'Codigo de turma e obrigatorio.' });
+    return res.status(400).json({ erro: 'Codigo de professor e obrigatorio.' });
   }
 
   // Curso/instituicao e texto livre e opcional - so trunca pro limite da
@@ -113,58 +123,26 @@ router.post('/registro', authLimiter, async (req, res) => {
     );
 
     if (existe.rows.length > 0) {
-      // O "claim" antigo (definir senha nova so sabendo a matricula, sem
-      // aprovacao de ninguem - codigo_turma nem era validado aqui) foi
-      // removido na auditoria de seguranca (item A2, 15/08/2026). Ver
-      // POST /api/auth/resetar-senha: agora exige um codigo curto gerado
-      // por um professor da propria turma do aluno.
-      return res.status(409).json({
-        erro: modo === 'aluno' ? 'Matricula ja cadastrada. Verifique sua senha.' : 'Matricula ja cadastrada.'
-      });
+      return res.status(409).json({ erro: 'Matricula ja cadastrada.' });
     }
 
     // Professor usa um codigo GLOBAL, unico para o app inteiro (env var,
     // item 3 do pedido da Marcia/Rita, 24/08/2026) - nao vinculado a turma
     // nenhuma. Ele cria a(s) propria(s) turma(s) depois, ja logado, pelo
     // Painel (aba Turmas); cada turma criada pertence so a ele
-    // (turmas.criado_por), nunca compartilhada com outro professor. Aluno
-    // continua usando o codigo publico da propria turma, como antes.
-    let turma_id = null;
-    if (modo === 'professor') {
-      if (codigo_turma !== process.env.CODIGO_PROFESSOR_GLOBAL) {
-        return res.status(400).json({ erro: 'Codigo de professor invalido.' });
-      }
-    } else {
-      const turma = await pool.query(
-        'SELECT id FROM turmas WHERE codigo = $1 AND ativa = true',
-        [codigo_turma]
-      );
-      if (turma.rows.length === 0) {
-        return res.status(400).json({ erro: 'Codigo de turma invalido ou turma inativa.' });
-      }
-      turma_id = turma.rows[0].id;
+    // (turmas.criado_por), nunca compartilhada com outro professor.
+    if (codigo_turma !== process.env.CODIGO_PROFESSOR_GLOBAL) {
+      return res.status(400).json({ erro: 'Codigo de professor invalido.' });
     }
 
     const senha_hash = await bcrypt.hash(senha, 10);
 
     const result = await pool.query(
-      'INSERT INTO usuarios (nome, matricula, senha_hash, modo, turma_id, senha_definida_pelo_aluno, curso) VALUES ($1, $2, $3, $4, $5, true, $6) RETURNING id, nome, matricula, modo, turma_id, curso',
-      [nome, matricula, senha_hash, modo, turma_id, cursoLimpo]
+      'INSERT INTO usuarios (nome, matricula, senha_hash, modo, senha_definida_pelo_aluno, curso) VALUES ($1, $2, $3, $4, true, $5) RETURNING id, nome, matricula, modo, turma_id, curso',
+      [nome, matricula, senha_hash, modo, cursoLimpo]
     );
 
     const usuario = result.rows[0];
-
-    // Cria registro de animal para o aluno
-    if (modo === 'aluno') {
-      await pool.query(
-        'INSERT INTO animal (usuario_id) VALUES ($1)',
-        [usuario.id]
-      );
-      await pool.query(
-        'INSERT INTO ranking (usuario_id) VALUES ($1)',
-        [usuario.id]
-      );
-    }
 
     const token = jwt.sign(
       { id: usuario.id, nome: usuario.nome, matricula: usuario.matricula, modo: usuario.modo, turma_id: usuario.turma_id },

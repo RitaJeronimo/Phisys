@@ -98,6 +98,8 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
   const [turmaForm, setTurmaForm] = useState(null);
   const [editingTurma, setEditingTurma] = useState(null);
   const [resetCodeInfo, setResetCodeInfo] = useState(null); // { nome, codigo, expiraEmMinutos }
+  const [cadastrandoAluno, setCadastrandoAluno] = useState(false);
+  const [alunoForm, setAlunoForm] = useState({ nome:'', matricula:'', codigo_turma:'' });
 
   const fetchTurmas = useCallback(() => {
     turmasApi.listar()
@@ -240,6 +242,31 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
   }, []);
 
   const avgXP = students.length > 0 ? (students.reduce((a,s)=>a+Number(s.xp_total||0),0)/students.length).toFixed(0) : '0';
+
+  function handleNewAluno() {
+    setAlunoForm({ nome:'', matricula:'', codigo_turma:'' });
+    setCadastrandoAluno(true);
+  }
+  async function handleSaveAluno() {
+    if (!alunoForm.nome.trim() || !alunoForm.matricula.trim() || !alunoForm.codigo_turma.trim()) {
+      alert('Nome, matrícula e código da turma são obrigatórios.');
+      return;
+    }
+    try {
+      const data = await usuariosApi.cadastrar({
+        nome: alunoForm.nome.trim(),
+        matricula: alunoForm.matricula.trim(),
+        codigo_turma: alunoForm.codigo_turma.trim(),
+      }, turmaAtualId);
+      setCadastrandoAluno(false);
+      fetchStudents();
+      // Reaproveita o mesmo card de "código pra mostrar em sala" que o reset
+      // de senha ja usa - e literalmente o mesmo mecanismo (item 4).
+      setResetCodeInfo({ nome: data.nome, codigo: data.codigo, expiraEmMinutos: data.expira_em_minutos });
+    } catch(e) {
+      alert('Erro ao cadastrar aluno: ' + e.message);
+    }
+  }
 
   async function handleResetarSenhaAluno(id, nome) {
     if (!window.confirm(`Gerar um código de reset para ${nome}? A senha atual dele para de funcionar na hora.`)) return;
@@ -750,6 +777,38 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
     );
   }
 
+  // ── FORMULÁRIO CADASTRO DE ALUNO ──
+  // Item 4 do pedido da Marcia/Rita, 24/08/2026: autocadastro de aluno foi
+  // removido - o professor cadastra cada aluno manualmente aqui. Pede o
+  // codigo da turma como segunda confirmacao deliberada (pedido da Rita),
+  // mesmo com a turma ja selecionada no seletor do topo - evita cadastrar na
+  // turma errada por engano.
+  if (cadastrandoAluno) {
+    const turmaSelecionada = turmasList.find(t => t.id === turmaAtualId);
+    return (
+      <div className="app-screen" style={styles.screen}>
+        <div style={styles.topbar}>
+          <button style={styles.backBtn} onClick={()=>setCadastrandoAluno(false)}>← Cancelar</button>
+          <div style={styles.title}>Cadastrar Aluno</div>
+          <button style={styles.saveBtn} onClick={handleSaveAluno}>Salvar</button>
+        </div>
+        <div style={styles.formScroll}>
+          <div style={styles.fieldHint}>
+            Turma selecionada: <b>{turmaSelecionada?.nome || '—'}</b>. Digite o código de alunos dela abaixo pra confirmar.
+          </div>
+          <div style={styles.fieldLabel}>Nome completo</div>
+          <input style={styles.input} value={alunoForm.nome} onChange={e=>setAlunoForm(f=>({...f,nome:e.target.value}))} placeholder="Ex: Ana Paula Silva"/>
+          <div style={styles.fieldLabel}>Matrícula</div>
+          <input style={styles.input} value={alunoForm.matricula} onChange={e=>setAlunoForm(f=>({...f,matricula:e.target.value}))} placeholder="Ex: 2024001234"/>
+          <div style={styles.fieldLabel}>Código da turma</div>
+          <input style={styles.input} value={alunoForm.codigo_turma} onChange={e=>setAlunoForm(f=>({...f,codigo_turma:e.target.value.toUpperCase()}))} placeholder="Ex: TURMA2026A"/>
+          <div style={styles.fieldHint}>O aluno nunca vê esse código - só serve pra confirmar que você está cadastrando na turma certa. Depois de salvar, você recebe um código de acesso único pra entregar a ele.</div>
+          <div style={{height:'2rem'}}/>
+        </div>
+      </div>
+    );
+  }
+
   // ── PAINEL PRINCIPAL ──
   return (
     <div className="app-screen" style={styles.screen}>
@@ -1097,6 +1156,11 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
       {/* ── TAB ALUNOS — RANKING EM TEMPO REAL ── */}
       {tab==='alunos' && (
         <>
+          <div style={styles.challengeHeader}>
+            <div style={styles.sectionTitle}>alunos da turma</div>
+            <button style={styles.newBtn} onClick={handleNewAluno} disabled={!turmaAtualId}>+ Cadastrar aluno</button>
+          </div>
+
           {/* Cabeçalho com resumo e atualização */}
           <div style={{ margin:'0 1rem .5rem', display:'flex', gap:'8px' }}>
             <div style={styles.summaryCard}>

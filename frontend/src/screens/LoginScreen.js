@@ -15,7 +15,11 @@ function ChibiMascot({ size = 76 }) {
 
 function LoginScreen({ onLogin }) {
   const [mode, setMode] = useState("aluno");
-  const [isNewAccount, setIsNewAccount] = useState(true);
+  // Autocadastro de aluno foi removido (item 4, 24/08/2026) - so professor
+  // ainda cria conta por aqui. Aluno so loga; conta e criada pelo professor
+  // no Painel, com um codigo de primeiro acesso (ver showReset abaixo, que
+  // agora serve tanto pra "esqueci a senha" quanto pra "primeiro acesso").
+  const [isNewAccount, setIsNewAccount] = useState(false);
   const [name, setName] = useState("");
   const [credential, setCredential] = useState("");
   const [alunoSenha, setAlunoSenha] = useState("");
@@ -42,6 +46,9 @@ function LoginScreen({ onLogin }) {
 
   function handleModeChange(novoModo) {
     setMode(novoModo);
+    // Aluno nunca tem a opcao de "criar conta" - garante isso mesmo se vinha
+    // de "professor" com isNewAccount=true.
+    if (novoModo === "aluno") setIsNewAccount(false);
     resetFormFields();
   }
 
@@ -59,12 +66,11 @@ function LoginScreen({ onLogin }) {
     setContaNaoEncontrada(false);
   }
 
-  // Nome so e obrigatorio quando serve pra alguma coisa: professor usa o
-  // nome como identificador de login (a matricula dele e derivada dele, ver
-  // abaixo), e cadastro de aluno precisa do nome pra criar a conta. Aluno
-  // que ja tem conta loga so com matricula+senha, sem precisar redigitar o
-  // nome toda vez.
-  const precisaNome = mode === "professor" || isNewAccount;
+  // Nome so e obrigatorio pro professor: usa o nome como identificador de
+  // login (a matricula dele e derivada dele, ver abaixo) tanto pra cadastro
+  // quanto pra login. Aluno nunca precisa - cadastro e feito pelo professor,
+  // e o login e so matricula+senha.
+  const precisaNome = mode === "professor";
 
   async function handleSubmit() {
     if (precisaNome) {
@@ -78,7 +84,6 @@ function LoginScreen({ onLogin }) {
         return;
       }
       if (!alunoSenha.trim()) { setError("Por favor, informe sua senha."); return; }
-      if (isNewAccount && alunoSenha.trim().length < 4) { setError("A senha deve ter pelo menos 4 caracteres."); return; }
     } else if (!credential.trim()) {
       setError("Por favor, informe sua senha.");
       return;
@@ -168,7 +173,7 @@ function LoginScreen({ onLogin }) {
         {showReset ? (
           <>
             <div style={{ ...FONT_SCALE.body, color:COLORS.textMuted, textAlign:'center', lineHeight:'1.5' }}>
-              Peça ao seu professor o código de 6 dígitos mostrado em sala e defina uma senha nova.
+              Primeiro acesso ou esqueceu a senha? Peça ao seu professor o código de 6 dígitos e defina sua senha.
             </div>
             <div style={s.formGroup}>
               <label style={s.label}>matricula</label>
@@ -193,14 +198,16 @@ function LoginScreen({ onLogin }) {
               <button style={{...s.modeBtn,...(mode==="professor"?s.modeBtnActive:s.modeBtnInactive)}} onClick={()=>handleModeChange("professor")}>Sou professor</button>
             </div>
 
-            <div style={s.intentToggle}>
-              <button style={{...s.intentBtn,...(!isNewAccount?s.intentBtnActive:s.intentBtnInactive)}} onClick={()=>handleIntentChange(false)}>Já tenho conta</button>
-              <button style={{...s.intentBtn,...(isNewAccount?s.intentBtnActive:s.intentBtnInactive)}} onClick={()=>handleIntentChange(true)}>Primeira vez aqui</button>
-            </div>
+            {mode === "professor" && (
+              <div style={s.intentToggle}>
+                <button style={{...s.intentBtn,...(!isNewAccount?s.intentBtnActive:s.intentBtnInactive)}} onClick={()=>handleIntentChange(false)}>Já tenho conta</button>
+                <button style={{...s.intentBtn,...(isNewAccount?s.intentBtnActive:s.intentBtnInactive)}} onClick={()=>handleIntentChange(true)}>Primeira vez aqui</button>
+              </div>
+            )}
             <div style={s.sectionHint}>
-              {isNewAccount
-                ? (mode === "aluno" ? "Criando uma conta nova de aluno. Preencha seus dados abaixo." : "Criando uma conta nova de professor. Preencha seus dados abaixo.")
-                : (mode === "aluno" ? "Entrando com uma conta de aluno já cadastrada." : "Entrando com uma conta de professor já cadastrada.")}
+              {mode === "aluno"
+                ? "Entrando com uma conta de aluno já cadastrada pelo professor."
+                : (isNewAccount ? "Criando uma conta nova de professor. Preencha seus dados abaixo." : "Entrando com uma conta de professor já cadastrada.")}
             </div>
 
             {precisaNome && (
@@ -254,15 +261,19 @@ function LoginScreen({ onLogin }) {
             {error?(
               <div style={s.error}>
                 {contaNaoEncontrada ? (
-                  <>Essa conta ainda não existe. <span style={s.inlineLink} onClick={handleOfferCadastro}>Quer criar uma?</span></>
+                  mode === "professor" ? (
+                    <>Essa conta ainda não existe. <span style={s.inlineLink} onClick={handleOfferCadastro}>Quer criar uma?</span></>
+                  ) : (
+                    <>Essa conta ainda não existe. Peça ao seu professor para te cadastrar.</>
+                  )
                 ) : error}
               </div>
             ):null}
             <button style={{...s.submitBtn,opacity:loading?0.7:1}} onClick={handleSubmit} disabled={loading}>
               {loading ? (isNewAccount ? "Criando conta..." : "Entrando...") : (isNewAccount ? "Criar conta" : "Entrar no Phisys")}
             </button>
-            {mode==="aluno" && !isNewAccount && (
-              <div style={{ ...FONT_SCALE.label, color:COLORS.indigo, cursor:'pointer', textDecoration:'underline' }} onClick={() => { setShowReset(true); setError(''); }}>Esqueceu a senha?</div>
+            {mode==="aluno" && (
+              <div style={{ ...FONT_SCALE.label, color:COLORS.indigo, cursor:'pointer', textDecoration:'underline' }} onClick={() => { setShowReset(true); setError(''); }}>Primeiro acesso ou esqueceu a senha?</div>
             )}
           </>
         )}
