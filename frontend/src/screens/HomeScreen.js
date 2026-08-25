@@ -531,10 +531,10 @@ function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, on
                 <div style={styles.careLabel}>{c.label.split(' ')[0]}</div>
                 {desc && <div style={styles.careDesc}>{desc}</div>}
                 {careEffect === c.id && (
-                  <div style={{ position:'absolute', top:'-10px', right:'4px', fontSize:'11px', fontWeight:'800', color:COLORS.status.debilitado.color, animation:'fadeUp 1.5s ease-out', pointerEvents:'none' }}>+5 XP ⚡</div>
+                  <div style={{ position:'absolute', top:'-10px', right:'4px', fontSize:'clamp(11px, calc(9.35px + 0.9vw), 14.3px)', fontWeight:'800', color:COLORS.status.debilitado.color, animation:'fadeUp 1.5s ease-out', pointerEvents:'none' }}>+5 XP ⚡</div>
                 )}
                 {careError === c.id && (
-                  <div style={{ position:'absolute', top:'-10px', right:'4px', fontSize:'10px', fontWeight:'800', color:COLORS.status.critico.color, pointerEvents:'none' }}>Indisponível</div>
+                  <div style={{ position:'absolute', top:'-10px', right:'4px', fontSize:'clamp(10px, calc(8.5px + 0.9vw), 13px)', fontWeight:'800', color:COLORS.status.critico.color, pointerEvents:'none' }}>Indisponível</div>
                 )}
               </div>
             );
@@ -575,13 +575,13 @@ function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, on
 }
 
 const styles = {
-  screen:           { width:'100%', minHeight:'100vh', display:'flex', flexDirection:'column', background:COLORS.surface, margin:'0 auto', overflowX:'hidden', fontFamily:FONT_FAMILY, color:COLORS.textPrimary },
+  screen:           { width:'100%', minHeight:'var(--app-min-h)', display:'flex', flexDirection:'column', background:COLORS.surface, margin:'0 auto', overflowX:'hidden', fontFamily:FONT_FAMILY, color:COLORS.textPrimary },
 
   header:           { position:'relative', background:COLORS.bg, padding:'22px 18px 28px', overflow:'hidden', display:'flex', alignItems:'flex-start', justifyContent:'space-between' },
   headerDeco:       { position:'absolute', top:'-10px', right:'-10px', width:'140px', height:'100px', opacity:.35, pointerEvents:'none' },
-  userName:         { fontSize:'22px', fontWeight:'800', color:'white', display:'flex', alignItems:'center', gap:'7px', position:'relative' },
-  userSub:          { fontSize:'12.5px', fontWeight:'600', color:'rgba(255,255,255,.55)', marginTop:'3px', position:'relative' },
-  xpBadge:          { display:'flex', alignItems:'center', gap:'7px', background:COLORS.xpPill.bg, border:'1px solid rgba(255,255,255,.25)', borderRadius:'999px', padding:'8px 15px 8px 11px', fontSize:'14px', color:'white', fontWeight:'800', position:'relative' },
+  userName:         { fontSize:'clamp(22px, calc(18.7px + 0.9vw), 28.6px)', fontWeight:'800', color:'white', display:'flex', alignItems:'center', gap:'7px', position:'relative' },
+  userSub:          { fontSize:'clamp(12.5px, calc(10.62px + 0.9vw), 16.25px)', fontWeight:'600', color:'rgba(255,255,255,.55)', marginTop:'3px', position:'relative' },
+  xpBadge:          { display:'flex', alignItems:'center', gap:'7px', background:COLORS.xpPill.bg, border:'1px solid rgba(255,255,255,.25)', borderRadius:'999px', padding:'8px 15px 8px 11px', fontSize:'clamp(14px, calc(11.9px + 0.9vw), 18.2px)', color:'white', fontWeight:'800', position:'relative' },
 
   scroll:           { flex:1, padding:'0 16px 8px', marginTop:'-14px', display:'flex', flexDirection:'column', gap:'10px', position:'relative' },
 
@@ -591,13 +591,13 @@ const styles = {
 
   ringWrap:         { position:'relative', width:'128px', height:'128px', flexShrink:0 },
   ringCenter:       { position:'absolute', inset:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'3px' },
-  ringLabel:        { fontSize:'11px', fontWeight:'700', color:COLORS.textMuted, textAlign:'center', lineHeight:1.2 },
-  ringPct:          { fontSize:'28px', fontWeight:'800', color:COLORS.textPrimary, lineHeight:1 },
+  ringLabel:        { fontSize:'clamp(11px, calc(9.35px + 0.9vw), 14.3px)', fontWeight:'700', color:COLORS.textMuted, textAlign:'center', lineHeight:1.2 },
+  ringPct:          { fontSize:'clamp(28px, calc(23.8px + 0.9vw), 36.4px)', fontWeight:'800', color:COLORS.textPrimary, lineHeight:1 },
 
   statusCol:        { display:'flex', flexDirection:'column', alignItems:'center', gap:'9px', flexShrink:0 },
   shield:           { width:'38px', height:'38px', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center' },
-  statusName:       { fontSize:'13px', fontWeight:'800', textAlign:'center' },
-  stagePill:        { display:'flex', alignItems:'center', gap:'5px', background:COLORS.stagePill.bg, borderRadius:'999px', padding:'6px 12px', fontSize:'11.5px', fontWeight:'700', color:COLORS.stagePill.text, whiteSpace:'nowrap' },
+  statusName:       { fontSize:'clamp(13px, calc(11.05px + 0.9vw), 16.9px)', fontWeight:'800', textAlign:'center' },
+  stagePill:        { display:'flex', alignItems:'center', gap:'5px', background:COLORS.stagePill.bg, borderRadius:'999px', padding:'6px 12px', fontSize:'clamp(11.5px, calc(9.78px + 0.9vw), 14.95px)', fontWeight:'700', color:COLORS.stagePill.text, whiteSpace:'nowrap' },
 
   sectionTitle:     { display:'flex', alignItems:'center', gap:'9px' },
   sectionTitleText: { ...FONT_SCALE.title, color:COLORS.textPrimary },
@@ -608,45 +608,45 @@ const styles = {
   indicatorTop:     { display:'flex', alignItems:'center', gap:'10px' },
   indicatorIcon:    { width:'38px', height:'38px', borderRadius:'50%', background:COLORS.iconChipBg, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 },
   indicatorText:    { display:'flex', flexDirection:'column', gap:'2px', minWidth:0 },
-  indicatorLabel:   { fontSize:'11.5px', fontWeight:'700', color:COLORS.textMuted },
-  indicatorValue:   { fontSize:'17px', fontWeight:'800', color:COLORS.indigo },
+  indicatorLabel:   { fontSize:'clamp(11.5px, calc(9.78px + 0.9vw), 14.95px)', fontWeight:'700', color:COLORS.textMuted },
+  indicatorValue:   { fontSize:'clamp(17px, calc(14.45px + 0.9vw), 22.1px)', fontWeight:'800', color:COLORS.indigo },
   indicatorBarTrack:{ height:'6px', borderRadius:'999px', background:COLORS.border, overflow:'hidden' },
   indicatorBarFill: { height:'100%', borderRadius:'999px' },
 
   caresRow:         { display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'10px' },
   careCard:         { borderRadius:'18px', padding:'16px 6px', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'8px' },
   careIconBox:      { display:'flex', alignItems:'center', justifyContent:'center' },
-  careLabel:        { fontSize:'12px', fontWeight:'800', textAlign:'center', color:COLORS.textPrimary, lineHeight:1.25 },
-  careDesc:         { fontSize:'9px', color:COLORS.textMuted, textAlign:'center', fontWeight:'600' },
+  careLabel:        { fontSize:'clamp(12px, calc(10.2px + 0.9vw), 15.6px)', fontWeight:'800', textAlign:'center', color:COLORS.textPrimary, lineHeight:1.25 },
+  careDesc:         { fontSize:'clamp(9px, calc(7.65px + 0.9vw), 11.7px)', color:COLORS.textMuted, textAlign:'center', fontWeight:'600' },
 
-  logoutRow:        { textAlign:'center', fontSize:'11px', color:COLORS.textMuted, cursor:'pointer', padding:'2px 0 4px', fontWeight:'600' },
+  logoutRow:        { textAlign:'center', fontSize:'clamp(11px, calc(9.35px + 0.9vw), 14.3px)', color:COLORS.textMuted, cursor:'pointer', padding:'2px 0 4px', fontWeight:'600' },
 
   bottomNav:        { background:COLORS.surface, boxShadow:'0 -4px 14px rgba(43,43,118,.06)', display:'grid', gridTemplateColumns:'repeat(4,1fr)', padding:'14px 8px 12px' },
-  navItem:          { display:'flex', flexDirection:'column', alignItems:'center', gap:'4px', color:COLORS.textMuted, fontSize:'10.5px', fontWeight:'700', cursor:'pointer' },
+  navItem:          { display:'flex', flexDirection:'column', alignItems:'center', gap:'4px', color:COLORS.textMuted, fontSize:'clamp(10.5px, calc(8.92px + 0.9vw), 13.65px)', fontWeight:'700', cursor:'pointer' },
   navItemActive:    { color:COLORS.indigo },
   navIconBox:        { display:'flex', alignItems:'center', justifyContent:'center' },
 
-  professorBar:     { background:COLORS.bg, display:'flex', alignItems:'center', justifyContent:'center', gap:'8px', padding:'13px 0 17px', fontSize:'13.5px', fontWeight:'700', color:'rgba(255,255,255,.85)', cursor:'pointer' },
+  professorBar:     { background:COLORS.bg, display:'flex', alignItems:'center', justifyContent:'center', gap:'8px', padding:'13px 0 17px', fontSize:'clamp(13.5px, calc(11.47px + 0.9vw), 17.55px)', fontWeight:'700', color:'rgba(255,255,255,.85)', cursor:'pointer' },
 
   modalOverlay:     { position:'fixed', top:0, left:0, width:'100%', height:'100%', background:'rgba(0,0,0,.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:100 },
-  modalCard:        { background:COLORS.surface, borderRadius:'24px', padding:'1.5rem', width:'90%', maxWidth:'340px', display:'flex', flexDirection:'column', gap:'12px', boxShadow:'0 20px 50px rgba(43,43,118,.35)' },
-  modalTitle:       { fontSize:'16px', fontWeight:'800', color:COLORS.textPrimary, textAlign:'center', marginBottom:'4px' },
+  modalCard:        { background:COLORS.surface, borderRadius:'24px', padding:'1.5rem', width:'90%', maxWidth:'min(90vw, 440px)', display:'flex', flexDirection:'column', gap:'12px', boxShadow:'0 20px 50px rgba(43,43,118,.35)' },
+  modalTitle:       { fontSize:'clamp(16px, calc(13.6px + 0.9vw), 20.8px)', fontWeight:'800', color:COLORS.textPrimary, textAlign:'center', marginBottom:'4px' },
   modeBtn:          { background:COLORS.surfaceMuted, border:`1px solid ${COLORS.border}`, borderRadius:'16px', padding:'1rem', cursor:'pointer' },
-  modeBtnIcon:      { fontSize:'24px', marginBottom:'4px' },
-  modeBtnTitle:     { fontSize:'14px', fontWeight:'800', color:COLORS.textPrimary, marginBottom:'4px' },
-  modeBtnDesc:      { fontSize:'11px', color:COLORS.textMuted, lineHeight:'1.4' },
-  modalCancel:      { background:'none', border:'none', borderRadius:'20px', padding:'8px', color:COLORS.textMuted, fontSize:'12px', cursor:'pointer', fontFamily:'inherit', fontWeight:'600' },
+  modeBtnIcon:      { fontSize:'clamp(24px, calc(20.4px + 0.9vw), 31.2px)', marginBottom:'4px' },
+  modeBtnTitle:     { fontSize:'clamp(14px, calc(11.9px + 0.9vw), 18.2px)', fontWeight:'800', color:COLORS.textPrimary, marginBottom:'4px' },
+  modeBtnDesc:      { fontSize:'clamp(11px, calc(9.35px + 0.9vw), 14.3px)', color:COLORS.textMuted, lineHeight:'1.4' },
+  modalCancel:      { background:'none', border:'none', borderRadius:'20px', padding:'8px', color:COLORS.textMuted, fontSize:'clamp(12px, calc(10.2px + 0.9vw), 15.6px)', cursor:'pointer', fontFamily:'inherit', fontWeight:'600' },
 
-  infoCard:         { background:COLORS.surface, borderRadius:'24px', padding:'1.5rem', width:'90%', maxWidth:'340px', display:'flex', flexDirection:'column', gap:'12px', boxShadow:'0 20px 50px rgba(43,43,118,.35)' },
+  infoCard:         { background:COLORS.surface, borderRadius:'24px', padding:'1.5rem', width:'90%', maxWidth:'min(90vw, 440px)', display:'flex', flexDirection:'column', gap:'12px', boxShadow:'0 20px 50px rgba(43,43,118,.35)' },
   infoHeader:       { display:'flex', alignItems:'center', gap:'10px' },
   infoIconChip:     { width:'34px', height:'34px', borderRadius:'50%', background:COLORS.iconChipBg, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 },
-  infoTitle:        { flex:1, fontSize:'16px', fontWeight:'800', color:COLORS.textPrimary },
-  infoClose:        { background:'none', border:'none', color:COLORS.textMuted, fontSize:'18px', cursor:'pointer', fontFamily:'inherit' },
-  infoQuestion:     { background:COLORS.iconChipBg, borderRadius:'14px', padding:'1rem', fontSize:'13px', color:COLORS.indigo, fontWeight:'700', lineHeight:'1.5' },
-  showAnswerBtn:    { background:COLORS.indigo, border:'none', borderRadius:'999px', padding:'10px', color:'white', fontSize:'13px', fontWeight:'800', cursor:'pointer', fontFamily:'inherit' },
-  infoAnswer:       { background:COLORS.surfaceMuted, borderRadius:'14px', padding:'1rem', fontSize:'12px', color:COLORS.textPrimary, lineHeight:'1.6' },
-  infoDica:         { background:COLORS.status.saudavel.soft, border:`1px solid ${COLORS.status.saudavel.color}`, borderRadius:'12px', padding:'.75rem', fontSize:'11px', color:COLORS.textPrimary, lineHeight:'1.4', fontWeight:'600' },
-  infoCloseBtn:     { background:'none', border:`1px solid ${COLORS.border}`, borderRadius:'999px', padding:'8px', color:COLORS.textMuted, fontSize:'12px', cursor:'pointer', fontFamily:'inherit', fontWeight:'600' },
+  infoTitle:        { flex:1, fontSize:'clamp(16px, calc(13.6px + 0.9vw), 20.8px)', fontWeight:'800', color:COLORS.textPrimary },
+  infoClose:        { background:'none', border:'none', color:COLORS.textMuted, fontSize:'clamp(18px, calc(15.3px + 0.9vw), 23.4px)', cursor:'pointer', fontFamily:'inherit' },
+  infoQuestion:     { background:COLORS.iconChipBg, borderRadius:'14px', padding:'1rem', fontSize:'clamp(13px, calc(11.05px + 0.9vw), 16.9px)', color:COLORS.indigo, fontWeight:'700', lineHeight:'1.5' },
+  showAnswerBtn:    { background:COLORS.indigo, border:'none', borderRadius:'999px', padding:'10px', color:'white', fontSize:'clamp(13px, calc(11.05px + 0.9vw), 16.9px)', fontWeight:'800', cursor:'pointer', fontFamily:'inherit' },
+  infoAnswer:       { background:COLORS.surfaceMuted, borderRadius:'14px', padding:'1rem', fontSize:'clamp(12px, calc(10.2px + 0.9vw), 15.6px)', color:COLORS.textPrimary, lineHeight:'1.6' },
+  infoDica:         { background:COLORS.status.saudavel.soft, border:`1px solid ${COLORS.status.saudavel.color}`, borderRadius:'12px', padding:'.75rem', fontSize:'clamp(11px, calc(9.35px + 0.9vw), 14.3px)', color:COLORS.textPrimary, lineHeight:'1.4', fontWeight:'600' },
+  infoCloseBtn:     { background:'none', border:`1px solid ${COLORS.border}`, borderRadius:'999px', padding:'8px', color:COLORS.textMuted, fontSize:'clamp(12px, calc(10.2px + 0.9vw), 15.6px)', cursor:'pointer', fontFamily:'inherit', fontWeight:'600' },
 };
 
 const styleTag = document.createElement('style');

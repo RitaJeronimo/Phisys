@@ -183,7 +183,7 @@ function App() {
   function handleViewSecondary() { setScreen('secondary'); }
 
   if (showWelcome) return (
-    <div style={{ width:'100%', maxWidth:'400px', minHeight:'100vh', display:'flex', flexDirection:'column', justifyContent:'center', alignItems:'center', background:COLORS.bg, margin:'0 auto', padding:'2rem', boxSizing:'border-box', fontFamily:FONT_FAMILY }}>
+    <div className="app-screen" style={{ width:'100%', minHeight:'var(--app-min-h)', display:'flex', flexDirection:'column', justifyContent:'center', alignItems:'center', background:COLORS.bg, margin:'0 auto', padding:'2rem', boxSizing:'border-box', fontFamily:FONT_FAMILY }}>
       <div style={{ width:'100%', background:COLORS.surface, borderRadius:'26px', padding:'2rem 1.5rem', display:'flex', flexDirection:'column', alignItems:'center', boxShadow:'0 10px 30px rgba(43,43,118,.25)' }}>
         <img
           src={MASCOT_IMAGES.ADULTO.saudavel}
@@ -196,7 +196,7 @@ function App() {
           Ao longo da jornada, ele cresce, muda de fase e responde às suas escolhas — ajudando você a compreender como o corpo regula seus sistemas cardiovascular e renal.<br/><br/>
           Cuide dele, observe seus parâmetros e teste hipóteses fisiológicas em tempo real!
         </div>
-        <button style={{ width:'100%', padding:'14px', borderRadius:'12px', border:'none', background:COLORS.indigo, color:'white', fontSize:'15px', fontWeight:'800', cursor:'pointer', fontFamily:'inherit' }}
+        <button style={{ width:'100%', padding:'14px', borderRadius:'12px', border:'none', background:COLORS.indigo, color:'white', fontSize:'clamp(15px, calc(12.75px + 0.9vw), 19.5px)', fontWeight:'800', cursor:'pointer', fontFamily:'inherit' }}
           onClick={() => setShowWelcome(false)}>
           Começar jornada 🐭
         </button>

@@ -39,15 +39,19 @@ export const RADIUS = { card: 18, cardLg: 26, pill: 999, iconChip: 12 };
 // Escala de tipografia extraida dos tamanhos ja validados visualmente na Home
 // (HomeScreen.js). Usar esses tokens em vez de fontSize/fontWeight soltos
 // mantem o app inteiro na mesma escala.
+// Cada tamanho e fluido (clamp): o valor "px" original continua sendo o
+// minimo (tela pequena/mobile, inalterado), e cresce ate +30% em telas
+// largas (desktop), em vez de ficar travado no tamanho de celular quando o
+// container .app-screen fica mais largo.
 export const FONT_SCALE = {
-  caption:  { fontSize: '10px',   fontWeight: '600' }, // legendas minimas (notas, descricoes de bloqueio)
-  label:    { fontSize: '11.5px', fontWeight: '700' }, // labels de card, nav, badges pequenos
-  body:     { fontSize: '13px',   fontWeight: '600' }, // texto padrao / paragrafos
-  bodyBold: { fontSize: '13px',   fontWeight: '800' }, // texto padrao em destaque
-  title:    { fontSize: '16px',   fontWeight: '800' }, // titulos de secao/modal
-  value:    { fontSize: '18px',   fontWeight: '800' }, // valores grandes de card
-  heading:  { fontSize: '22px',   fontWeight: '800' }, // nome/titulo principal da tela
-  display:  { fontSize: '28px',   fontWeight: '800' }, // numero de destaque (ex: anel de Homeostase)
+  caption:  { fontSize: 'clamp(10px, calc(8.5px + 0.9vw), 13px)',     fontWeight: '600' }, // legendas minimas (notas, descricoes de bloqueio)
+  label:    { fontSize: 'clamp(11.5px, calc(9.78px + 0.9vw), 14.95px)', fontWeight: '700' }, // labels de card, nav, badges pequenos
+  body:     { fontSize: 'clamp(13px, calc(11.05px + 0.9vw), 16.9px)', fontWeight: '600' }, // texto padrao / paragrafos
+  bodyBold: { fontSize: 'clamp(13px, calc(11.05px + 0.9vw), 16.9px)', fontWeight: '800' }, // texto padrao em destaque
+  title:    { fontSize: 'clamp(16px, calc(13.6px + 0.9vw), 20.8px)',  fontWeight: '800' }, // titulos de secao/modal
+  value:    { fontSize: 'clamp(18px, calc(15.3px + 0.9vw), 23.4px)',  fontWeight: '800' }, // valores grandes de card
+  heading:  { fontSize: 'clamp(22px, calc(18.7px + 0.9vw), 28.6px)',  fontWeight: '800' }, // nome/titulo principal da tela
+  display:  { fontSize: 'clamp(28px, calc(23.8px + 0.9vw), 36.4px)', fontWeight: '800' }, // numero de destaque (ex: anel de Homeostase)
 };
 
 export const FONT_FAMILY = "'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif";

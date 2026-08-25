@@ -31,6 +31,20 @@ body {
   min-height: 100dvh;
 }
 
+/* Altura minima de tela usada pelos containers .app-screen de cada pagina.
+   100vh no Safari mobile inclui a area atras da barra de endereco retratil,
+   deixando o conteudo mais alto que o viewport realmente visivel (corta o
+   rodape/menu em telas pequenas). 100dvh acompanha o viewport visivel real,
+   com fallback pra 100vh em navegadores sem suporte a dvh. */
+:root {
+  --app-min-h: 100vh;
+}
+@supports (height: 100dvh) {
+  :root {
+    --app-min-h: 100dvh;
+  }
+}
+
 /* Evita scroll horizontal em todos os elementos */
 * {
   max-width: 100vw;
@@ -64,23 +78,18 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
 }
 
+/* Largura do "cartao" do app: fluida (acompanha a viewport com min()) em vez
+   de degraus fixos por media query. Um degrau fixo (ex: so expande a partir
+   de exatamente 1100px) deixa qualquer janela/monitor/zoom que caia entre os
+   degraus preso na largura de celular mesmo em desktop - min() cresce de
+   forma continua com a tela, sem essa "zona morta". */
 .app-screen {
   width: 100%;
-  max-width: 400px;
+  max-width: min(94vw, 1000px);
   margin: 0 auto;
 }
 .app-screen--wide {
   width: 100%;
-  max-width: 420px;
+  max-width: min(94vw, 1080px);
   margin: 0 auto;
-}
-
-@media (min-width: 700px) {
-  .app-screen { max-width: 640px; }
-  .app-screen--wide { max-width: 680px; }
-}
-
-@media (min-width: 1100px) {
-  .app-screen { max-width: 860px; }
-  .app-screen--wide { max-width: 920px; }
 }

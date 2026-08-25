@@ -139,8 +139,8 @@ function LoginScreen({ onLogin }) {
   }
 
   const s = {
-    wrap: { display:"flex", justifyContent:"center", alignItems:"center", minHeight:"100vh", background:COLORS.bg, padding:"2rem 1rem", boxSizing:"border-box", fontFamily:FONT_FAMILY },
-    card: { background:COLORS.surface, borderRadius:"26px", padding:"2.5rem 2rem", width:"100%", maxWidth:"370px", display:"flex", flexDirection:"column", alignItems:"center", gap:"1.25rem", boxShadow:"0 10px 30px rgba(43,43,118,.25)", margin:"0 auto", boxSizing:"border-box" },
+    wrap: { display:"flex", justifyContent:"center", alignItems:"center", minHeight:"var(--app-min-h)", background:COLORS.bg, padding:"2rem 1rem", boxSizing:"border-box", fontFamily:FONT_FAMILY },
+    card: { background:COLORS.surface, borderRadius:"26px", padding:"2.5rem 2rem", width:"100%", maxWidth:"min(90vw, 460px)", display:"flex", flexDirection:"column", alignItems:"center", gap:"1.25rem", boxShadow:"0 10px 30px rgba(43,43,118,.25)", margin:"0 auto", boxSizing:"border-box" },
     brandName: { ...FONT_SCALE.display, fontFamily:FONT_FAMILY, color:COLORS.textPrimary },
     brandSub: { ...FONT_SCALE.label, letterSpacing:"0.08em", textTransform:"uppercase", color:COLORS.textMuted },
     divider: { width:"100%", height:"2px", borderRadius:"2px", background:COLORS.border },
@@ -159,7 +159,7 @@ function LoginScreen({ onLogin }) {
     input: { width:"100%", padding:"11px 14px", borderRadius:"10px", fontSize:"14px", border:`1.5px solid ${COLORS.border}`, background:COLORS.surfaceMuted, color:COLORS.textPrimary, fontFamily:"inherit", outline:"none", boxSizing:"border-box" },
     error: { width:"100%", ...FONT_SCALE.body, color:COLORS.status.critico.color, backgroundColor:COLORS.status.critico.soft, border:`1.5px solid ${COLORS.status.critico.color}`, borderRadius:"10px", padding:"8px 12px" },
     inlineLink: { color:COLORS.indigo, textDecoration:"underline", cursor:"pointer", fontWeight:"700" },
-    submitBtn: { width:"100%", padding:"13px", borderRadius:"12px", border:"none", backgroundColor:COLORS.indigo, color:"white", fontSize:"14px", fontWeight:"800", cursor:"pointer", fontFamily:"inherit" },
+    submitBtn: { width:"100%", padding:"13px", borderRadius:"12px", border:"none", backgroundColor:COLORS.indigo, color:"white", fontSize:'clamp(14px, calc(11.9px + 0.9vw), 18.2px)', fontWeight:"800", cursor:"pointer", fontFamily:"inherit" },
     footerNote: { ...FONT_SCALE.caption, color:COLORS.textMuted, textAlign:"center", lineHeight:"1.6" },
   };
 

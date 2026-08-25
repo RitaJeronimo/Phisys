@@ -37,10 +37,10 @@ function RankingScreen({ user, onBack }) {
   }
 
   return (
-    <div className="app-screen" style={{ width:'100%', minHeight:'100vh', display:'flex', flexDirection:'column', background:COLORS.surface, margin:'0 auto', paddingBottom:'2rem', fontFamily:FONT_FAMILY, color:COLORS.textPrimary }}>
+    <div className="app-screen" style={{ width:'100%', minHeight:'var(--app-min-h)', display:'flex', flexDirection:'column', background:COLORS.surface, margin:'0 auto', paddingBottom:'2rem', fontFamily:FONT_FAMILY, color:COLORS.textPrimary }}>
 
       <div style={{ background:COLORS.bg, padding:'1.25rem 1.5rem 0.75rem', display:'flex', alignItems:'center', gap:'1rem' }}>
-        <button style={{ fontSize:'20px', cursor:'pointer', background:'none', border:'none', color:'white' }} onClick={onBack}>←</button>
+        <button style={{ fontSize:'clamp(20px, calc(17px + 0.9vw), 26px)', cursor:'pointer', background:'none', border:'none', color:'white' }} onClick={onBack}>←</button>
         <div style={{ ...FONT_SCALE.heading, color:'white' }}>Ranking da Turma</div>
       </div>
 
@@ -59,13 +59,13 @@ function RankingScreen({ user, onBack }) {
               const pos = [2, 1, 3];
               return (
                 <div key={item.usuario_id} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'6px' }}>
-                  {pos[i] === 1 && <div style={{ fontSize:'22px' }}>👑</div>}
+                  {pos[i] === 1 && <div style={{ fontSize:'clamp(22px, calc(18.7px + 0.9vw), 28.6px)' }}>👑</div>}
                   <div style={{ width:`${sizes[i]}px`, height:`${sizes[i]}px`, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:'800', color:'white', fontSize:`${sizes[i]/3}px`, background:COLORS.indigo, border:`3px solid ${COLORS.iconChipBg}`, ...(item.nome === user.name ? { background:COLORS.accent } : {}) }}>
                     {initials(item.nome)}
                   </div>
                   <div style={{ ...FONT_SCALE.label, color:COLORS.textPrimary, textAlign:'center' }}>{item.nome?.split(' ')[0]}</div>
                   <div style={{ ...FONT_SCALE.label, color:COLORS.textPrimary, fontWeight:'800' }}>{item.xp_total} pts</div>
-                  <div style={{ borderRadius:'8px 8px 0 0', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px', fontWeight:'900', color:'white', width:'64px', height:`${heights[i]}px`, background:COLORS.bg }}>{pos[i]}</div>
+                  <div style={{ borderRadius:'8px 8px 0 0', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'clamp(18px, calc(15.3px + 0.9vw), 23.4px)', fontWeight:'900', color:'white', width:'64px', height:`${heights[i]}px`, background:COLORS.bg }}>{pos[i]}</div>
                 </div>
               );
             })}

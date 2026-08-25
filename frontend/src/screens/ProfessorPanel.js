@@ -660,11 +660,11 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
           <input style={styles.input} value={simForm.title} onChange={e=>setSimForm(f=>({...f,title:e.target.value}))} placeholder="Ex: Insuficiência Cardíaca"/>
           <div style={styles.fieldLabel}>Foco</div>
           <div style={{ display:'flex', gap:'8px', marginBottom:'4px' }}>
-            <div style={{ flex:1, padding:'10px', borderRadius:'10px', border:`1px solid ${simForm.focus === 'cardiovascular' ? COLORS.indigo : COLORS.border}`, background: simForm.focus === 'cardiovascular' ? COLORS.iconChipBg : COLORS.surfaceMuted, color: simForm.focus === 'cardiovascular' ? COLORS.indigo : COLORS.textMuted, fontSize:'13px', textAlign:'center', cursor:'pointer', fontWeight: simForm.focus === 'cardiovascular' ? '700' : '400' }}
+            <div style={{ flex:1, padding:'10px', borderRadius:'10px', border:`1px solid ${simForm.focus === 'cardiovascular' ? COLORS.indigo : COLORS.border}`, background: simForm.focus === 'cardiovascular' ? COLORS.iconChipBg : COLORS.surfaceMuted, color: simForm.focus === 'cardiovascular' ? COLORS.indigo : COLORS.textMuted, fontSize:'clamp(13px, calc(11.05px + 0.9vw), 16.9px)', textAlign:'center', cursor:'pointer', fontWeight: simForm.focus === 'cardiovascular' ? '700' : '400' }}
               onClick={() => setSimForm(f=>({...f, focus:'cardiovascular'}))}>
               ❤️ Cardiovascular
             </div>
-            <div style={{ flex:1, padding:'10px', borderRadius:'10px', border:`1px solid ${simForm.focus === 'renal' ? COLORS.indigo : COLORS.border}`, background: simForm.focus === 'renal' ? COLORS.iconChipBg : COLORS.surfaceMuted, color: simForm.focus === 'renal' ? COLORS.indigo : COLORS.textMuted, fontSize:'13px', textAlign:'center', cursor:'pointer', fontWeight: simForm.focus === 'renal' ? '700' : '400' }}
+            <div style={{ flex:1, padding:'10px', borderRadius:'10px', border:`1px solid ${simForm.focus === 'renal' ? COLORS.indigo : COLORS.border}`, background: simForm.focus === 'renal' ? COLORS.iconChipBg : COLORS.surfaceMuted, color: simForm.focus === 'renal' ? COLORS.indigo : COLORS.textMuted, fontSize:'clamp(13px, calc(11.05px + 0.9vw), 16.9px)', textAlign:'center', cursor:'pointer', fontWeight: simForm.focus === 'renal' ? '700' : '400' }}
               onClick={() => setSimForm(f=>({...f, focus:'renal'}))}>
               🫗 Renal
             </div>
@@ -704,7 +704,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
                   <span style={styles.simParamIcon}>{p.icon}</span>
                   <span style={styles.simParamName}>{p.name}</span>
                   <span style={{ ...styles.simParamVal, color }}>{Math.round(val)} {p.unit}</span>
-                  <span style={{ fontSize:'10px', color, marginLeft:'4px' }}>{inRange ? '✓' : '⚠️'}</span>
+                  <span style={{ fontSize:'clamp(10px, calc(8.5px + 0.9vw), 13px)', color, marginLeft:'4px' }}>{inRange ? '✓' : '⚠️'}</span>
                 </div>
                 <input type="range" min={p.min} max={p.max} step={p.step} value={val}
                   onChange={e => handleSimParam(p.id, e.target.value)}
@@ -882,7 +882,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
             🏫 Cada turma tem seu próprio código de acesso para alunos. Desafios, simulações, parâmetros e ranking ficam isolados por turma - só você vê e edita as turmas que você mesmo criou.
           </div>
           {turmasList.length === 0 ? (
-            <div style={{ margin:'0 1rem', background:COLORS.surfaceMuted, borderRadius:'14px', padding:'2rem', textAlign:'center', color:COLORS.textMuted, fontSize:'13px' }}>
+            <div style={{ margin:'0 1rem', background:COLORS.surfaceMuted, borderRadius:'14px', padding:'2rem', textAlign:'center', color:COLORS.textMuted, fontSize:'clamp(13px, calc(11.05px + 0.9vw), 16.9px)' }}>
               Nenhuma turma cadastrada ainda.
             </div>
           ) : (
@@ -928,7 +928,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
                 <div key={opt.value}
                   style={{
                     flex:1, padding:'8px 4px', borderRadius:'10px', textAlign:'center', cursor:'pointer',
-                    fontSize:'11px', fontWeight:'700',
+                    fontSize:'clamp(11px, calc(9.35px + 0.9vw), 14.3px)', fontWeight:'700',
                     background: sessaoFoco === opt.value ? COLORS.indigo : COLORS.surface,
                     border: `1px solid ${sessaoFoco === opt.value ? COLORS.indigo : COLORS.border}`,
                     color: sessaoFoco === opt.value ? 'white' : COLORS.textMuted,
@@ -1134,7 +1134,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
             📊 Parâmetros extras pra acompanhar durante a simulação — só exibição, não afetam saúde, física ou XP. Antes de lançar uma simulação, você digita o valor daquela sessão pra cada parâmetro ativo.
           </div>
           {parametrosList.length === 0 ? (
-            <div style={{ margin:'0 1rem', background:COLORS.surfaceMuted, borderRadius:'14px', padding:'2rem', textAlign:'center', color:COLORS.textMuted, fontSize:'13px' }}>
+            <div style={{ margin:'0 1rem', background:COLORS.surfaceMuted, borderRadius:'14px', padding:'2rem', textAlign:'center', color:COLORS.textMuted, fontSize:'clamp(13px, calc(11.05px + 0.9vw), 16.9px)' }}>
               Nenhum parâmetro customizado cadastrado ainda.
             </div>
           ) : (
@@ -1199,7 +1199,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
           {/* Ranking */}
           <div style={styles.sectionTitle}>🏆 ranking da simulação atual</div>
           {students.length === 0 ? (
-            <div style={{ margin:'0 1rem', background:COLORS.surfaceMuted, borderRadius:'14px', padding:'2rem', textAlign:'center', color:COLORS.textMuted, fontSize:'13px' }}>
+            <div style={{ margin:'0 1rem', background:COLORS.surfaceMuted, borderRadius:'14px', padding:'2rem', textAlign:'center', color:COLORS.textMuted, fontSize:'clamp(13px, calc(11.05px + 0.9vw), 16.9px)' }}>
               Nenhum aluno no ranking ainda.<br/>Use 🗑️ Zerar e 🚀 Lançar para começar uma nova simulação.
             </div>
           ) : (
@@ -1224,8 +1224,8 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
                     <div style={{ ...FONT_SCALE.caption, color:COLORS.textMuted, marginTop:'2px' }}>{student.matricula} · {student.sessoes} sessão(ões){student.curso ? ` · ${student.curso}` : ''}</div>
                   </div>
                   <div style={{ textAlign:'right' }}>
-                    <div style={{ fontSize:'16px', fontWeight:'800', color:'#E8A83C' }}>⭐ {xp}</div>
-                    <div style={{ fontSize:'10px', color: saudeColor, fontWeight:'700' }}>❤️ {saude.toFixed(0)}%</div>
+                    <div style={{ fontSize:'clamp(16px, calc(13.6px + 0.9vw), 20.8px)', fontWeight:'800', color:'#E8A83C' }}>⭐ {xp}</div>
+                    <div style={{ fontSize:'clamp(10px, calc(8.5px + 0.9vw), 13px)', color: saudeColor, fontWeight:'700' }}>❤️ {saude.toFixed(0)}%</div>
                   </div>
                   <div style={{ textAlign:'right', minWidth:'52px' }}>
                     <div style={{ ...FONT_SCALE.caption, color:COLORS.textMuted, marginBottom:'2px' }}>nota</div>
@@ -1244,12 +1244,12 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
                   </div>
                   <button
                     onClick={() => handleResetarSenhaAluno(student.id, student.nome)}
-                    style={{ background:COLORS.iconChipBg, border:`1px solid ${COLORS.border}`, color:COLORS.blue, borderRadius:'8px', padding:'4px 8px', cursor:'pointer', fontSize:'12px', fontFamily:'inherit' }}
+                    style={{ background:COLORS.iconChipBg, border:`1px solid ${COLORS.border}`, color:COLORS.blue, borderRadius:'8px', padding:'4px 8px', cursor:'pointer', fontSize:'clamp(12px, calc(10.2px + 0.9vw), 15.6px)', fontFamily:'inherit' }}
                     title="Resetar senha"
                   >🔑</button>
                   <button
                     onClick={() => handleDeletarAluno(student.id, student.nome)}
-                    style={{ background:COLORS.status.critico.soft, border:`1px solid ${COLORS.status.critico.color}`, color:COLORS.status.critico.color, borderRadius:'8px', padding:'4px 8px', cursor:'pointer', fontSize:'12px', fontFamily:'inherit' }}
+                    style={{ background:COLORS.status.critico.soft, border:`1px solid ${COLORS.status.critico.color}`, color:COLORS.status.critico.color, borderRadius:'8px', padding:'4px 8px', cursor:'pointer', fontSize:'clamp(12px, calc(10.2px + 0.9vw), 15.6px)', fontFamily:'inherit' }}
                     title="Remover aluno"
                   >🗑️</button>
                 </div>
@@ -1268,7 +1268,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
             📝 Esta lista é ordenada pela nota final que você lançou para cada aluno (independente do XP/ranking do jogo). Alunos sem nota lançada aparecem por último.
           </div>
           {students.length === 0 ? (
-            <div style={{ margin:'0 1rem', background:COLORS.surfaceMuted, borderRadius:'14px', padding:'2rem', textAlign:'center', color:COLORS.textMuted, fontSize:'13px' }}>
+            <div style={{ margin:'0 1rem', background:COLORS.surfaceMuted, borderRadius:'14px', padding:'2rem', textAlign:'center', color:COLORS.textMuted, fontSize:'clamp(13px, calc(11.05px + 0.9vw), 16.9px)' }}>
               Nenhum aluno cadastrado ainda.
             </div>
           ) : (
@@ -1304,7 +1304,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
                     </div>
                     <div style={{ textAlign:'right' }}>
                       {temNota ? (
-                        <div style={{ fontSize:'18px', fontWeight:'800', color:'#E8A83C' }}>{Number(nota).toFixed(1)}</div>
+                        <div style={{ fontSize:'clamp(18px, calc(15.3px + 0.9vw), 23.4px)', fontWeight:'800', color:'#E8A83C' }}>{Number(nota).toFixed(1)}</div>
                       ) : (
                         <div style={{ ...FONT_SCALE.label, color:COLORS.textMuted, fontStyle:'italic' }}>Sem nota</div>
                       )}
@@ -1357,7 +1357,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
             const colors = { 1:'#E24B4A', 2:'#EF9F27', 3:'#85B7EB', 4:'#32C878', 5:'#FFD700' };
             return (
               <div key={level} style={{ ...styles.challengeCard, border:`1px solid ${colors[level]}33` }}>
-                <div style={{ fontSize:'13px', fontWeight:'700', color: colors[level], marginBottom:'8px' }}>
+                <div style={{ fontSize:'clamp(13px, calc(11.05px + 0.9vw), 16.9px)', fontWeight:'700', color: colors[level], marginBottom:'8px' }}>
                   Nível {level} – {labels[level]}
                 </div>
                 <textarea
@@ -1423,7 +1423,7 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
                 { label:'🦳 Idoso',         days:600, color:'#9B59B6' },
               ].map(preset => (
                 <div key={preset.days}
-                  style={{ flex:1, background:`${preset.color}22`, border:`1px solid ${preset.color}55`, borderRadius:'8px', padding:'6px 4px', textAlign:'center', cursor:'pointer', fontSize:'10px', fontWeight:'700', color:COLORS.textPrimary }}
+                  style={{ flex:1, background:`${preset.color}22`, border:`1px solid ${preset.color}55`, borderRadius:'8px', padding:'6px 4px', textAlign:'center', cursor:'pointer', fontSize:'clamp(10px, calc(8.5px + 0.9vw), 13px)', fontWeight:'700', color:COLORS.textPrimary }}
                   onClick={async () => {
                     if (setAgeDays) setAgeDays(preset.days);
                     try {
@@ -1445,9 +1445,9 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
               { icon:'🦳', label:'Idoso',         range:'541+ dias',    color:'#9B59B6', desc:'Maior vulnerabilidade fisiológica, menor capacidade compensatória' },
             ].map(fase => (
               <div key={fase.label} style={{ display:'flex', gap:'10px', alignItems:'flex-start', marginBottom:'10px' }}>
-                <div style={{ fontSize:'20px' }}>{fase.icon}</div>
+                <div style={{ fontSize:'clamp(20px, calc(17px + 0.9vw), 26px)' }}>{fase.icon}</div>
                 <div style={{ flex:1 }}>
-                  <div style={{ fontSize:'12px', fontWeight:'700', color: fase.color }}>{fase.label} – {fase.range}</div>
+                  <div style={{ fontSize:'clamp(12px, calc(10.2px + 0.9vw), 15.6px)', fontWeight:'700', color: fase.color }}>{fase.label} – {fase.range}</div>
                   <div style={{ ...FONT_SCALE.caption, color:COLORS.textMuted, marginTop:'2px' }}>{fase.desc}</div>
                 </div>
               </div>
@@ -1461,22 +1461,22 @@ function ProfessorPanel({ onBack, onApplySimulation, ageDays, setAgeDays }) {
 }
 
 const styles = {
-  screen:           { width:'100%', minHeight:'100vh', display:'flex', flexDirection:'column', background:COLORS.surface, margin:'0 auto', paddingBottom:'2rem', overflowX:'hidden', fontFamily:FONT_FAMILY, color:COLORS.textPrimary },
+  screen:           { width:'100%', minHeight:'var(--app-min-h)', display:'flex', flexDirection:'column', background:COLORS.surface, margin:'0 auto', paddingBottom:'2rem', overflowX:'hidden', fontFamily:FONT_FAMILY, color:COLORS.textPrimary },
   topbar:           { background:COLORS.bg, padding:'1.25rem 1rem .75rem', display:'flex', alignItems:'center', justifyContent:'space-between' },
-  backBtn:          { fontSize:'20px', cursor:'pointer', background:'none', border:'none', color:'white' },
+  backBtn:          { fontSize:'clamp(20px, calc(17px + 0.9vw), 26px)', cursor:'pointer', background:'none', border:'none', color:'white' },
   title:            { ...FONT_SCALE.title, color:'white' },
   exportBtn:        { ...FONT_SCALE.label, background:'rgba(255,255,255,.15)', border:'1px solid rgba(255,255,255,.25)', color:'white', padding:'5px 12px', borderRadius:'20px', cursor:'pointer', fontFamily:'inherit' },
   resetTurmaBtn:    { ...FONT_SCALE.label, fontWeight:'800', background:'rgba(255,255,255,.15)', border:'1px solid rgba(255,255,255,.35)', color:'#FFD4D0', padding:'5px 12px', borderRadius:'20px', cursor:'pointer', fontFamily:'inherit' },
   resetCodeCard:    { position:'sticky', top:0, zIndex:20, margin:'.75rem 1rem', background:COLORS.status.debilitado.soft, border:`1px solid ${COLORS.status.debilitado.color}`, borderRadius:'16px', padding:'1rem', textAlign:'center', boxShadow:SHADOW_CARD },
   resetCodeLabel:   { ...FONT_SCALE.body, color:COLORS.textPrimary, marginBottom:'4px' },
-  resetCodeValue:   { fontSize:'32px', fontWeight:'800', letterSpacing:'.15em', fontFamily:'monospace', color:COLORS.textPrimary },
+  resetCodeValue:   { fontSize:'clamp(32px, calc(27.2px + 0.9vw), 41.6px)', fontWeight:'800', letterSpacing:'.15em', fontFamily:'monospace', color:COLORS.textPrimary },
   resetCodeHint:    { ...FONT_SCALE.label, color:COLORS.textMuted, margin:'4px 0 10px' },
   resetCodeActions: { display:'flex', gap:'8px', justifyContent:'center' },
   resetCodeCopyBtn: { ...FONT_SCALE.label, fontWeight:'800', background:COLORS.indigo, color:'white', border:'none', padding:'6px 16px', borderRadius:'20px', cursor:'pointer', fontFamily:'inherit' },
   resetCodeCloseBtn:{ ...FONT_SCALE.label, background:'none', border:`1px solid ${COLORS.border}`, color:COLORS.textMuted, padding:'6px 16px', borderRadius:'20px', cursor:'pointer', fontFamily:'inherit' },
   saveBtn:          { ...FONT_SCALE.label, fontWeight:'800', background:COLORS.status.saudavel.color, border:'none', color:'white', padding:'6px 14px', borderRadius:'20px', cursor:'pointer', fontFamily:'inherit' },
   tabs:             { margin:'0 1rem .75rem', display:'flex', gap:'4px' },
-  tab:              { flex:1, padding:'7px 2px', textAlign:'center', fontSize:'10px', fontWeight:'700', color:COLORS.textMuted, background:COLORS.surfaceMuted, border:`1px solid ${COLORS.border}`, borderRadius:'10px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', minHeight:'36px', lineHeight:'1.2' },
+  tab:              { flex:1, padding:'7px 2px', textAlign:'center', fontSize:'clamp(10px, calc(8.5px + 0.9vw), 13px)', fontWeight:'700', color:COLORS.textMuted, background:COLORS.surfaceMuted, border:`1px solid ${COLORS.border}`, borderRadius:'10px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', minHeight:'36px', lineHeight:'1.2' },
   tabActive:        { background:COLORS.indigo, color:'white', borderColor:COLORS.indigo },
   challengeHeader:  { display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 1rem .25rem' },
   sectionTitle:     { padding:'.5rem 1rem .25rem', ...FONT_SCALE.label, color:COLORS.textMuted, letterSpacing:'.08em', textTransform:'uppercase' },
@@ -1494,12 +1494,12 @@ const styles = {
   editBtn:          { ...FONT_SCALE.label, background:COLORS.surfaceMuted, border:`1px solid ${COLORS.border}`, color:COLORS.textPrimary, padding:'5px 12px', borderRadius:'8px', cursor:'pointer', fontFamily:'inherit' },
   toggleBtn:        { ...FONT_SCALE.label, background:COLORS.surfaceMuted, border:`1px solid ${COLORS.border}`, color:COLORS.textPrimary, padding:'5px 12px', borderRadius:'8px', cursor:'pointer', fontFamily:'inherit' },
   ativarBtn:        { ...FONT_SCALE.label, fontWeight:'800', background:COLORS.status.debilitado.soft, border:`1px solid ${COLORS.status.debilitado.color}`, color:COLORS.status.debilitado.color, padding:'5px 12px', borderRadius:'8px', cursor:'pointer', fontFamily:'inherit' },
-  deleteBtn:        { fontSize:'14px', background:COLORS.status.critico.soft, border:`1px solid ${COLORS.status.critico.color}`, color:COLORS.status.critico.color, padding:'5px 10px', borderRadius:'8px', cursor:'pointer', fontFamily:'inherit' },
+  deleteBtn:        { fontSize:'clamp(14px, calc(11.9px + 0.9vw), 18.2px)', background:COLORS.status.critico.soft, border:`1px solid ${COLORS.status.critico.color}`, color:COLORS.status.critico.color, padding:'5px 10px', borderRadius:'8px', cursor:'pointer', fontFamily:'inherit' },
   simInfo:          { margin:'0 1rem .75rem', background:COLORS.status.debilitado.soft, border:`1px solid ${COLORS.status.debilitado.color}`, borderRadius:'14px', padding:'.75rem', ...FONT_SCALE.body, color:COLORS.textPrimary, lineHeight:'1.5' },
   simNotice:        { background:COLORS.status.debilitado.soft, border:`1px solid ${COLORS.status.debilitado.color}`, borderRadius:'10px', padding:'.75rem', ...FONT_SCALE.label, color:COLORS.textPrimary, lineHeight:'1.5', marginBottom:'1rem' },
   simParamRow:      { background:COLORS.surfaceMuted, borderRadius:'10px', padding:'.75rem', marginBottom:'8px' },
   simParamHeader:   { display:'flex', alignItems:'center', gap:'6px', marginBottom:'4px' },
-  simParamIcon:     { fontSize:'16px' },
+  simParamIcon:     { fontSize:'clamp(16px, calc(13.6px + 0.9vw), 20.8px)' },
   simParamName:     { flex:1, ...FONT_SCALE.label, color:COLORS.textPrimary, fontWeight:'600' },
   simParamVal:      { ...FONT_SCALE.bodyBold },
   simParamRange:    { ...FONT_SCALE.caption, color:COLORS.textMuted },
