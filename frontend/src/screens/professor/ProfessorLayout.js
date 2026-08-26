@@ -71,11 +71,17 @@ function ProfessorLayout({ onBack, onApplySimulation, ageDays, setAgeDays }) {
   async function handleExport() {
     try {
       const data = await rankingApi.get(turmaAtualId);
-      const header = 'Posicao,Nome,Matricula,XP Total,Sessoes,Media Saude,Nota Final\n';
+      // "sep=;" na primeira linha declara o delimitador explicitamente pro
+      // Excel, funciona independente da configuracao regional de quem abre
+      // o arquivo (nao so em pt-BR, onde "," ja e o separador decimal e por
+      // isso ";" e o esperado como separador de coluna em CSV - sem isso,
+      // a linha inteira caia numa unica celula).
+      const sepHint = 'sep=;\n';
+      const header = 'Posicao;Nome;Matricula;XP Total;Sessoes;Media Saude;Nota Final\n';
       const rows = data.map((r, i) =>
-        `${i+1},${r.nome},${r.matricula},${r.xp_total},${r.sessoes},${Number(r.media_saude).toFixed(1)},${r.nota_final ?? '-'}`
+        `${i+1};${r.nome};${r.matricula};${r.xp_total};${r.sessoes};${Number(r.media_saude).toFixed(1)};${r.nota_final ?? '-'}`
       ).join('\n');
-      const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
+      const blob = new Blob([sepHint + header + rows], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
