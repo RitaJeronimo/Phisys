@@ -241,7 +241,7 @@ function LoginScreen({ onLogin }) {
             {isNewAccount && (
               <div style={s.formGroup}>
                 <label style={s.label}>curso / instituição (opcional)</label>
-                <input style={s.input} type="text" placeholder="Ex: Enfermagem – UFPE" value={curso} onChange={e=>setCurso(e.target.value)}/>
+                <input style={s.input} type="text" placeholder="Ex: Enfermagem – UFES" value={curso} onChange={e=>setCurso(e.target.value)}/>
                 <div style={s.fieldHint}>Ajuda o professor a identificar de onde você é, quando a turma reúne alunos de mais de uma instituição.</div>
               </div>
             )}
