@@ -79,7 +79,8 @@ router.post('/:id/checar', auth, async (req, res) => {
 
     if (correta) {
       const configResult = await pool.query(
-        `SELECT valor FROM configuracoes WHERE chave = 'recuperacao_multiplicador'`
+        `SELECT valor FROM configuracoes WHERE chave = 'recuperacao_multiplicador' AND turma_id = $1`,
+        [req.usuario.turma_id]
       );
       const multiplicador = configResult.rows.length > 0 ? Number(configResult.rows[0].valor) : 1;
       const fatorRecuperacao = (multiplicador || 1) * getAgeRecoveryPenalty(ageDaysAtual);
