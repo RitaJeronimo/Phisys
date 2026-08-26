@@ -160,9 +160,12 @@ router.post('/cuidado', auth, async (req, res) => {
     }
 
     const a = animal.rows[0];
-    const novaHidratacao = efeito.hidratacao ? Math.min(100, a.hidratacao + efeito.hidratacao) : a.hidratacao;
-    const novaEnergia    = efeito.energia    ? Math.min(100, a.energia    + efeito.energia)    : a.energia;
-    const novaSaude      = efeito.saude      ? Math.min(100, a.saude      + efeito.saude)      : a.saude;
+    // NUMERIC no Postgres vem como string pelo driver pg - sem o Number(),
+    // "70" + 20 concatena ("7020") em vez de somar, e Math.min(100, "7020")
+    // sempre bate em 100 (bug real: cuidados diarios pulavam direto pra 100).
+    const novaHidratacao = efeito.hidratacao ? Math.min(100, Number(a.hidratacao) + efeito.hidratacao) : Number(a.hidratacao);
+    const novaEnergia    = efeito.energia    ? Math.min(100, Number(a.energia)    + efeito.energia)    : Number(a.energia);
+    const novaSaude      = efeito.saude      ? Math.min(100, Number(a.saude)      + efeito.saude)      : Number(a.saude);
 
     const result = await pool.query(
       `UPDATE animal SET
