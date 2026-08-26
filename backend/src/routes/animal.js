@@ -3,6 +3,7 @@ const router = express.Router();
 const pool = require('../db/connection');
 const auth = require('../middleware/auth');
 const { requireProfessor, resolveTurmaId } = require('../middleware/turmaOwnership');
+const { recalcularSaudeTurma } = require('../utils/recalcularSaudeTurma');
 
 const COOLDOWN_HORAS_MODO_LIVRE = 2;
 
@@ -220,15 +221,35 @@ router.post('/cuidado', auth, async (req, res) => {
 // PUT /api/animal/age — professor atualiza idade de todos os alunos de uma turma dele
 router.put('/age', auth, requireProfessor, resolveTurmaId, async (req, res) => {
   const { age_days } = req.body;
+  const client = await pool.connect();
+  // Mesmo padrao de simulacoes.js's /ativar - sem esse handler, um erro de
+  // conexao no client "checked-out" (ex: Neon encerrando a conexao) derruba
+  // o processo inteiro em vez de so essa requisicao.
+  client.on('error', (err) => {
+    console.error('Erro na conexao do client durante a transacao (mudar idade da turma):', err.message);
+  });
   try {
-    await pool.query(
+    await client.query('BEGIN');
+    await client.query(
       `UPDATE animal SET age_days = $1, atualizado_em = NOW()
        WHERE usuario_id IN (SELECT id FROM usuarios WHERE modo = 'aluno' AND turma_id = $2)`,
       [age_days, req.turmaId]
     );
+    // Idade muda as faixas normais de PA/FC/peso usadas por calcularSaude -
+    // sem recalcular aqui, saude ficava parada com o valor de antes da
+    // mudanca de idade (mesmo bug do /simulacoes/:id/ativar).
+    await recalcularSaudeTurma(client, req.turmaId);
+    await client.query('COMMIT');
     res.json({ ok: true });
   } catch (err) {
+    try {
+      await client.query('ROLLBACK');
+    } catch (rollbackErr) {
+      console.error('Erro ao tentar ROLLBACK (conexao provavelmente ja perdida):', rollbackErr.message);
+    }
     res.status(500).json({ erro: 'Erro interno do servidor.' });
+  } finally {
+    client.release();
   }
 });
 

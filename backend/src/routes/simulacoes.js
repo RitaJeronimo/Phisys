@@ -3,6 +3,7 @@ const router = express.Router();
 const pool = require('../db/connection');
 const auth = require('../middleware/auth');
 const { requireProfessor, mesmaTurmaDoRecurso, resolveTurmaId } = require('../middleware/turmaOwnership');
+const { recalcularSaudeTurma } = require('../utils/recalcularSaudeTurma');
 
 // GET /api/simulacoes/ativa – retorna a simulação ativa da turma do usuario logado
 router.get('/ativa', auth, resolveTurmaId, async (req, res) => {
@@ -110,6 +111,7 @@ router.put('/:id/ativar', auth, requireProfessor, mesmaTurmaDoRecurso('simulacoe
          WHERE usuario_id IN (SELECT id FROM usuarios WHERE modo = $${idx} AND turma_id = $${idx + 1})`,
         valores
       );
+      await recalcularSaudeTurma(client, turma_id);
     }
 
     // 4. Registra os valores desta sessao para os parametros customizados da
