@@ -591,8 +591,8 @@ const styles = {
 
   ringWrap:         { position:'relative', width:'clamp(70px, 24vw, 128px)', height:'clamp(70px, 24vw, 128px)', flexShrink:0 },
   ringCenter:       { position:'absolute', inset:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'3px' },
-  ringLabel:        { fontSize:'clamp(13px, calc(11.05px + 0.9vw), 16.9px)', fontWeight:'700', color:COLORS.textMuted, textAlign:'center', lineHeight:1.2 },
-  ringPct:          { fontSize:'clamp(30px, calc(25.5px + 0.9vw), 39px)', fontWeight:'800', color:COLORS.textPrimary, lineHeight:1 },
+  ringLabel:        { fontSize:'clamp(9px, 2.8vw, 15px)', fontWeight:'700', color:COLORS.textMuted, textAlign:'center', lineHeight:1.2 },
+  ringPct:          { fontSize:'clamp(20px, 6.7vw, 36px)', fontWeight:'800', color:COLORS.textPrimary, lineHeight:1 },
 
   statusCol:        { display:'flex', flexDirection:'column', alignItems:'center', gap:'9px', flexShrink:0 },
   shield:           { width:'38px', height:'38px', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center' },
