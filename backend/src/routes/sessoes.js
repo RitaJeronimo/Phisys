@@ -23,9 +23,21 @@ router.post('/iniciar', auth, async (req, res) => {
 // PUT /api/sessoes/:id/finalizar — finaliza sessão
 router.put('/:id/finalizar', auth, async (req, res) => {
   const { id } = req.params;
-  const { duracao_segundos, xp_total, saude_final } = req.body;
+  const { duracao_segundos } = req.body;
 
   try {
+    // xp_total e saude_final nunca vem do cliente (era possivel forjar
+    // xp_total:99999 e inflar o ranking pra sempre via GREATEST). O
+    // ranking.xp_total ja e mantido correto a cada resposta em
+    // desafios.js's /checar (fechar:true), e animal.saude a cada cuidado -
+    // aqui so relemos essas fontes de verdade, o mesmo padrao que o resto
+    // do backend ja usa.
+    const rankingAtual = await pool.query('SELECT xp_total FROM ranking WHERE usuario_id = $1', [req.usuario.id]);
+    const xpTotal = rankingAtual.rows.length > 0 ? Number(rankingAtual.rows[0].xp_total) || 0 : 0;
+
+    const animalAtual = await pool.query('SELECT saude FROM animal WHERE usuario_id = $1', [req.usuario.id]);
+    const saudeFinal = animalAtual.rows.length > 0 ? Number(animalAtual.rows[0].saude) || 0 : 0;
+
     const result = await pool.query(
       `UPDATE sessoes SET
         finalizada_em    = NOW(),
@@ -34,7 +46,7 @@ router.put('/:id/finalizar', auth, async (req, res) => {
         saude_final      = $3
        WHERE id = $4 AND usuario_id = $5
        RETURNING *`,
-      [duracao_segundos, xp_total, saude_final, id, req.usuario.id]
+      [duracao_segundos, xpTotal, saudeFinal, id, req.usuario.id]
     );
 
     if (result.rows.length === 0) {
@@ -46,11 +58,11 @@ router.put('/:id/finalizar', auth, async (req, res) => {
       `INSERT INTO ranking (usuario_id, xp_total, sessoes, media_saude)
        VALUES ($1, $2, 1, $3)
        ON CONFLICT (usuario_id) DO UPDATE SET
-         xp_total      = GREATEST(ranking.xp_total, $2),
+         xp_total      = $2,
          sessoes       = ranking.sessoes + 1,
          media_saude   = ($3 + ranking.media_saude) / 2,
          atualizado_em = NOW()`,
-      [req.usuario.id, xp_total, saude_final]
+      [req.usuario.id, xpTotal, saudeFinal]
     );
 
     res.json(result.rows[0]);
