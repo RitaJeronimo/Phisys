@@ -94,12 +94,12 @@ const styles = {
   subtext:      { ...FONT_SCALE.body, color:COLORS.textMuted, textAlign:'center', lineHeight:'1.5' },
   levels:       { display:'flex', gap:'8px', justifyContent:'center', width:'100%', marginTop:'.5rem' },
   levelBtn:     { flex:1, background:COLORS.iconChipBg, border:`2px solid ${COLORS.border}`, borderRadius:'14px', padding:'10px 4px', display:'flex', flexDirection:'column', alignItems:'center', gap:'4px', cursor:'pointer', transition:'all .2s' },
-  levelEmoji:   { fontSize:'clamp(26px, calc(22.1px + 0.9vw), 33.8px)' },
+  levelEmoji:   { fontSize:'clamp(28px, calc(23.8px + 0.9vw), 36.4px)' },
   levelNum:     { ...FONT_SCALE.label, color:COLORS.textMuted },
   messageCard:  { width:'100%', background:COLORS.surfaceMuted, border:'1px solid', borderRadius:'14px', padding:'1rem', display:'flex', flexDirection:'column', gap:'8px' },
   levelLabel:   { ...FONT_SCALE.bodyBold },
   messageText:  { ...FONT_SCALE.body, color:COLORS.textPrimary, lineHeight:'1.6' },
-  continueBtn:  { width:'100%', padding:'13px', borderRadius:'12px', border:'none', background:COLORS.indigo, color:'white', fontSize:'clamp(14px, calc(11.9px + 0.9vw), 18.2px)', fontWeight:'800', cursor:'pointer', fontFamily:'inherit', marginTop:'.5rem' },
+  continueBtn:  { width:'100%', padding:'13px', borderRadius:'12px', border:'none', background:COLORS.indigo, color:'white', fontSize:'clamp(16px, calc(13.6px + 0.9vw), 20.8px)', fontWeight:'800', cursor:'pointer', fontFamily:'inherit', marginTop:'.5rem' },
   note:         { ...FONT_SCALE.caption, color:COLORS.textMuted, textAlign:'center', lineHeight:'1.5' },
 };
 

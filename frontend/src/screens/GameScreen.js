@@ -524,7 +524,7 @@ useEffect(() => {
 const styles = {
   screen:             { width:'100%', minHeight:'var(--app-min-h)', display:'flex', flexDirection:'column', background:COLORS.surface, margin:'0 auto', fontFamily:FONT_FAMILY, color:COLORS.textPrimary },
   topbar:             { background:COLORS.bg, padding:'1.25rem 1.5rem 0.75rem', display:'flex', justifyContent:'space-between', alignItems:'center', gap:'8px', flexWrap:'wrap' },
-  backBtn:            { fontSize:'clamp(20px, calc(17px + 0.9vw), 26px)', cursor:'pointer', background:'none', border:'none', color:'white' },
+  backBtn:            { fontSize:'clamp(22px, calc(18.7px + 0.9vw), 28.6px)', cursor:'pointer', background:'none', border:'none', color:'white' },
   scoreBadge:         { background:'rgba(255,255,255,0.15)', border:'1px solid rgba(255,255,255,0.25)', borderRadius:'20px', padding:'4px 14px', ...FONT_SCALE.label, color:'white' },
   timerBadge:         { background:'rgba(255,255,255,0.15)', border:'1px solid rgba(255,255,255,0.25)', borderRadius:'20px', padding:'4px 14px', ...FONT_SCALE.label, color:'white' },
   mascotSection:      { padding:'1rem 1.5rem 0', display:'flex', alignItems:'center', gap:'1rem' },
@@ -553,7 +553,7 @@ const styles = {
   optionLetterCorrect:{ background:COLORS.status.saudavel.color, color:'white' },
   optionLetterWrong:  { background:COLORS.status.critico.color, color:'white' },
   optionText:         { ...FONT_SCALE.body, color:COLORS.textPrimary, lineHeight:'1.4' },
-  nextBtn:            { width:'100%', padding:'13px', borderRadius:'12px', border:'none', backgroundColor:COLORS.indigo, color:'white', fontSize:'clamp(14px, calc(11.9px + 0.9vw), 18.2px)', fontWeight:'800', cursor:'pointer', fontFamily:'inherit' },
+  nextBtn:            { width:'100%', padding:'13px', borderRadius:'12px', border:'none', backgroundColor:COLORS.indigo, color:'white', fontSize:'clamp(16px, calc(13.6px + 0.9vw), 20.8px)', fontWeight:'800', cursor:'pointer', fontFamily:'inherit' },
   modeBadge:          { background:'rgba(255,255,255,0.15)', border:'1px solid rgba(255,255,255,0.25)', borderRadius:'20px', padding:'4px 10px', ...FONT_SCALE.label, color:'white' },
 };
 

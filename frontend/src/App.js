@@ -197,7 +197,7 @@ function App() {
           Ao longo da jornada, ele cresce, muda de fase e responde às suas escolhas — ajudando você a compreender como o corpo regula seus sistemas cardiovascular e renal.<br/><br/>
           Cuide dele, observe seus parâmetros e teste hipóteses fisiológicas em tempo real!
         </div>
-        <button style={{ width:'100%', padding:'14px', borderRadius:'12px', border:'none', background:COLORS.indigo, color:'white', fontSize:'clamp(15px, calc(12.75px + 0.9vw), 19.5px)', fontWeight:'800', cursor:'pointer', fontFamily:'inherit' }}
+        <button style={{ width:'100%', padding:'14px', borderRadius:'12px', border:'none', background:COLORS.indigo, color:'white', fontSize:'clamp(17px, calc(14.45px + 0.9vw), 22.1px)', fontWeight:'800', cursor:'pointer', fontFamily:'inherit' }}
           onClick={() => setShowWelcome(false)}>
           Começar jornada 🐭
         </button>

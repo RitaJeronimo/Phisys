@@ -200,7 +200,7 @@ const styles = {
   msgText:      { ...FONT_SCALE.bodyBold, color:COLORS.textPrimary, lineHeight:'1.6', textAlign:'center' },
   summaryGrid:  { margin:'0 1rem .75rem', display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'8px' },
   summaryCard:  { background:COLORS.surface, boxShadow:SHADOW_CARD, borderRadius:'14px', padding:'.875rem .5rem', display:'flex', flexDirection:'column', alignItems:'center', gap:'4px' },
-  summaryIcon:  { fontSize:'clamp(20px, calc(17px + 0.9vw), 26px)' },
+  summaryIcon:  { fontSize:'clamp(22px, calc(18.7px + 0.9vw), 28.6px)' },
   summaryVal:   { ...FONT_SCALE.value, color:COLORS.indigo },
   summaryLbl:   { ...FONT_SCALE.caption, color:COLORS.textMuted, textTransform:'uppercase', letterSpacing:'.05em', textAlign:'center' },
   sectionLabel: { padding:'.25rem 1rem', ...FONT_SCALE.label, color:COLORS.textMuted, letterSpacing:'.08em', textTransform:'uppercase' },
@@ -214,7 +214,7 @@ const styles = {
   chartLegend:  { display:'flex', flexWrap:'wrap', gap:'8px', marginTop:'8px', justifyContent:'center' },
   legendItem:   { display:'flex', alignItems:'center', gap:'4px' },
   legendLabel:  { ...FONT_SCALE.caption, color:COLORS.textMuted },
-  backBtn:      { width:'100%', padding:'13px', borderRadius:'12px', border:'none', background:COLORS.indigo, color:'white', fontSize:'clamp(14px, calc(11.9px + 0.9vw), 18.2px)', fontWeight:'800', cursor:'pointer', fontFamily:'inherit' },
+  backBtn:      { width:'100%', padding:'13px', borderRadius:'12px', border:'none', background:COLORS.indigo, color:'white', fontSize:'clamp(16px, calc(13.6px + 0.9vw), 20.8px)', fontWeight:'800', cursor:'pointer', fontFamily:'inherit' },
 };
 
 export default FinalScreen;

@@ -159,7 +159,7 @@ function LoginScreen({ onLogin }) {
     input: { width:"100%", padding:"11px 14px", borderRadius:"10px", fontSize:"14px", border:`1.5px solid ${COLORS.border}`, background:COLORS.surfaceMuted, color:COLORS.textPrimary, fontFamily:"inherit", outline:"none", boxSizing:"border-box" },
     error: { width:"100%", ...FONT_SCALE.body, color:COLORS.status.critico.color, backgroundColor:COLORS.status.critico.soft, border:`1.5px solid ${COLORS.status.critico.color}`, borderRadius:"10px", padding:"8px 12px" },
     inlineLink: { color:COLORS.indigo, textDecoration:"underline", cursor:"pointer", fontWeight:"700" },
-    submitBtn: { width:"100%", padding:"13px", borderRadius:"12px", border:"none", backgroundColor:COLORS.indigo, color:"white", fontSize:'clamp(14px, calc(11.9px + 0.9vw), 18.2px)', fontWeight:"800", cursor:"pointer", fontFamily:"inherit" },
+    submitBtn: { width:"100%", padding:"13px", borderRadius:"12px", border:"none", backgroundColor:COLORS.indigo, color:"white", fontSize:'clamp(16px, calc(13.6px + 0.9vw), 20.8px)', fontWeight:"800", cursor:"pointer", fontFamily:"inherit" },
     footerNote: { ...FONT_SCALE.caption, color:COLORS.textMuted, textAlign:"center", lineHeight:"1.6" },
   };
 
