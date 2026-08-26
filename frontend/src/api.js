@@ -81,8 +81,8 @@ export const simulacoes = {
   ativar:   (id, valoresCustom) => req(`/api/simulacoes/${id}/ativar`, { method: 'PUT', headers: authHeaders(), body: JSON.stringify(valoresCustom ? { valoresCustom } : {}) }),
 };
 export const mensagens = {
-  get:  ()     => req('/api/mensagens', { headers: authHeaders() }),
-  save: (data) => req('/api/mensagens', { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ mensagens: data }) }),
+  get:  (turmaId)       => req(comTurma('/api/mensagens', turmaId), { headers: authHeaders() }),
+  save: (data, turmaId) => req('/api/mensagens', { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ mensagens: data, turma_id: turmaId }) }),
 };
 export const sessoes = {
   iniciar:   (data)     => req('/api/sessoes/iniciar', { method: 'POST', headers: authHeaders(), body: JSON.stringify(data) }),

@@ -153,6 +153,24 @@ async function adicionarColunas() {
       )
     `);
 
+    // Escopa mensagens motivacionais por turma (correcao - ficou de fora do M3
+    // por engano: nivel era UNIQUE global, entao a mensagem de um professor
+    // sobrescrevia a de todos os outros). Mesmo padrao do M3 em configuracoes.
+    await pool.query(`ALTER TABLE mensagens ADD COLUMN IF NOT EXISTS turma_id INTEGER REFERENCES turmas(id) ON DELETE CASCADE`);
+    await pool.query(`DELETE FROM mensagens WHERE turma_id IS NULL`);
+    await pool.query(`ALTER TABLE mensagens DROP CONSTRAINT IF EXISTS mensagens_nivel_key`);
+    await pool.query(`ALTER TABLE mensagens ALTER COLUMN turma_id SET NOT NULL`);
+    await pool.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint WHERE conname = 'mensagens_nivel_turma_key'
+        ) THEN
+          ALTER TABLE mensagens ADD CONSTRAINT mensagens_nivel_turma_key UNIQUE (nivel, turma_id);
+        END IF;
+      END $$;
+    `);
+
     // Registro de cada uso de cuidado diario (Trocar Agua, Alimentar, Limpar Maravalha)
     // usado para o cooldown de 2h (Modo Livre). A contagem por quantidade de vezes
     // (Modo Sessao) passou a usar um contador exato (ver cuidados_sessao_contagem

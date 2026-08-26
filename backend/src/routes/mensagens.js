@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db/connection');
 const auth = require('../middleware/auth');
+const { requireProfessor, resolveTurmaId } = require('../middleware/turmaOwnership');
 
 const DEFAULT_MESSAGES = {
   1: 'Tudo bem! O Phisys está aqui com você. Mesmo nos dias difíceis, seu ratinho precisa de cuidado. Vamos devagar — cada pequena ação ajuda a manter a homeostase.',
@@ -11,10 +12,11 @@ const DEFAULT_MESSAGES = {
   5: 'Incrível! Com essa energia você vai longe. O Phisys está com sorte — cuide dele, teste hipóteses e comprove como o corpo regula seus sistemas em tempo real!',
 };
 
-// GET /api/mensagens
-router.get('/', async (req, res) => {
+// GET /api/mensagens — mensagens da turma do usuario logado (aluno: propria
+// turma via token; professor: turma_id explicito, ver resolveTurmaId, item 3)
+router.get('/', auth, resolveTurmaId, async (req, res) => {
   try {
-    const result = await pool.query('SELECT nivel, texto FROM mensagens ORDER BY nivel');
+    const result = await pool.query('SELECT nivel, texto FROM mensagens WHERE turma_id = $1 ORDER BY nivel', [req.turmaId]);
     if (result.rows.length === 0) {
       return res.json(DEFAULT_MESSAGES);
     }
@@ -26,18 +28,15 @@ router.get('/', async (req, res) => {
   }
 });
 
-// PUT /api/mensagens — professor salva mensagens
-router.put('/', auth, async (req, res) => {
-  if (req.usuario.modo !== 'professor') {
-    return res.status(403).json({ erro: 'Acesso negado.' });
-  }
+// PUT /api/mensagens — professor salva mensagens da propria turma
+router.put('/', auth, requireProfessor, resolveTurmaId, async (req, res) => {
   const { mensagens } = req.body;
   try {
     for (const [nivel, texto] of Object.entries(mensagens)) {
       await pool.query(
-        `INSERT INTO mensagens (nivel, texto) VALUES ($1, $2)
-         ON CONFLICT (nivel) DO UPDATE SET texto = $2, atualizado_em = NOW()`,
-        [Number(nivel), texto]
+        `INSERT INTO mensagens (nivel, texto, turma_id) VALUES ($1, $2, $3)
+         ON CONFLICT (nivel, turma_id) DO UPDATE SET texto = $2, atualizado_em = NOW()`,
+        [Number(nivel), texto, req.turmaId]
       );
     }
     res.json({ ok: true });

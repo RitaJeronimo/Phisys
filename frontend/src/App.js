@@ -45,10 +45,6 @@ function App() {
   const [motivationNivel, setMotivationNivel] = useState(3);
 
   useEffect(() => {
-    mensagensApi.get().then(data => setMotivationMessages(data)).catch(() => {});
-  }, []);
-
-  useEffect(() => {
     setValues(prev => ({ ...prev, age_days: ageDays }));
   }, [ageDays]);
 
@@ -87,6 +83,11 @@ function App() {
       setScreen('professor');
       return;
     }
+
+    // Mensagens motivacionais sao por turma (correcao, 25/08/2026 - antes eram
+    // globais por engano) - so da pra buscar depois de saber a turma do aluno,
+    // por isso aqui e nao mais num useEffect cego no mount do App inteiro.
+    mensagensApi.get(userData.turma_id).then(data => setMotivationMessages(data)).catch(() => {});
 
     const welcomeKey = 'phisys_welcome_' + loggedUser.matricula;
     if (!localStorage.getItem(welcomeKey)) {
