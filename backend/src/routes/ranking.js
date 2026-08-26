@@ -84,6 +84,18 @@ router.post('/reset', auth, requireProfessor, resolveTurmaId, async (req, res) =
         atualizado_em = NOW()
       WHERE usuario_id IN (SELECT id FROM usuarios WHERE modo = 'aluno' AND turma_id = $1)
     `, [turma_id]);
+    // 4. Limpa contadores de cuidados - sem isso, um aluno que ja tinha
+    //    batido o limite (Modo Sessao) ou estava em cooldown (Modo Livre)
+    //    continuava bloqueado mesmo com o animal resetado pro padrao
+    //    (bug real, varredura funcional de 25/08/2026).
+    await client.query(`
+      DELETE FROM cuidados_sessao_contagem
+      WHERE usuario_id IN (SELECT id FROM usuarios WHERE modo = 'aluno' AND turma_id = $1)
+    `, [turma_id]);
+    await client.query(`
+      DELETE FROM cuidados_uso
+      WHERE usuario_id IN (SELECT id FROM usuarios WHERE modo = 'aluno' AND turma_id = $1)
+    `, [turma_id]);
     await client.query('COMMIT');
     res.json({ ok: true, mensagem: 'Turma zerada com sucesso.' });
   } catch (err) {
