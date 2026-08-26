@@ -9,6 +9,12 @@ function AlunosSection({ turmaAtualId, onResetCode }) {
   const [lastUpdate, setLastUpdate] = useState(null);
   const [cadastrandoAluno, setCadastrandoAluno] = useState(false);
   const [alunoForm, setAlunoForm] = useState({ nome:'', matricula:'', codigo_turma:'' });
+  const [importando, setImportando] = useState(false);
+  const [importCsv, setImportCsv] = useState('');
+  const [importCodigoTurma, setImportCodigoTurma] = useState('');
+  const [importPreview, setImportPreview] = useState(null);
+  const [importResultado, setImportResultado] = useState(null);
+  const [importLoading, setImportLoading] = useState(false);
 
   const fetchStudents = useCallback(() => {
     if (!turmaAtualId) { setStudents([]); return; }
@@ -64,6 +70,82 @@ function AlunosSection({ turmaAtualId, onResetCode }) {
     } catch(e) {
       alert('Erro ao cadastrar aluno: ' + e.message);
     }
+  }
+
+  function handleAbrirImportacao() {
+    setImportCsv('');
+    setImportCodigoTurma('');
+    setImportPreview(null);
+    setImportResultado(null);
+    setImportando(true);
+  }
+
+  async function handleValidarImportacao() {
+    if (!importCsv.trim() || !importCodigoTurma.trim()) {
+      alert('Cole o CSV e informe o código da turma.');
+      return;
+    }
+    setImportLoading(true);
+    try {
+      const data = await usuariosApi.importarPreview(
+        { csv: importCsv, codigo_turma: importCodigoTurma.trim() },
+        turmaAtualId
+      );
+      setImportPreview(data.linhas);
+      setImportResultado(null);
+    } catch (e) {
+      alert('Erro ao validar planilha: ' + e.message);
+    } finally {
+      setImportLoading(false);
+    }
+  }
+
+  async function handleConfirmarImportacao() {
+    // So manda pro backend o que ele realmente espera (matricula/nome) -
+    // "linha" e "status" existem so pra exibir a tabela de preview aqui.
+    const validas = (importPreview || [])
+      .filter(l => l.status === 'ok')
+      .map(l => ({ matricula: l.matricula, nome: l.nome }));
+    if (validas.length === 0) return;
+    setImportLoading(true);
+    try {
+      const data = await usuariosApi.importarConfirmar(
+        { alunos: validas, codigo_turma: importCodigoTurma.trim() },
+        turmaAtualId
+      );
+      setImportResultado(data.alunos);
+      setImportPreview(null);
+      fetchStudents();
+    } catch (e) {
+      // 409 (revalidacao falhou) vem com { linhas } atualizado no corpo da
+      // resposta - api.js's req() anexa isso em e.data (nao em e.linhas
+      // direto). Mostra o motivo novo em vez de so um alert generico -
+      // nada foi gravado nesse caso.
+      if (e.data && e.data.linhas) {
+        setImportPreview(e.data.linhas);
+        alert('Alguns dados mudaram desde a validação - nada foi importado. Confira a lista atualizada.');
+      } else {
+        alert('Erro ao importar alunos: ' + e.message);
+      }
+    } finally {
+      setImportLoading(false);
+    }
+  }
+
+  function handleExportarCodigos() {
+    if (!importResultado || importResultado.length === 0) return;
+    // Mesmo padrao (";" + "sep=;") corrigido no export do ranking - abre
+    // certo em Excel independente da configuracao regional.
+    const sepHint = 'sep=;\n';
+    const header = 'Matricula;Nome;Codigo\n';
+    const rows = importResultado.map(a => `${a.matricula};${a.nome};${a.codigo}`).join('\n');
+    const blob = new Blob([sepHint + header + rows], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'phisys_codigos_acesso.csv';
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   async function handleResetarSenhaAluno(id, nome) {
@@ -138,6 +220,91 @@ function AlunosSection({ turmaAtualId, onResetCode }) {
     );
   }
 
+  if (importando) {
+    return (
+      <div style={styles.editorBackdrop}>
+        <div className="app-screen" style={styles.screen}>
+          <div style={styles.topbar}>
+            <button style={styles.backBtn} onClick={() => setImportando(false)}>← Fechar</button>
+            <div style={styles.title}>Importar por planilha</div>
+            <div style={{ width:'60px' }}/>
+          </div>
+          <div style={styles.formScroll}>
+            {!importResultado && (
+              <>
+                <div style={styles.fieldHint}>
+                  Cole abaixo, uma linha por aluno: <b>matrícula,nome</b> (com ou sem cabeçalho).
+                </div>
+                <div style={styles.fieldLabel}>CSV</div>
+                <textarea
+                  style={{ ...styles.input, minHeight:'160px', fontFamily:'monospace', resize:'vertical' }}
+                  value={importCsv}
+                  onChange={e => setImportCsv(e.target.value)}
+                  placeholder={'matricula,nome\n2024001234,Ana Paula Silva\n2024001235,Bruno Costa'}
+                />
+                <div style={styles.fieldLabel}>Código da turma</div>
+                <input
+                  style={styles.input}
+                  value={importCodigoTurma}
+                  onChange={e => setImportCodigoTurma(e.target.value.toUpperCase())}
+                  placeholder="Ex: TURMA2026A"
+                />
+                <div style={styles.fieldHint}>Mesmo código usado no cadastro manual - confirma que a importação é pra turma certa.</div>
+                <button style={styles.newBtn} onClick={handleValidarImportacao} disabled={importLoading}>
+                  {importLoading ? 'Validando...' : 'Validar'}
+                </button>
+
+                {importPreview && (
+                  <>
+                    <div style={{ ...styles.fieldLabel, marginTop:'1rem' }}>
+                      {importPreview.filter(l=>l.status==='ok').length} de {importPreview.length} linha(s) válida(s)
+                    </div>
+                    {importPreview.map(l => (
+                      <div key={l.linha} style={{
+                        display:'flex', gap:'8px', alignItems:'center', padding:'6px 10px',
+                        borderRadius:'8px', marginBottom:'4px',
+                        background: l.status==='ok' ? COLORS.status.saudavel.soft : COLORS.status.critico.soft,
+                      }}>
+                        <div style={{ ...FONT_SCALE.caption }}>{l.status==='ok' ? '✅' : '❌'}</div>
+                        <div style={{ ...FONT_SCALE.caption, flex:1 }}>
+                          linha {l.linha}: {l.matricula || '(sem matrícula)'} — {l.nome || '(sem nome)'}
+                          {l.motivo ? ` · ${l.motivo}` : ''}
+                        </div>
+                      </div>
+                    ))}
+                    <button
+                      style={{ ...styles.saveBtn, marginTop:'.5rem' }}
+                      onClick={handleConfirmarImportacao}
+                      disabled={importLoading || importPreview.filter(l=>l.status==='ok').length === 0}
+                    >
+                      {importLoading ? 'Importando...' : `Confirmar importação (${importPreview.filter(l=>l.status==='ok').length})`}
+                    </button>
+                  </>
+                )}
+              </>
+            )}
+
+            {importResultado && (
+              <>
+                <div style={styles.fieldHint}>
+                  ✅ {importResultado.length} aluno(s) importado(s). Entregue os códigos abaixo em sala - cada um é válido até a turma ser desativada.
+                </div>
+                {importResultado.map(a => (
+                  <div key={a.id} style={{ display:'flex', justifyContent:'space-between', padding:'6px 10px', background:COLORS.surfaceMuted, borderRadius:'8px', marginBottom:'4px' }}>
+                    <div style={{ ...FONT_SCALE.caption }}>{a.nome} ({a.matricula})</div>
+                    <div style={{ ...FONT_SCALE.caption, fontWeight:'800' }}>{a.codigo}</div>
+                  </div>
+                ))}
+                <button style={{ ...styles.newBtn, marginTop:'.5rem' }} onClick={handleExportarCodigos}>⬇ Exportar códigos (CSV)</button>
+              </>
+            )}
+            <div style={{height:'2rem'}}/>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       <div style={styles.challengeHeader}>
@@ -145,6 +312,7 @@ function AlunosSection({ turmaAtualId, onResetCode }) {
         <div style={{ display:'flex', gap:'6px' }}>
           <button style={styles.toggleBtn} onClick={handleZerarTurma}>↺ Zerar XP</button>
           <button style={styles.toggleBtn} onClick={handleLimparTodosAlunos}>🗑️ Limpar</button>
+          <button style={styles.toggleBtn} onClick={handleAbrirImportacao} disabled={!turmaAtualId}>📄 Importar planilha</button>
           <button style={styles.newBtn} onClick={handleNewAluno} disabled={!turmaAtualId}>+ Cadastrar aluno</button>
         </div>
       </div>

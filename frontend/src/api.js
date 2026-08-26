@@ -68,6 +68,8 @@ export const usuarios = {
   limparTodos:  (turmaId) => req(comTurma('/api/usuarios', turmaId), { method: 'DELETE', headers: authHeaders() }),
   resetarSenha: (id) => req(`/api/usuarios/${id}/resetar-senha`, { method: 'PUT', headers: authHeaders() }),
   cadastrar:    (data, turmaId) => req('/api/usuarios', { method: 'POST', headers: authHeaders(), body: JSON.stringify({ ...data, turma_id: turmaId }) }),
+  importarPreview:   (data, turmaId) => req('/api/usuarios/importar-preview', { method: 'POST', headers: authHeaders(), body: JSON.stringify({ ...data, turma_id: turmaId }) }),
+  importarConfirmar: (data, turmaId) => req('/api/usuarios/importar-confirmar', { method: 'POST', headers: authHeaders(), body: JSON.stringify({ ...data, turma_id: turmaId }) }),
 };
 export const desafios = {
   get: (turmaId) => req(comTurma('/api/desafios', turmaId), { headers: authHeaders() }),
