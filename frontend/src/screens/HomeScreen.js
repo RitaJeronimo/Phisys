@@ -250,7 +250,7 @@ function HomeostaseRing({ pct }) {
   const sc = statusColors(clamped >= 75 ? STATUS.SAUDAVEL : clamped >= 40 ? STATUS.DEBILITADO : STATUS.CRITICO);
   return (
     <div style={styles.ringWrap}>
-      <svg width="128" height="128" viewBox="0 0 128 128" style={{ transform:'rotate(-90deg)', display:'block' }}>
+      <svg viewBox="0 0 128 128" style={{ width:'100%', height:'100%', transform:'rotate(-90deg)', display:'block' }}>
         <circle cx="64" cy="64" r={r} fill="none" stroke={COLORS.border} strokeWidth="12"/>
         <circle cx="64" cy="64" r={r} fill="none" stroke={sc.color} strokeWidth="12" strokeLinecap="round"
           strokeDasharray={c} strokeDashoffset={offset} style={{ transition:'stroke-dashoffset .3s ease' }}/>
@@ -587,9 +587,9 @@ const styles = {
 
   statusCard:       { background:'#FFFFFF', borderRadius:'28px', padding:'18px 15px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:'8px', boxShadow:'0 2px 6px rgba(43,43,118,.06), 0 10px 24px rgba(43,43,118,.09)' },
 
-  mascotImage:      { width:'104px', height:'104px', objectFit:'contain', borderRadius:'20px', flexShrink:0 },
+  mascotImage:      { width:'clamp(56px, 18vw, 104px)', height:'clamp(56px, 18vw, 104px)', objectFit:'contain', borderRadius:'20px', flexShrink:0 },
 
-  ringWrap:         { position:'relative', width:'128px', height:'128px', flexShrink:0 },
+  ringWrap:         { position:'relative', width:'clamp(70px, 24vw, 128px)', height:'clamp(70px, 24vw, 128px)', flexShrink:0 },
   ringCenter:       { position:'absolute', inset:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'3px' },
   ringLabel:        { fontSize:'clamp(13px, calc(11.05px + 0.9vw), 16.9px)', fontWeight:'700', color:COLORS.textMuted, textAlign:'center', lineHeight:1.2 },
   ringPct:          { fontSize:'clamp(30px, calc(25.5px + 0.9vw), 39px)', fontWeight:'800', color:COLORS.textPrimary, lineHeight:1 },
