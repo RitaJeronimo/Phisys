@@ -437,86 +437,92 @@ useEffect(() => {
         <div style={styles.timerBadge}>⏱ {formatTime(seconds)}</div>
       </div>
 
-      <div style={styles.mascotSection}>
-        <ChibiMascot status={status} ageDays={ageDays} size={72}/>
-        <div style={styles.paramsPanel}>
-          {/* CORRECAO: a energia exibida aqui era o valor bruto (values.energia),
-              enquanto a HomeScreen ja aplicava calcularEnergiaModulada (reduz a
-              energia exibida quando saude/hidratacao estao baixas). Isso fazia
-              a mesma energia real aparecer diferente em cada tela (ex: 80% aqui,
-              60% na Home). Agora as duas telas usam a mesma formula. */}
-          {PARAMS.map(p => (
-            <ParamBar
-              key={p.id}
-              param={p}
-              value={p.id === 'energia' ? calcularEnergiaModulada(values, calcularSaude(values)) : values[p.id]}
-            />
-          ))}
-        </div>
-      </div>
-
-      <div style={styles.statusBar}>
-        {[
-          { val: statusEmoji[status], lbl: statusLabel[status] },
-          // Quando o aluno esta numa volta extra de recuperacao, mostra
-          // "Volta X" em vez de "Desafios", para deixar claro que a lista
-          // esta se repetindo (nao e um erro/travamento).
-          { val: `${currentIdx + 1}/${challenges.length}`, lbl: voltasExtrasUsadas > 0 ? `Volta ${voltasExtrasUsadas + 1}` : 'Desafios' },
-          { val: errorCount, lbl: 'Erros' },
-          { val: myRank, lbl: 'Ranking' },
-        ].map(item => (
-          <div key={item.lbl} style={styles.statusPill}>
-            <div style={styles.statusPillVal}>{item.val}</div>
-            <div style={styles.statusPillLbl}>{item.lbl}</div>
-          </div>
-        ))}
-      </div>
-
-      <div style={styles.challengeCard}>
-        <div style={styles.challengeHeader}>
-          <div style={styles.challengeTag}>🏃 {challenge.tag}</div>
-          <div style={styles.challengeFocus}>{challenge.focus}</div>
-        </div>
-        <div style={styles.challengeText}>{challenge.text}</div>
-      </div>
-
-      <div style={styles.optionsTitle}>escolha a resposta</div>
-
-      <div style={styles.options}>
-        {challenge.options.map((option, idx) => {
-          let extra = {};
-          const isCorrectOption = idx === correctIndex;
-          if (answered && option.letter === selected && isCorrectOption) extra = styles.optionCorrect;
-          else if (answered && option.letter === selected && !isCorrectOption) extra = styles.optionWrong;
-          else if (answered && isCorrectOption) extra = styles.optionCorrect;
-          return (
-            <div key={option.letter} style={{ ...styles.option, ...extra }} onClick={() => handleAnswer(option, idx)}>
-              <div style={{ ...styles.optionLetter, ...(answered && isCorrectOption ? styles.optionLetterCorrect : answered && option.letter === selected ? styles.optionLetterWrong : {}) }}>
-                {option.letter}
-              </div>
-              <div style={styles.optionText}>{option.text}</div>
+      <div className="session-columns">
+        <div className="session-left">
+          <div style={styles.mascotSection}>
+            <ChibiMascot status={status} ageDays={ageDays} size={72}/>
+            <div style={styles.paramsPanel}>
+              {/* CORRECAO: a energia exibida aqui era o valor bruto (values.energia),
+                  enquanto a HomeScreen ja aplicava calcularEnergiaModulada (reduz a
+                  energia exibida quando saude/hidratacao estao baixas). Isso fazia
+                  a mesma energia real aparecer diferente em cada tela (ex: 80% aqui,
+                  60% na Home). Agora as duas telas usam a mesma formula. */}
+              {PARAMS.map(p => (
+                <ParamBar
+                  key={p.id}
+                  param={p}
+                  value={p.id === 'energia' ? calcularEnergiaModulada(values, calcularSaude(values)) : values[p.id]}
+                />
+              ))}
             </div>
-          );
-        })}
-      </div>
-
-      {!answered && attempts === 1 && (
-        <div style={{ margin:'0 1.5rem .5rem', background:COLORS.status.debilitado.soft, border:`1px solid ${COLORS.status.debilitado.color}`, borderRadius:'12px', padding:'.75rem', ...FONT_SCALE.body, color:COLORS.textPrimary, textAlign:'center' }}>
-          ⚠️ Resposta incorreta! Você tem mais uma tentativa.
-        </div>
-      )}
-
-      {answered && (
-        <div style={{ padding:'0 1.5rem' }}>
-          <div style={{ background:COLORS.surface, boxShadow:SHADOW_CARD, borderRadius:'14px', padding:'1rem', marginBottom:'10px' }}>
-            <div style={{ ...FONT_SCALE.caption, color:COLORS.accent, marginBottom:'4px', letterSpacing:'.06em', textTransform:'uppercase' }}>💡 Explicação Fisiológica</div>
-            <div style={{ ...FONT_SCALE.body, color:COLORS.textPrimary, lineHeight:'1.6' }}>{challenge.explanation}</div>
           </div>
-          <button style={styles.nextBtn} onClick={handleNext}>
-            {currentIdx + 1 >= challenges.length ? 'Ver resultado' : 'Próximo desafio →'}
-          </button>
+
+          <div style={styles.statusBar}>
+            {[
+              { val: statusEmoji[status], lbl: statusLabel[status] },
+              // Quando o aluno esta numa volta extra de recuperacao, mostra
+              // "Volta X" em vez de "Desafios", para deixar claro que a lista
+              // esta se repetindo (nao e um erro/travamento).
+              { val: `${currentIdx + 1}/${challenges.length}`, lbl: voltasExtrasUsadas > 0 ? `Volta ${voltasExtrasUsadas + 1}` : 'Desafios' },
+              { val: errorCount, lbl: 'Erros' },
+              { val: myRank, lbl: 'Ranking' },
+            ].map(item => (
+              <div key={item.lbl} style={styles.statusPill}>
+                <div style={styles.statusPillVal}>{item.val}</div>
+                <div style={styles.statusPillLbl}>{item.lbl}</div>
+              </div>
+            ))}
+          </div>
         </div>
-      )}
+
+        <div className="session-right">
+          <div style={styles.challengeCard}>
+            <div style={styles.challengeHeader}>
+              <div style={styles.challengeTag}>🏃 {challenge.tag}</div>
+              <div style={styles.challengeFocus}>{challenge.focus}</div>
+            </div>
+            <div style={styles.challengeText}>{challenge.text}</div>
+          </div>
+
+          <div style={styles.optionsTitle}>escolha a resposta</div>
+
+          <div style={styles.options}>
+            {challenge.options.map((option, idx) => {
+              let extra = {};
+              const isCorrectOption = idx === correctIndex;
+              if (answered && option.letter === selected && isCorrectOption) extra = styles.optionCorrect;
+              else if (answered && option.letter === selected && !isCorrectOption) extra = styles.optionWrong;
+              else if (answered && isCorrectOption) extra = styles.optionCorrect;
+              return (
+                <div key={option.letter} style={{ ...styles.option, ...extra }} onClick={() => handleAnswer(option, idx)}>
+                  <div style={{ ...styles.optionLetter, ...(answered && isCorrectOption ? styles.optionLetterCorrect : answered && option.letter === selected ? styles.optionLetterWrong : {}) }}>
+                    {option.letter}
+                  </div>
+                  <div style={styles.optionText}>{option.text}</div>
+                </div>
+              );
+            })}
+          </div>
+
+          {!answered && attempts === 1 && (
+            <div style={{ margin:'0 1.5rem .5rem', background:COLORS.status.debilitado.soft, border:`1px solid ${COLORS.status.debilitado.color}`, borderRadius:'12px', padding:'.75rem', ...FONT_SCALE.body, color:COLORS.textPrimary, textAlign:'center' }}>
+              ⚠️ Resposta incorreta! Você tem mais uma tentativa.
+            </div>
+          )}
+
+          {answered && (
+            <div style={{ padding:'0 1.5rem' }}>
+              <div style={{ background:COLORS.surface, boxShadow:SHADOW_CARD, borderRadius:'14px', padding:'1rem', marginBottom:'10px' }}>
+                <div style={{ ...FONT_SCALE.caption, color:COLORS.accent, marginBottom:'4px', letterSpacing:'.06em', textTransform:'uppercase' }}>💡 Explicação Fisiológica</div>
+                <div style={{ ...FONT_SCALE.body, color:COLORS.textPrimary, lineHeight:'1.6' }}>{challenge.explanation}</div>
+              </div>
+              <button style={styles.nextBtn} onClick={handleNext}>
+                {currentIdx + 1 >= challenges.length ? 'Ver resultado' : 'Próximo desafio →'}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

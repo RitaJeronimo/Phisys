@@ -89,7 +89,7 @@ function FinalScreen({ user, score, saude, seconds, solvedChallenges, totalChall
       </div>
 
       {/* CARDS DE RESUMO */}
-      <div style={{ ...styles.summaryGrid, gridTemplateColumns:'repeat(2,1fr)' }}>
+      <div style={{ ...styles.summaryGrid, gridTemplateColumns:'var(--final-summary-cols, repeat(2,1fr))' }}>
   <div style={styles.summaryCard}>
     <div style={styles.summaryIcon}>⏱</div>
     <div style={styles.summaryVal}>{formatTime(seconds)}</div>
@@ -134,7 +134,7 @@ function FinalScreen({ user, score, saude, seconds, solvedChallenges, totalChall
         <div style={{ ...FONT_SCALE.caption, color:COLORS.textMuted, textAlign:'center', marginBottom:'4px' }}>
           Valores normalizados em % do máximo fisiológico de cada parâmetro
         </div>
-        <svg width={chartW} height={chartH}>
+        <svg viewBox={`0 0 ${chartW} ${chartH}`} style={{ width:'var(--chart-w, 320px)', height:'var(--chart-h, 140px)' }}>
           {/* FUNDO GRADE + RÓTULOS EIXO Y */}
           {[0,25,50,75,100].map(pct => {
             const y = padT + innerH - (pct/100)*innerH;

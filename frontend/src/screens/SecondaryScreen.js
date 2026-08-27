@@ -206,44 +206,51 @@ function SecondaryScreen({ values, onBack }) {
         )}
       </div>
 
-      <div style={styles.sectionLabel}>mapa de correlações fisiológicas</div>
-      <div style={styles.correlCard}>
-        {[
-  { titulo: 'Desidratação', texto: '↓ Hidratação → ↓ Volemia → ↓ Pré-carga → ↓ VS → ↓ DC → ↓ PA' },
-  { titulo: 'Compensação da desidratação', texto: '↓ PA / ↓ perfusão → ↑ FC + ↑ RVP + ↓ Volume Urinário' },
-  { titulo: 'Hipervolemia', texto: '↑ Volemia → ↑ Pré-carga → ↑ VS/DC → ↑ PA' },
-  { titulo: 'Diurese sem reposição', texto: '↑ Volume Urinário → ↓ Volemia → ↓ Pré-carga → ↓ DC' },
-  { titulo: 'Aumento da RVP', texto: '↑ RVP → ↑ Pós-carga → possível ↓ DC → possível ↑ FC compensatória' },
-  { titulo: 'Aumento do DC', texto: '↑ DC → ↑ Perfusão Renal → possível ↑ filtração/Volume Urinário' },
-  { titulo: 'Insuficiência Renal', texto: '↓ Função renal → ↓ eliminação urinária + alteração do equilíbrio hídrico/osmótico' },
-].map((item, i) => (
-          <div key={i} style={styles.correlRow}>
-    <div style={{ ...FONT_SCALE.caption, color:COLORS.textMuted, textTransform:'uppercase', letterSpacing:'.05em', marginBottom:'2px', fontWeight:'700' }}>{item.titulo}</div>
-    <span style={styles.correlText}>{item.texto}</span>
-  </div>
-        ))}
+      <div className="secondary-two-col">
+        <div>
+          <div style={styles.sectionLabel}>mapa de correlações fisiológicas</div>
+          <div style={styles.correlCard}>
+            {[
+      { titulo: 'Desidratação', texto: '↓ Hidratação → ↓ Volemia → ↓ Pré-carga → ↓ VS → ↓ DC → ↓ PA' },
+      { titulo: 'Compensação da desidratação', texto: '↓ PA / ↓ perfusão → ↑ FC + ↑ RVP + ↓ Volume Urinário' },
+      { titulo: 'Hipervolemia', texto: '↑ Volemia → ↑ Pré-carga → ↑ VS/DC → ↑ PA' },
+      { titulo: 'Diurese sem reposição', texto: '↑ Volume Urinário → ↓ Volemia → ↓ Pré-carga → ↓ DC' },
+      { titulo: 'Aumento da RVP', texto: '↑ RVP → ↑ Pós-carga → possível ↓ DC → possível ↑ FC compensatória' },
+      { titulo: 'Aumento do DC', texto: '↑ DC → ↑ Perfusão Renal → possível ↑ filtração/Volume Urinário' },
+      { titulo: 'Insuficiência Renal', texto: '↓ Função renal → ↓ eliminação urinária + alteração do equilíbrio hídrico/osmótico' },
+    ].map((item, i) => (
+              <div key={i} style={styles.correlRow}>
+        <div style={{ ...FONT_SCALE.caption, color:COLORS.textMuted, textTransform:'uppercase', letterSpacing:'.05em', marginBottom:'2px', fontWeight:'700' }}>{item.titulo}</div>
+        <span style={styles.correlText}>{item.texto}</span>
       </div>
-<div style={styles.sectionLabel}>tabela de referência didática</div>
-<div style={{ margin:'0 1rem .75rem', background:COLORS.surface, boxShadow:SHADOW_CARD, borderRadius:'16px', overflow:'hidden' }}>
-  {[
-    { param:'⚡ Energia',           func:'Disposição para ações e desafios',        obs:'Baixa energia limita ações e sinaliza necessidade de cuidado' },
-    { param:'💧 Hidratação',        func:'Equilíbrio hídrico',                       obs:'Desidratação reduz volemia e gera ↑ FC compensatória' },
-    { param:'❤️ FC',                func:'Batimentos cardíacos por minuto',          obs:'FC basal: 360–380 bpm. ↑ FC pode indicar compensação' },
-    { param:'❤️ Pressão Arterial',  func:'Equilíbrio cardiovascular',               obs:'PA basal: 110/70 mmHg. PA = DC × RVP' },
-    { param:'⚖️ Peso',              func:'Condição corporal geral',                  obs:'Peso saudável: 200–400g. Excesso ↑ RVP e PA' },
-    { param:'➕ Saúde',             func:'Indicador-síntese do estado geral',        obs:'≥75% saudável; 40–74% debilitado; <40% crítico' },
-    { param:'🐭 Idade/Fase',        func:'Etapa de desenvolvimento',                obs:'↑ idade → ↑ vulnerabilidade e ↓ capacidade compensatória' },
-    { param:'🫗 Vol. Urinário',     func:'Eliminação renal',                         obs:'Categorias: baixo/normal/alto' },
-    { param:'🩸 RVP',               func:'Resistência dos vasos',                    obs:'Categorias: baixa/normal/alta. Influencia PA' },
-    { param:'🔄 Débito Cardíaco',   func:'Volume bombeado por minuto',               obs:'DC = FC × VS. Normal: 80–120 mL/min' },
-  ].map((row, i) => (
-    <div key={i} style={{ display:'grid', gridTemplateColumns:'1.2fr 1.5fr 2fr', padding:'8px 12px', borderTop: i > 0 ? `1px solid ${COLORS.border}` : 'none', background: i % 2 === 0 ? COLORS.surfaceMuted : 'transparent' }}>
-      <div style={{ ...FONT_SCALE.caption, fontWeight:'800', color:COLORS.textPrimary }}>{row.param}</div>
-      <div style={{ ...FONT_SCALE.caption, color:COLORS.textMuted, paddingLeft:'6px' }}>{row.func}</div>
-      <div style={{ ...FONT_SCALE.caption, color:COLORS.textMuted, paddingLeft:'6px', fontStyle:'italic' }}>{row.obs}</div>
-    </div>
-  ))}
-</div>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <div style={styles.sectionLabel}>tabela de referência didática</div>
+          <div style={{ margin:'0 1rem .75rem', background:COLORS.surface, boxShadow:SHADOW_CARD, borderRadius:'16px', overflow:'hidden' }}>
+      {[
+        { param:'⚡ Energia',           func:'Disposição para ações e desafios',        obs:'Baixa energia limita ações e sinaliza necessidade de cuidado' },
+        { param:'💧 Hidratação',        func:'Equilíbrio hídrico',                       obs:'Desidratação reduz volemia e gera ↑ FC compensatória' },
+        { param:'❤️ FC',                func:'Batimentos cardíacos por minuto',          obs:'FC basal: 360–380 bpm. ↑ FC pode indicar compensação' },
+        { param:'❤️ Pressão Arterial',  func:'Equilíbrio cardiovascular',               obs:'PA basal: 110/70 mmHg. PA = DC × RVP' },
+        { param:'⚖️ Peso',              func:'Condição corporal geral',                  obs:'Peso saudável: 200–400g. Excesso ↑ RVP e PA' },
+        { param:'➕ Saúde',             func:'Indicador-síntese do estado geral',        obs:'≥75% saudável; 40–74% debilitado; <40% crítico' },
+        { param:'🐭 Idade/Fase',        func:'Etapa de desenvolvimento',                obs:'↑ idade → ↑ vulnerabilidade e ↓ capacidade compensatória' },
+        { param:'🫗 Vol. Urinário',     func:'Eliminação renal',                         obs:'Categorias: baixo/normal/alto' },
+        { param:'🩸 RVP',               func:'Resistência dos vasos',                    obs:'Categorias: baixa/normal/alta. Influencia PA' },
+        { param:'🔄 Débito Cardíaco',   func:'Volume bombeado por minuto',               obs:'DC = FC × VS. Normal: 80–120 mL/min' },
+      ].map((row, i) => (
+        <div key={i} style={{ display:'grid', gridTemplateColumns:'1.2fr 1.5fr 2fr', padding:'8px 12px', borderTop: i > 0 ? `1px solid ${COLORS.border}` : 'none', background: i % 2 === 0 ? COLORS.surfaceMuted : 'transparent' }}>
+          <div style={{ ...FONT_SCALE.caption, fontWeight:'800', color:COLORS.textPrimary }}>{row.param}</div>
+          <div style={{ ...FONT_SCALE.caption, color:COLORS.textMuted, paddingLeft:'6px' }}>{row.func}</div>
+          <div style={{ ...FONT_SCALE.caption, color:COLORS.textMuted, paddingLeft:'6px', fontStyle:'italic' }}>{row.obs}</div>
+        </div>
+      ))}
+          </div>
+        </div>
+      </div>
       <div style={{ height: '2rem' }}/>
     </div>
   );

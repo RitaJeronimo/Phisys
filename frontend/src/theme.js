@@ -46,14 +46,18 @@ export const RADIUS = { card: 18, cardLg: 26, pill: 999, iconChip: 12 };
 // mesmo com o crescimento fluido): os valores mobile originais (10-28px)
 // estavam pequenos demais mesmo antes de qualquer crescimento pra desktop.
 export const FONT_SCALE = {
-  caption:  { fontSize: 'clamp(12px, calc(10.2px + 0.9vw), 15.6px)', fontWeight: '600' }, // legendas minimas (notas, descricoes de bloqueio)
-  label:    { fontSize: 'clamp(13px, calc(11.05px + 0.9vw), 16.9px)', fontWeight: '700' }, // labels de card, nav, badges pequenos
-  body:     { fontSize: 'clamp(15px, calc(12.75px + 0.9vw), 19.5px)', fontWeight: '600' }, // texto padrao / paragrafos
-  bodyBold: { fontSize: 'clamp(15px, calc(12.75px + 0.9vw), 19.5px)', fontWeight: '800' }, // texto padrao em destaque
-  title:    { fontSize: 'clamp(18px, calc(15.3px + 0.9vw), 23.4px)', fontWeight: '800' }, // titulos de secao/modal
-  value:    { fontSize: 'clamp(20px, calc(17px + 0.9vw), 26px)',     fontWeight: '800' }, // valores grandes de card
-  heading:  { fontSize: 'clamp(24px, calc(20.4px + 0.9vw), 31.2px)', fontWeight: '800' }, // nome/titulo principal da tela
-  display:  { fontSize: 'clamp(30px, calc(25.5px + 0.9vw), 39px)',   fontWeight: '800' }, // numero de destaque (ex: anel de Homeostase)
+  // Os valores reais de fontSize agora vivem em index.css (variaveis --fs-*),
+  // com uma segunda formula de crescimento a partir de 1024px de viewport -
+  // o clamp() antigo, sozinho, saturava aos ~750px e nao diferenciava mais
+  // nenhum tamanho de tela desktop dali pra frente.
+  caption:  { fontSize: 'var(--fs-caption)', fontWeight: '600' }, // legendas minimas (notas, descricoes de bloqueio)
+  label:    { fontSize: 'var(--fs-label)',   fontWeight: '700' }, // labels de card, nav, badges pequenos
+  body:     { fontSize: 'var(--fs-body)',    fontWeight: '600' }, // texto padrao / paragrafos
+  bodyBold: { fontSize: 'var(--fs-body)',    fontWeight: '800' }, // texto padrao em destaque
+  title:    { fontSize: 'var(--fs-title)',   fontWeight: '800' }, // titulos de secao/modal
+  value:    { fontSize: 'var(--fs-value)',   fontWeight: '800' }, // valores grandes de card
+  heading:  { fontSize: 'var(--fs-heading)', fontWeight: '800' }, // nome/titulo principal da tela
+  display:  { fontSize: 'var(--fs-display)', fontWeight: '800' }, // numero de destaque (ex: anel de Homeostase)
 };
 
 export const FONT_FAMILY = "'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif";
