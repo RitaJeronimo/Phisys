@@ -142,7 +142,7 @@ function LoginScreen({ onLogin }) {
     wrap: { display:"flex", justifyContent:"center", alignItems:"center", minHeight:"var(--app-min-h)", background:COLORS.bg, padding:"2rem 1rem", boxSizing:"border-box", fontFamily:FONT_FAMILY },
     card: { background:COLORS.surface, borderRadius:"26px", padding:"2.5rem 2rem", width:"100%", maxWidth:"min(90vw, 460px)", display:"flex", flexDirection:"column", alignItems:"center", gap:"1.25rem", boxShadow:"0 10px 30px rgba(43,43,118,.25)", margin:"0 auto", boxSizing:"border-box" },
     brandName: { ...FONT_SCALE.display, fontFamily:FONT_FAMILY, color:COLORS.textPrimary },
-    brandSub: { ...FONT_SCALE.label, letterSpacing:"0.08em", textTransform:"uppercase", color:COLORS.textMuted },
+    brandSub: { ...FONT_SCALE.label, letterSpacing:"0.08em", textTransform:"uppercase", color:COLORS.textMuted, textAlign:'center' },
     divider: { width:"100%", height:"2px", borderRadius:"2px", background:COLORS.border },
     modeToggle: { display:"flex", gap:"8px", width:"100%" },
     modeBtn: { flex:1, padding:"9px", borderRadius:"10px", ...FONT_SCALE.body, cursor:"pointer", fontFamily:"inherit" },
