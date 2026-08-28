@@ -39,6 +39,9 @@ router.put('/pesos', auth, requireProfessor, resolveTurmaId, async (req, res) =>
     ['peso_challenges', challenges],
     ['peso_response_time', response_time],
   ];
+  if (pares.every(([, valor]) => valor === undefined)) {
+    return res.status(400).json({ erro: 'Nenhum dos campos esperados (score, survival, challenges, response_time) foi enviado.' });
+  }
 
   try {
     for (const [chave, valor] of pares) {
@@ -90,6 +93,9 @@ router.put('/recuperacao', auth, requireProfessor, resolveTurmaId, async (req, r
     ['recuperacao_multiplicador', multiplicador],
     ['recuperacao_desafios_extras', desafios_extras],
   ];
+  if (pares.every(([, valor]) => valor === undefined)) {
+    return res.status(400).json({ erro: 'Nenhum dos campos esperados (multiplicador, desafios_extras) foi enviado.' });
+  }
 
   try {
     for (const [chave, valor] of pares) {
