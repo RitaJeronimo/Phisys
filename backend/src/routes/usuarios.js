@@ -5,6 +5,7 @@ const auth = require('../middleware/auth');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const { requireProfessor, mesmaTurmaDoRecurso, resolveTurmaId } = require('../middleware/turmaOwnership');
+const enviarCodigoEmail = require('../utils/enviarCodigoEmail');
 
 // Gera e grava um codigo de 6 digitos de uso unico pra um aluno
 // definir/redefinir a propria senha em POST /api/auth/resetar-senha.
@@ -36,11 +37,15 @@ async function gerarCodigoAcesso(usuario_id, { expiraComTurma = false, queryable
   return codigo;
 }
 
-// Parseia um CSV colado (matricula,nome por linha) - sem lib nova, so split
-// no primeiro "," pra deixar nome livre pra ter virgula se precisar. Pula
-// uma linha de cabecalho se a primeira coluna for literalmente "matricula".
-// Numero de linha reportado bate com o texto original colado (util pro
-// professor achar o erro).
+// Parseia um CSV colado (matricula,nome,email por linha) - sem lib nova.
+// Usa a PRIMEIRA virgula pra separar matricula e a ULTIMA pra separar
+// email, deixando nome livre pra ter virgula no meio se precisar (ex:
+// "Silva, Maria"). Pula uma linha de cabecalho se a primeira coluna for
+// literalmente "matricula". Numero de linha reportado bate com o texto
+// original colado (util pro professor achar o erro). Uma linha ainda no
+// formato antigo de 2 colunas (sem email) cai com nome E email vazios -
+// validarLinhasAlunos pega isso como "Nome ausente"/"Email ausente",
+// sinalizando que a planilha precisa da coluna nova.
 function parseCsvAlunos(csvTexto) {
   const linhasBrutas = String(csvTexto || '').split('\n');
   const linhas = [];
@@ -52,10 +57,13 @@ function parseCsvAlunos(csvTexto) {
       primeiraNaoVazia = false;
       if (trimmed.split(',')[0].trim().toLowerCase() === 'matricula') return;
     }
-    const idx = trimmed.indexOf(',');
-    const matricula = (idx === -1 ? trimmed : trimmed.slice(0, idx)).trim();
-    const nome = (idx === -1 ? '' : trimmed.slice(idx + 1)).trim();
-    linhas.push({ linha: i + 1, matricula, nome });
+    const primeiraVirgula = trimmed.indexOf(',');
+    const ultimaVirgula = trimmed.lastIndexOf(',');
+    const temTresColunas = primeiraVirgula !== -1 && ultimaVirgula !== primeiraVirgula;
+    const matricula = (primeiraVirgula === -1 ? trimmed : trimmed.slice(0, primeiraVirgula)).trim();
+    const nome = temTresColunas ? trimmed.slice(primeiraVirgula + 1, ultimaVirgula).trim() : '';
+    const email = temTresColunas ? trimmed.slice(ultimaVirgula + 1).trim() : '';
+    linhas.push({ linha: i + 1, matricula, nome, email });
   });
   return linhas;
 }
@@ -69,6 +77,7 @@ function validarLinhasAlunos(linhasParsed, matriculasExistentes) {
   return linhasParsed.map(l => {
     if (!l.matricula) return { ...l, status: 'erro', motivo: 'Matricula ausente.' };
     if (!l.nome) return { ...l, status: 'erro', motivo: 'Nome ausente.' };
+    if (!l.email) return { ...l, status: 'erro', motivo: 'Email ausente.' };
     if (vistos.has(l.matricula)) return { ...l, status: 'erro', motivo: 'Matricula duplicada no arquivo.' };
     vistos.add(l.matricula);
     if (matriculasExistentes.has(l.matricula)) return { ...l, status: 'erro', motivo: 'Matricula ja cadastrada.' };
@@ -88,9 +97,9 @@ function validarLinhasAlunos(linhasParsed, matriculasExistentes) {
 // (reaproveita o fluxo do A2 em vez de criar um "primeiro login" novo baseado
 // so em matricula, que nao e segredo neste app - ver GET /api/ranking).
 router.post('/', auth, requireProfessor, resolveTurmaId, async (req, res) => {
-  const { nome, matricula, codigo_turma } = req.body;
-  if (!nome || !matricula || !codigo_turma) {
-    return res.status(400).json({ erro: 'Nome, matricula e codigo da turma sao obrigatorios.' });
+  const { nome, matricula, email, codigo_turma } = req.body;
+  if (!nome || !matricula || !email || !codigo_turma) {
+    return res.status(400).json({ erro: 'Nome, matricula, email e codigo da turma sao obrigatorios.' });
   }
   try {
     const turma = await pool.query('SELECT codigo FROM turmas WHERE id = $1', [req.turmaId]);
@@ -106,9 +115,9 @@ router.post('/', auth, requireProfessor, resolveTurmaId, async (req, res) => {
     const senhaTemporaria = crypto.randomBytes(24).toString('hex');
     const senha_hash = await bcrypt.hash(senhaTemporaria, 10);
     const result = await pool.query(
-      `INSERT INTO usuarios (nome, matricula, senha_hash, modo, turma_id, senha_definida_pelo_aluno)
-       VALUES ($1, $2, $3, 'aluno', $4, false) RETURNING id, nome, matricula`,
-      [nome, matricula, senha_hash, req.turmaId]
+      `INSERT INTO usuarios (nome, matricula, email, senha_hash, modo, turma_id, senha_definida_pelo_aluno)
+       VALUES ($1, $2, $3, $4, 'aluno', $5, false) RETURNING id, nome, matricula`,
+      [nome, matricula, email, senha_hash, req.turmaId]
     );
     const usuario = result.rows[0];
 
@@ -116,6 +125,7 @@ router.post('/', auth, requireProfessor, resolveTurmaId, async (req, res) => {
     await pool.query('INSERT INTO ranking (usuario_id) VALUES ($1)', [usuario.id]);
 
     const codigo = await gerarCodigoAcesso(usuario.id, { expiraComTurma: true });
+    await enviarCodigoEmail(email, usuario.nome, codigo);
 
     res.status(201).json({
       id: usuario.id,
@@ -123,7 +133,7 @@ router.post('/', auth, requireProfessor, resolveTurmaId, async (req, res) => {
       matricula: usuario.matricula,
       codigo,
       expira_com_turma: true,
-      mensagem: 'Aluno cadastrado. Mostre o codigo a ele - fica valido ate a turma ser desativada.',
+      mensagem: 'Aluno cadastrado. Codigo enviado por e-mail - tambem mostrado abaixo, caso o envio falhe.',
     });
   } catch (err) {
     console.error('Erro ao cadastrar aluno:', err.message);
@@ -192,6 +202,7 @@ router.post('/importar-confirmar', auth, requireProfessor, resolveTurmaId, async
       linha: i + 1,
       matricula: String(a.matricula || '').trim(),
       nome: String(a.nome || '').trim(),
+      email: String(a.email || '').trim(),
     }));
     const matriculas = linhasParsed.map(l => l.matricula).filter(Boolean);
     const existentes = matriculas.length > 0
@@ -209,27 +220,31 @@ router.post('/importar-confirmar', auth, requireProfessor, resolveTurmaId, async
 
     await client.query('BEGIN');
     const criados = [];
-    for (const { matricula, nome } of revalidado) {
+    for (const { matricula, nome, email } of revalidado) {
       const senhaTemporaria = crypto.randomBytes(24).toString('hex');
       const senha_hash = await bcrypt.hash(senhaTemporaria, 10);
       const result = await client.query(
-        `INSERT INTO usuarios (nome, matricula, senha_hash, modo, turma_id, senha_definida_pelo_aluno)
-         VALUES ($1, $2, $3, 'aluno', $4, false) RETURNING id, nome, matricula`,
-        [nome, matricula, senha_hash, req.turmaId]
+        `INSERT INTO usuarios (nome, matricula, email, senha_hash, modo, turma_id, senha_definida_pelo_aluno)
+         VALUES ($1, $2, $3, $4, 'aluno', $5, false) RETURNING id, nome, matricula`,
+        [nome, matricula, email, senha_hash, req.turmaId]
       );
       const usuario = result.rows[0];
       await client.query('INSERT INTO animal (usuario_id) VALUES ($1)', [usuario.id]);
       await client.query('INSERT INTO ranking (usuario_id) VALUES ($1)', [usuario.id]);
       const codigo = await gerarCodigoAcesso(usuario.id, { expiraComTurma: true, queryable: client });
-      criados.push({ id: usuario.id, nome: usuario.nome, matricula: usuario.matricula, codigo });
+      criados.push({ id: usuario.id, nome: usuario.nome, matricula: usuario.matricula, email, codigo });
     }
     await client.query('COMMIT');
+
+    // Fora da transacao de proposito - best effort, enviarCodigoEmail nunca
+    // lanca, entao Promise.all nunca rejeita aqui.
+    await Promise.all(criados.map(u => enviarCodigoEmail(u.email, u.nome, u.codigo)));
 
     res.status(201).json({
       ok: true,
       total: criados.length,
       alunos: criados,
-      mensagem: `${criados.length} aluno(s) importado(s) com sucesso.`,
+      mensagem: `${criados.length} aluno(s) importado(s) com sucesso. Codigos enviados por e-mail.`,
     });
   } catch (err) {
     try {

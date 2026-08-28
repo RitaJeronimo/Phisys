@@ -133,6 +133,12 @@ async function adicionarColunas() {
     // nao entra em nenhuma regra de negocio. Contas existentes ficam com
     // curso NULL.
     await pool.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS curso VARCHAR(255)`);
+    // E-mail do aluno (pedido da Samela, 28/08/2026, depois que
+    // bioinovatecufes.com foi verificado na Resend): usado so pra mandar o
+    // codigo de acesso automaticamente no cadastro. Fica NULL pra contas ja
+    // existentes - exigido a nivel de aplicacao pra cadastros novos, nao a
+    // nivel de coluna, pra nao quebrar linhas ja no banco.
+    await pool.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS email VARCHAR(255)`);
     await pool.query(`ALTER TABLE animal ADD COLUMN IF NOT EXISTS age_days INTEGER DEFAULT 90`);
     await pool.query(`UPDATE animal SET fc = 370 WHERE fc = 75`);
     await pool.query(`ALTER TABLE desafios ADD COLUMN IF NOT EXISTS delta_acerto JSONB DEFAULT '{}'`);

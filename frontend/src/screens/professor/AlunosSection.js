@@ -8,7 +8,7 @@ function AlunosSection({ turmaAtualId, onResetCode }) {
   const [manualGrades, setManualGrades] = useState({});
   const [lastUpdate, setLastUpdate] = useState(null);
   const [cadastrandoAluno, setCadastrandoAluno] = useState(false);
-  const [alunoForm, setAlunoForm] = useState({ nome:'', matricula:'', codigo_turma:'' });
+  const [alunoForm, setAlunoForm] = useState({ nome:'', matricula:'', email:'', codigo_turma:'' });
   const [importando, setImportando] = useState(false);
   const [importCsv, setImportCsv] = useState('');
   const [importCodigoTurma, setImportCodigoTurma] = useState('');
@@ -46,18 +46,19 @@ function AlunosSection({ turmaAtualId, onResetCode }) {
   const avgXP = students.length > 0 ? (students.reduce((a,s)=>a+Number(s.xp_total||0),0)/students.length).toFixed(0) : '0';
 
   function handleNewAluno() {
-    setAlunoForm({ nome:'', matricula:'', codigo_turma:'' });
+    setAlunoForm({ nome:'', matricula:'', email:'', codigo_turma:'' });
     setCadastrandoAluno(true);
   }
   async function handleSaveAluno() {
-    if (!alunoForm.nome.trim() || !alunoForm.matricula.trim() || !alunoForm.codigo_turma.trim()) {
-      alert('Nome, matrícula e código da turma são obrigatórios.');
+    if (!alunoForm.nome.trim() || !alunoForm.matricula.trim() || !alunoForm.email.trim() || !alunoForm.codigo_turma.trim()) {
+      alert('Nome, matrícula, e-mail e código da turma são obrigatórios.');
       return;
     }
     try {
       const data = await usuariosApi.cadastrar({
         nome: alunoForm.nome.trim(),
         matricula: alunoForm.matricula.trim(),
+        email: alunoForm.email.trim(),
         codigo_turma: alunoForm.codigo_turma.trim(),
       }, turmaAtualId);
       setCadastrandoAluno(false);
@@ -65,7 +66,9 @@ function AlunosSection({ turmaAtualId, onResetCode }) {
       // Reaproveita o mesmo card de "código pra mostrar em sala" que o reset
       // de senha ja usa - e literalmente o mesmo mecanismo (item 4). Esse
       // codigo nao expira em minutos - fica valido ate a turma ser
-      // desativada (pedido da Rita, 24/08/2026).
+      // desativada (pedido da Rita, 24/08/2026). O codigo tambem ja foi
+      // enviado por e-mail (28/08/2026) - o card continua servindo de rede
+      // de seguranca caso o envio falhe.
       onResetCode({ nome: data.nome, codigo: data.codigo, expiraComTurma: true });
     } catch(e) {
       alert('Erro ao cadastrar aluno: ' + e.message);
@@ -105,7 +108,7 @@ function AlunosSection({ turmaAtualId, onResetCode }) {
     // "linha" e "status" existem so pra exibir a tabela de preview aqui.
     const validas = (importPreview || [])
       .filter(l => l.status === 'ok')
-      .map(l => ({ matricula: l.matricula, nome: l.nome }));
+      .map(l => ({ matricula: l.matricula, nome: l.nome, email: l.email }));
     if (validas.length === 0) return;
     setImportLoading(true);
     try {
@@ -210,9 +213,11 @@ function AlunosSection({ turmaAtualId, onResetCode }) {
             <input style={styles.input} value={alunoForm.nome} onChange={e=>setAlunoForm(f=>({...f,nome:e.target.value}))} placeholder="Ex: Ana Paula Silva"/>
             <div style={styles.fieldLabel}>Matrícula</div>
             <input style={styles.input} value={alunoForm.matricula} onChange={e=>setAlunoForm(f=>({...f,matricula:e.target.value}))} placeholder="Ex: 2024001234"/>
+            <div style={styles.fieldLabel}>E-mail</div>
+            <input style={styles.input} type="email" value={alunoForm.email} onChange={e=>setAlunoForm(f=>({...f,email:e.target.value}))} placeholder="Ex: ana.silva@aluno.ufes.br"/>
             <div style={styles.fieldLabel}>Código da turma</div>
             <input style={styles.input} value={alunoForm.codigo_turma} onChange={e=>setAlunoForm(f=>({...f,codigo_turma:e.target.value.toUpperCase()}))} placeholder="Ex: TURMA2026A"/>
-            <div style={styles.fieldHint}>O aluno nunca vê esse código - só serve pra confirmar que você está cadastrando na turma certa. Depois de salvar, você recebe um código de acesso único pra entregar a ele.</div>
+            <div style={styles.fieldHint}>O aluno nunca vê esse código - só serve pra confirmar que você está cadastrando na turma certa. Depois de salvar, o código de acesso é enviado automaticamente pro e-mail do aluno (e também aparece aqui, caso o envio falhe).</div>
             <div style={{height:'2rem'}}/>
           </div>
         </div>
@@ -233,14 +238,14 @@ function AlunosSection({ turmaAtualId, onResetCode }) {
             {!importResultado && (
               <>
                 <div style={styles.fieldHint}>
-                  Cole abaixo, uma linha por aluno: <b>matrícula,nome</b> (com ou sem cabeçalho).
+                  Cole abaixo, uma linha por aluno: <b>matrícula,nome,e-mail</b> (com ou sem cabeçalho).
                 </div>
                 <div style={styles.fieldLabel}>CSV</div>
                 <textarea
                   style={{ ...styles.input, minHeight:'160px', fontFamily:'monospace', resize:'vertical' }}
                   value={importCsv}
                   onChange={e => setImportCsv(e.target.value)}
-                  placeholder={'matricula,nome\n2024001234,Ana Paula Silva\n2024001235,Bruno Costa'}
+                  placeholder={'matricula,nome,email\n2024001234,Ana Paula Silva,ana.silva@aluno.ufes.br\n2024001235,Bruno Costa,bruno.costa@aluno.ufes.br'}
                 />
                 <div style={styles.fieldLabel}>Código da turma</div>
                 <input
@@ -267,7 +272,7 @@ function AlunosSection({ turmaAtualId, onResetCode }) {
                       }}>
                         <div style={{ ...FONT_SCALE.caption }}>{l.status==='ok' ? '✅' : '❌'}</div>
                         <div style={{ ...FONT_SCALE.caption, flex:1 }}>
-                          linha {l.linha}: {l.matricula || '(sem matrícula)'} — {l.nome || '(sem nome)'}
+                          linha {l.linha}: {l.matricula || '(sem matrícula)'} — {l.nome || '(sem nome)'} — {l.email || '(sem e-mail)'}
                           {l.motivo ? ` · ${l.motivo}` : ''}
                         </div>
                       </div>
@@ -287,7 +292,7 @@ function AlunosSection({ turmaAtualId, onResetCode }) {
             {importResultado && (
               <>
                 <div style={styles.fieldHint}>
-                  ✅ {importResultado.length} aluno(s) importado(s). Entregue os códigos abaixo em sala - cada um é válido até a turma ser desativada.
+                  ✅ {importResultado.length} aluno(s) importado(s). Código enviado por e-mail pra cada um - também listados abaixo (e exportáveis), caso algum envio falhe.
                 </div>
                 {importResultado.map(a => (
                   <div key={a.id} style={{ display:'flex', justifyContent:'space-between', padding:'6px 10px', background:COLORS.surfaceMuted, borderRadius:'8px', marginBottom:'4px' }}>
