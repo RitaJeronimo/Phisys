@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const pool = require('../db/connection');
 const rateLimit = require('express-rate-limit');
+const { ipKeyGenerator } = rateLimit;
 const PostgresStore = require('../middleware/rateLimitStore');
 
 // Limita tentativas de login/registro por IP, para dificultar forca bruta
@@ -21,7 +22,11 @@ const authLimiter = rateLimit({
   // Cloudflare (que fica na frente do Render mesmo no dominio padrao
   // *.onrender.com) e nao e alteravel pelo cliente - mais confiavel que
   // contar hops. req.ip fica so como fallback (ex: dev local sem Cloudflare).
-  keyGenerator: (req) => req.headers['cf-connecting-ip'] || req.ip,
+  // ipKeyGenerator normaliza IPv6 pro prefixo /56 antes de virar chave -
+  // sem isso, um cliente IPv6 (que tipicamente ganha uma subrede inteira do
+  // provedor) podia trocar de endereco a cada tentativa e nunca cair no
+  // mesmo balde de rate limit. IPv4 passa direto, sem mudanca de comportamento.
+  keyGenerator: (req) => ipKeyGenerator(req.headers['cf-connecting-ip'] || req.ip),
 });
 
 // POST /api/auth/login
