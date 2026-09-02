@@ -493,6 +493,12 @@ export const INTERVENTIONS = {
     description: 'Excesso de peso eleva RVP e PA.',
     effect: { peso: +150, pas: +20, pad: +15, fc: +40 },
   },
+  normalizacao: {
+    label: 'Normalização / Sem crise',
+    focus: 'geral',
+    description: 'Sem crise específica - o animal permanece dentro das faixas normais, para praticar manutenção da homeostase.',
+    effect: {},
+  },
 };
 
 export function aplicarIntervencao(valores, intervencaoId) {
