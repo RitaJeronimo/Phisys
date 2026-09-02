@@ -8,7 +8,7 @@ function DesafiosSection({ turmaAtualId, nomeTurma }) {
   const [challenges, setChallenges] = useState([]);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(null);
-  const [recuperacaoConfig, setRecuperacaoConfig] = useState({ multiplicador: 1, desafios_extras: 0 });
+  const [recuperacaoConfig, setRecuperacaoConfig] = useState({ multiplicador: 1, desafios_extras: 0, questoes_por_rodada: 3 });
   const [sessaoFoco, setSessaoFoco] = useState(() => {
     try {
       const cfg = JSON.parse(localStorage.getItem('phisys_sessao_config') || '{}');
@@ -263,7 +263,7 @@ function DesafiosSection({ turmaAtualId, nomeTurma }) {
       </div>
 
       {(() => {
-        const TAMANHO_RODADA = 3; // mesmo padrao usado no GameScreen.js
+        const TAMANHO_RODADA = Math.max(1, recuperacaoConfig.questoes_por_rodada ?? 3);
         const desafiosDisponiveis = challenges.filter(c => c.active && (sessaoFoco === 'todos' || c.focus === sessaoFoco)).length;
         const voltasMaxSemRepetir = Math.max(0, Math.floor(desafiosDisponiveis / TAMANHO_RODADA) - 1);
         const faltamDesafios = desafiosDisponiveis < TAMANHO_RODADA;
@@ -280,6 +280,20 @@ function DesafiosSection({ turmaAtualId, nomeTurma }) {
                 ⚠️ São necessários pelo menos {TAMANHO_RODADA} desafios ativos neste foco para uma sessão completa funcionar. Atualmente: {desafiosDisponiveis}.
               </div>
             )}
+
+            <div style={{ marginBottom:'14px' }}>
+              <div style={{ ...FONT_SCALE.label, color:COLORS.textPrimary, marginBottom:'4px' }}>
+                Questões por rodada
+              </div>
+              <input type="number" min="1" step="1" value={TAMANHO_RODADA}
+                onChange={e => {
+                  const questoes = Math.max(1, Number(e.target.value) || 1);
+                  const newConfig = { ...recuperacaoConfig, questoes_por_rodada: questoes };
+                  setRecuperacaoConfig(newConfig);
+                  configuracoesApi.setRecuperacao(newConfig, turmaAtualId).catch(() => {});
+                }}
+                style={{ width:'100%', padding:'8px 10px', borderRadius:'8px', border:`1px solid ${COLORS.border}`, ...FONT_SCALE.body, color:COLORS.textPrimary, boxSizing:'border-box' }}/>
+            </div>
 
             <div style={{ marginBottom:'14px' }}>
               <div style={{ display:'flex', justifyContent:'space-between', ...FONT_SCALE.label, color:COLORS.textPrimary, marginBottom:'4px' }}>

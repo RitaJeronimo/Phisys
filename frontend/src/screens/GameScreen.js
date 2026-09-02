@@ -94,22 +94,20 @@ function GameScreen({ user, mode, values: initialValues, score: initialScore, on
   const [responseTimes, setResponseTimes] = useState([]);
   const [questionStart, setQuestionStart] = useState(Date.now());
   const [finished, setFinished] = useState(false);
-  const [recuperacaoConfig, setRecuperacaoConfig] = useState({ multiplicador: 1, desafios_extras: 0 });
+  const [recuperacaoConfig, setRecuperacaoConfig] = useState({ multiplicador: 1, desafios_extras: 0, questoes_por_rodada: 3 });
   const [voltasExtrasUsadas, setVoltasExtrasUsadas] = useState(0);
   const [correctIndex, setCorrectIndex] = useState(null);
 
-  useEffect(() => {
-    configuracoesApi.getRecuperacao()
-      .then(data => setRecuperacaoConfig(data))
-      .catch(() => {});
-  }, []);
-  
   const [myRank, setMyRank] = useState('-');
   const [challengePool, setChallengePool] = useState([]); // pool completo, embaralhado
   const [challenges, setChallenges] = useState([]);        // fatia atual (rodada em exibicao)
   const [loadingChallenges, setLoadingChallenges] = useState(true);
 
-  const TAMANHO_RODADA = 3; // mesmo padrao ja usado como default em totalChallenges
+  // Le do state (atualizado assim que a config da turma chega, dentro do
+  // Promise.all abaixo) - clamp pra nunca zerar o slice do pool (ver
+  // definirPool), so cai no default 3 antes do primeiro fetch resolver ou se
+  // o professor nunca configurou nada.
+  const TAMANHO_RODADA = Math.max(1, recuperacaoConfig.questoes_por_rodada ?? 3);
   const [attempts, setAttempts] = useState(0);
   const [paramHistory, setParamHistory] = useState([{
     label: 'Início',
@@ -122,17 +120,21 @@ function GameScreen({ user, mode, values: initialValues, score: initialScore, on
   // CORRECAO B: define o pool completo (embaralhado) e exibe so a primeira
   // fatia (tamanho TAMANHO_RODADA). O restante do pool fica reservado para
   // as voltas extras de recuperacao, evitando repetir os mesmos desafios.
-  function definirPool(lista) {
+  function definirPool(lista, tamanhoRodada) {
     const embaralhado = embaralharArray(lista);
     setChallengePool(embaralhado);
-    setChallenges(embaralhado.slice(0, TAMANHO_RODADA));
+    setChallenges(embaralhado.slice(0, tamanhoRodada));
   }
 
 useEffect(() => {
     Promise.all([
       desafiosApi.get(),
       simulacoesApi.getAtiva().catch(() => null),
-    ]).then(([data, simAtiva]) => {
+      configuracoesApi.getRecuperacao().catch(() => ({ multiplicador: 1, desafios_extras: 0, questoes_por_rodada: 3 })),
+    ]).then(([data, simAtiva, recConfig]) => {
+      setRecuperacaoConfig(recConfig);
+      const tamanhoRodada = Math.max(1, recConfig.questoes_por_rodada ?? 3);
+
       const fromDB = Array.isArray(data) && data.length > 0
         ? data.map(d => ({
             id: d.id,
@@ -189,9 +191,9 @@ useEffect(() => {
             );
             if (fallback.length === 0) fallback = MOCK_CHALLENGES; // seguranca: nunca deixar o quiz vazio
           }
-          definirPool(sessaoChallenges.length > 0 ? sessaoChallenges : fallback);
+          definirPool(sessaoChallenges.length > 0 ? sessaoChallenges : fallback, tamanhoRodada);
         } catch {
-          definirPool(fromDBCoerente.length > 0 ? fromDBCoerente : MOCK_CHALLENGES);
+          definirPool(fromDBCoerente.length > 0 ? fromDBCoerente : MOCK_CHALLENGES, tamanhoRodada);
         }
       } else {
         // CORRECAO: antes, o Modo Livre sempre misturava MOCK_CHALLENGES junto
@@ -200,10 +202,10 @@ useEffect(() => {
         // intervencao, entao "vazavam" no pool mesmo quando uma simulacao
         // especifica estava ativa. Agora os mocks so sao usados como ultimo
         // recurso, quando NAO ha nenhum desafio real cadastrado no banco.
-        definirPool(fromDBCoerente.length > 0 ? fromDBCoerente : MOCK_CHALLENGES);
+        definirPool(fromDBCoerente.length > 0 ? fromDBCoerente : MOCK_CHALLENGES, tamanhoRodada);
       }
     }).catch(() => {
-      definirPool(MOCK_CHALLENGES);
+      definirPool(MOCK_CHALLENGES, 3);
     }).finally(() => setLoadingChallenges(false));
   }, [mode]);
 
@@ -552,7 +554,7 @@ const styles = {
   challengeText:      { ...FONT_SCALE.body, color:COLORS.textPrimary, lineHeight:'1.6' },
   optionsTitle:       { padding:'0.75rem 1.5rem 0.5rem', ...FONT_SCALE.label, color:COLORS.textMuted, letterSpacing:'0.08em', textTransform:'uppercase' },
   options:            { padding:'0 1.5rem', display:'flex', flexDirection:'column', gap:'10px' },
-  option:             { background:COLORS.surface, boxShadow:SHADOW_CARD, border:`1.5px solid ${COLORS.border}`, borderRadius:'14px', padding:'1rem 1.25rem', cursor:'pointer', display:'flex', alignItems:'center', gap:'12px' },
+  option:             { background:COLORS.surface, boxShadow:SHADOW_CARD, borderWidth:'1.5px', borderStyle:'solid', borderColor:COLORS.border, borderRadius:'14px', padding:'1rem 1.25rem', cursor:'pointer', display:'flex', alignItems:'center', gap:'12px' },
   optionCorrect:      { background:COLORS.status.saudavel.soft, borderColor:COLORS.status.saudavel.color },
   optionWrong:        { background:COLORS.status.critico.soft, borderColor:COLORS.status.critico.color },
   optionLetter:       { width:'26px', height:'26px', borderRadius:'50%', background:COLORS.iconChipBg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'12px', fontWeight:'800', color:COLORS.indigo, flexShrink:0 },

@@ -63,21 +63,22 @@ router.put('/pesos', auth, requireProfessor, resolveTurmaId, async (req, res) =>
 // Controles do professor para calibrar a dificuldade de recuperação do
 // animal apos uma simulacao/crise. Editaveis a qualquer momento.
 
-const RECUPERACAO_PADRAO = { multiplicador: 1, desafios_extras: 0 };
+const RECUPERACAO_PADRAO = { multiplicador: 1, desafios_extras: 0, questoes_por_rodada: 3 };
 
-// GET /api/configuracoes/recuperacao – retorna multiplicador e desafios extras atuais
+// GET /api/configuracoes/recuperacao – retorna multiplicador, desafios extras e questoes por rodada atuais
 router.get('/recuperacao', auth, resolveTurmaId, async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT chave, valor FROM configuracoes WHERE chave = ANY($1) AND turma_id = $2`,
-      [['recuperacao_multiplicador', 'recuperacao_desafios_extras'], req.turmaId]
+      [['recuperacao_multiplicador', 'recuperacao_desafios_extras', 'recuperacao_questoes_por_rodada'], req.turmaId]
     );
     const encontrados = {};
     result.rows.forEach(r => { encontrados[r.chave] = Number(r.valor); });
 
     res.json({
-      multiplicador:   encontrados.recuperacao_multiplicador   ?? RECUPERACAO_PADRAO.multiplicador,
-      desafios_extras: encontrados.recuperacao_desafios_extras ?? RECUPERACAO_PADRAO.desafios_extras,
+      multiplicador:       encontrados.recuperacao_multiplicador       ?? RECUPERACAO_PADRAO.multiplicador,
+      desafios_extras:     encontrados.recuperacao_desafios_extras     ?? RECUPERACAO_PADRAO.desafios_extras,
+      questoes_por_rodada: encontrados.recuperacao_questoes_por_rodada ?? RECUPERACAO_PADRAO.questoes_por_rodada,
     });
   } catch (err) {
     console.error('Erro ao buscar config de recuperacao:', err.message);
@@ -85,16 +86,20 @@ router.get('/recuperacao', auth, resolveTurmaId, async (req, res) => {
   }
 });
 
-// PUT /api/configuracoes/recuperacao – professor salva multiplicador e desafios extras
+// PUT /api/configuracoes/recuperacao – professor salva multiplicador, desafios extras e questoes por rodada
 // (so afeta a propria turma - ver M3 na auditoria)
 router.put('/recuperacao', auth, requireProfessor, resolveTurmaId, async (req, res) => {
-  const { multiplicador, desafios_extras } = req.body;
+  const { multiplicador, desafios_extras, questoes_por_rodada } = req.body;
   const pares = [
     ['recuperacao_multiplicador', multiplicador],
     ['recuperacao_desafios_extras', desafios_extras],
+    ['recuperacao_questoes_por_rodada', questoes_por_rodada],
   ];
   if (pares.every(([, valor]) => valor === undefined)) {
-    return res.status(400).json({ erro: 'Nenhum dos campos esperados (multiplicador, desafios_extras) foi enviado.' });
+    return res.status(400).json({ erro: 'Nenhum dos campos esperados (multiplicador, desafios_extras, questoes_por_rodada) foi enviado.' });
+  }
+  if (questoes_por_rodada !== undefined && Number(questoes_por_rodada) < 1) {
+    return res.status(400).json({ erro: 'questoes_por_rodada deve ser pelo menos 1.' });
   }
 
   try {
