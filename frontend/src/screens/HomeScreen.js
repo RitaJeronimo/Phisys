@@ -179,7 +179,7 @@ function ParamCard({ param, value, onClick, normalOverride }) {
         <div style={styles.indicatorIcon}><Icon name={param.id} size={20} color={ICON_COLOR[param.id] || COLORS.indigo}/></div>
         <div style={styles.indicatorText}>
           <div style={styles.indicatorLabel}>{param.name}</div>
-          <div style={styles.indicatorValue}>{display}{unit}</div>
+          <div style={{ ...styles.indicatorValue, color: inRange ? styles.indicatorValue.color : color }}>{display}{unit}</div>
         </div>
       </div>
       <div style={styles.indicatorBarTrack}>
