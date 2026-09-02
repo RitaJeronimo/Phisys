@@ -23,8 +23,9 @@ async function enviarCodigoEmail(email, nome, codigo) {
       subject: 'Seu código de acesso - Phisys',
       html: `
         <p>Olá, ${nome}!</p>
-        <p>Você foi cadastrado(a) no Phisys. Use o código abaixo na tela de login, em
-        "Primeiro acesso ou esqueceu a senha?", para definir sua senha:</p>
+        <p>Você foi cadastrado(a) no Phisys. Acesse
+        <a href="https://phisys.vercel.app">https://phisys.vercel.app</a> e use o código abaixo
+        na tela de login, em "Primeiro acesso ou esqueceu a senha?", para definir sua senha:</p>
         <h2 style="letter-spacing:4px;">${codigo}</h2>
       `,
     });
