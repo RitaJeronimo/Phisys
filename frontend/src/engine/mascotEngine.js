@@ -72,7 +72,7 @@ default: 370,
     min: 50,
     max: 800,
     normal: [200, 400],
-    default: 300,
+    default: 125,
     step: 1,
     icon: '⚖️',
     description: 'Representa a condição corporal geral. Excesso de peso aumenta a RVP e a pós-carga cardíaca, elevando a PA. Peso saudável aproximado: 200–400g.',
@@ -356,7 +356,7 @@ export function calcularSaude(primarios) {
   else if (energia < 40) saude = Math.max(0, saude - 10);
 
   // Modulador: peso por fase
-  const peso = primarios.peso ?? 300;
+  const peso = primarios.peso ?? 125;
   const pesoNormal = stage.pesoNormal ?? [200, 400];
   if (peso < pesoNormal[0] || peso > pesoNormal[1]) saude = Math.max(0, saude - 10);
 

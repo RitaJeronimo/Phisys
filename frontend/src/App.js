@@ -20,7 +20,7 @@ function corrigirAnimal(a) {
     energia:    Number(a.energia)    || 80,
     hidratacao: Number(a.hidratacao) || 70,
     pas, pad, fc,
-    peso:       Number(a.peso)       || 300,
+    peso:       Number(a.peso)       || 125,
     age_days:   Number(a.age_days)   || 90,
     // CORRECAO: esse campo estava faltando aqui - a funcao reconstroi
     // o objeto do animal do zero e descartava o valor de saude vindo

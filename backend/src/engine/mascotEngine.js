@@ -77,7 +77,7 @@ function calcularSaude(primarios) {
   if (energia < 20) saude = Math.max(0, saude - 20);
   else if (energia < 40) saude = Math.max(0, saude - 10);
 
-  const peso = primarios.peso ?? 300;
+  const peso = primarios.peso ?? 125;
   const pesoNormal = stage.pesoNormal ?? [200, 400];
   if (peso < pesoNormal[0] || peso > pesoNormal[1]) saude = Math.max(0, saude - 10);
 

@@ -79,7 +79,7 @@ router.post('/reset', auth, requireProfessor, resolveTurmaId, async (req, res) =
         pas           = 110,
         pad           = 70,
         fc            = 370,
-        peso          = 300,
+        peso          = 125,
         saude         = 85,
         atualizado_em = NOW()
       WHERE usuario_id IN (SELECT id FROM usuarios WHERE modo = 'aluno' AND turma_id = $1)

@@ -31,7 +31,7 @@ async function criarTabelas() {
         pas           NUMERIC DEFAULT 110,
         pad           NUMERIC DEFAULT 70,
         fc            NUMERIC DEFAULT 370,
-        peso          NUMERIC DEFAULT 300,
+        peso          NUMERIC DEFAULT 125,
         saude         NUMERIC DEFAULT 85,
         age_days      INTEGER DEFAULT 90,
         atualizado_em TIMESTAMP DEFAULT NOW(),
@@ -369,6 +369,16 @@ async function adicionarColunas() {
     // codigo curto + uso unico ja bastam, esticar a validade so nesse caso
     // reabriria a mesma janela de ataque que o A2 fechou.
     await pool.query(`ALTER TABLE reset_senha_tokens ADD COLUMN IF NOT EXISTS expira_com_turma BOOLEAN DEFAULT false`);
+
+    // Peso inicial do animal (feedback da Samela, 04/09/2026): 300g caia fora
+    // da faixa juvenil (50-200g) definida em AGE_STAGES, entao um animal recem
+    // criado (idade padrao 90 dias = juvenil) ja nascia com sobrepeso. 125g e o
+    // meio da faixa juvenil, dando margem antes de qualquer simulacao/desafio
+    // empurrar o peso pra fora dela logo no inicio. So o DEFAULT da coluna muda
+    // aqui - alunos ja cadastrados mantem o peso atual, decisao deliberada da
+    // Rita (nao e um bug de dado corrompido como os UPDATE acima, e um valor de
+    // balanceamento que so deve valer daqui pra frente).
+    await pool.query(`ALTER TABLE animal ALTER COLUMN peso SET DEFAULT 125`);
 
     console.log('Colunas e tabelas adicionadas com sucesso!');
   } catch (err) {
