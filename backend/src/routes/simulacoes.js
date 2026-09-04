@@ -60,6 +60,68 @@ router.post('/', auth, requireProfessor, resolveTurmaId, async (req, res) => {
   }
 });
 
+// POST /api/simulacoes/:id/duplicar – copia a simulacao para outras turmas
+// do MESMO professor (item 4 do pedido da Samela, 04/09/2026): evita ter que
+// recriar manualmente em cada turma. Cada turma_id da lista e validado
+// individualmente (mesmo padrao de posse do resolveTurmaId) - nao confia no
+// resto do array so porque um item passou. Best-effort: turmas invalidas sao
+// reportadas em "falha" sem derrubar as copias validas da lista, ja que cada
+// INSERT e independente (nao ha estado compartilhado entre turmas que exija
+// atomicidade, diferente da transacao de /ativar). Cada copia nasce com
+// ativo=false explicito (nao so omitido) - a coluna tem DEFAULT TRUE no
+// schema, entao so excluir do INSERT faria a copia nascer ativa e quebrar a
+// invariante de "uma simulacao ativa por turma" mantida pela rota /ativar.
+router.post('/:id/duplicar', auth, requireProfessor, mesmaTurmaDoRecurso('simulacoes'), async (req, res) => {
+  const { id } = req.params;
+  const turmaIds = Array.isArray(req.body.turma_ids) ? req.body.turma_ids : [];
+  if (turmaIds.length === 0) {
+    return res.status(400).json({ erro: 'turma_ids e obrigatorio (lista nao vazia).' });
+  }
+  try {
+    const origResult = await pool.query('SELECT * FROM simulacoes WHERE id = $1', [id]);
+    if (origResult.rows.length === 0) {
+      return res.status(404).json({ erro: 'Simulacao nao encontrada.' });
+    }
+    const orig = origResult.rows[0];
+
+    const sucesso = [];
+    const falha = [];
+
+    for (const turmaIdRaw of turmaIds) {
+      const turmaId = Number(turmaIdRaw);
+      if (!Number.isInteger(turmaId)) {
+        falha.push({ turma_id: turmaIdRaw, motivo: 'turma_id invalido.' });
+        continue;
+      }
+      // Mesma checagem de posse do resolveTurmaId, rodando POR ITEM da lista.
+      const dono = await pool.query('SELECT criado_por FROM turmas WHERE id = $1', [turmaId]);
+      if (dono.rows.length === 0) {
+        falha.push({ turma_id: turmaId, motivo: 'Turma nao encontrada.' });
+        continue;
+      }
+      if (Number(dono.rows[0].criado_por) !== Number(req.usuario.id)) {
+        falha.push({ turma_id: turmaId, motivo: 'Turma pertence a outro professor.' });
+        continue;
+      }
+      try {
+        const copia = await pool.query(
+          `INSERT INTO simulacoes (titulo, descricao, foco, params, cuidados_por_sessao, intervencao, turma_id, ativo)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, false) RETURNING id, turma_id`,
+          [orig.titulo, orig.descricao, orig.foco, JSON.stringify(orig.params), orig.cuidados_por_sessao, orig.intervencao, turmaId]
+        );
+        sucesso.push({ turma_id: turmaId, id: copia.rows[0].id });
+      } catch (err) {
+        falha.push({ turma_id: turmaId, motivo: 'Erro ao duplicar.' });
+      }
+    }
+
+    res.status(sucesso.length > 0 ? 201 : 400).json({ sucesso, falha });
+  } catch (err) {
+    console.error('Erro ao duplicar simulacao:', err.message);
+    res.status(500).json({ erro: 'Erro interno do servidor.' });
+  }
+});
+
 // PUT /api/simulacoes/:id/ativar – ativa simulação e aplica params em todos os alunos da mesma turma
 router.put('/:id/ativar', auth, requireProfessor, mesmaTurmaDoRecurso('simulacoes'), async (req, res) => {
   const { id } = req.params;

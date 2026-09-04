@@ -172,6 +172,64 @@ router.post('/', auth, requireProfessor, resolveTurmaId, async (req, res) => {
   }
 });
 
+// POST /api/desafios/:id/duplicar – mesmo mecanismo de simulacoes/:id/duplicar,
+// ver comentario la para o raciocinio completo (posse verificada por item da
+// lista, best-effort, ativo=false explicito na copia mesmo com DEFAULT TRUE
+// no schema).
+router.post('/:id/duplicar', auth, requireProfessor, mesmaTurmaDoRecurso('desafios'), async (req, res) => {
+  const { id } = req.params;
+  const turmaIds = Array.isArray(req.body.turma_ids) ? req.body.turma_ids : [];
+  if (turmaIds.length === 0) {
+    return res.status(400).json({ erro: 'turma_ids e obrigatorio (lista nao vazia).' });
+  }
+  try {
+    const origResult = await pool.query('SELECT * FROM desafios WHERE id = $1', [id]);
+    if (origResult.rows.length === 0) {
+      return res.status(404).json({ erro: 'Desafio nao encontrado.' });
+    }
+    const orig = origResult.rows[0];
+
+    const sucesso = [];
+    const falha = [];
+
+    for (const turmaIdRaw of turmaIds) {
+      const turmaId = Number(turmaIdRaw);
+      if (!Number.isInteger(turmaId)) {
+        falha.push({ turma_id: turmaIdRaw, motivo: 'turma_id invalido.' });
+        continue;
+      }
+      const dono = await pool.query('SELECT criado_por FROM turmas WHERE id = $1', [turmaId]);
+      if (dono.rows.length === 0) {
+        falha.push({ turma_id: turmaId, motivo: 'Turma nao encontrada.' });
+        continue;
+      }
+      if (Number(dono.rows[0].criado_por) !== Number(req.usuario.id)) {
+        falha.push({ turma_id: turmaId, motivo: 'Turma pertence a outro professor.' });
+        continue;
+      }
+      try {
+        const copia = await pool.query(
+          `INSERT INTO desafios (titulo, pergunta, opcoes, correta, foco, dificuldade, intervencao, delta_acerto, delta_erro, turma_id, ativo)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, false) RETURNING id, turma_id`,
+          [
+            orig.titulo, orig.pergunta, JSON.stringify(orig.opcoes), orig.correta, orig.foco,
+            orig.dificuldade, orig.intervencao, JSON.stringify(orig.delta_acerto), JSON.stringify(orig.delta_erro),
+            turmaId,
+          ]
+        );
+        sucesso.push({ turma_id: turmaId, id: copia.rows[0].id });
+      } catch (err) {
+        falha.push({ turma_id: turmaId, motivo: 'Erro ao duplicar.' });
+      }
+    }
+
+    res.status(sucesso.length > 0 ? 201 : 400).json({ sucesso, falha });
+  } catch (err) {
+    console.error('Erro ao duplicar desafio:', err.message);
+    res.status(500).json({ erro: 'Erro interno do servidor.' });
+  }
+});
+
 // PUT /api/desafios/:id – edita desafio (so o dono da turma do desafio)
 router.put('/:id', auth, requireProfessor, mesmaTurmaDoRecurso('desafios'), async (req, res) => {
   const { id } = req.params;
