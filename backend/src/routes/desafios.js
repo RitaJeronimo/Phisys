@@ -223,7 +223,8 @@ router.post('/:id/duplicar', auth, requireProfessor, mesmaTurmaDoRecurso('desafi
       }
     }
 
-    res.status(sucesso.length > 0 ? 201 : 400).json({ sucesso, falha });
+    // Ver comentario equivalente em simulacoes.js.
+    res.status(201).json({ sucesso, falha });
   } catch (err) {
     console.error('Erro ao duplicar desafio:', err.message);
     res.status(500).json({ erro: 'Erro interno do servidor.' });

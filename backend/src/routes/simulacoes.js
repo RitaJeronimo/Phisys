@@ -115,7 +115,12 @@ router.post('/:id/duplicar', auth, requireProfessor, mesmaTurmaDoRecurso('simula
       }
     }
 
-    res.status(sucesso.length > 0 ? 201 : 400).json({ sucesso, falha });
+    // Sempre 200/201, mesmo se todas as turmas falharem - o status HTTP nao
+    // carrega esse significado aqui, o corpo (sucesso/falha por item) ja
+    // descreve o resultado completo. Evita que o frontend perca o array
+    // "falha" no caminho de erro do req() compartilhado (que so preserva
+    // data.erro, uma string, quando res.ok e false).
+    res.status(201).json({ sucesso, falha });
   } catch (err) {
     console.error('Erro ao duplicar simulacao:', err.message);
     res.status(500).json({ erro: 'Erro interno do servidor.' });
