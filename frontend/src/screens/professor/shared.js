@@ -117,4 +117,10 @@ export const styles = {
   weightSlider:     { flex:1, accentColor:COLORS.indigo },
   weightVal:        { ...FONT_SCALE.label, fontWeight:'800', color:COLORS.textPrimary, width:'36px', textAlign:'right' },
   notaInput:        { width:'52px', padding:'4px 6px', borderRadius:'6px', border:`1px solid ${COLORS.border}`, background:COLORS.surfaceMuted, color:COLORS.textPrimary, fontSize:'13px', fontFamily:'inherit', textAlign:'center', outline:'none' },
+
+  // Painel inline "Duplicar para outras turmas" (DuplicarTurmasPanel.js).
+  duplicarBox:          { background:COLORS.surfaceMuted, borderRadius:'10px', padding:'10px', marginTop:'10px' },
+  duplicarTurmaRow:     { display:'flex', alignItems:'center', gap:'8px', ...FONT_SCALE.label, color:COLORS.textPrimary, padding:'4px 0', cursor:'pointer' },
+  duplicarResultOk:     { ...FONT_SCALE.label, color:COLORS.status.saudavel.color, padding:'2px 0' },
+  duplicarResultFalha:  { ...FONT_SCALE.label, color:COLORS.status.critico.color, padding:'2px 0' },
 };

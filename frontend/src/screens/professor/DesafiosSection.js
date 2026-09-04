@@ -3,11 +3,13 @@ import { desafios as desafiosApi, configuracoes as configuracoesApi } from '../.
 import { COLORS, FONT_SCALE } from '../../theme';
 import { INTERVENTIONS } from '../../engine/mascotEngine';
 import { styles, req, authHeaders, diffColor, diffLabel, focusLabel, EMPTY_CHALLENGE } from './shared';
+import DuplicarTurmasPanel from './DuplicarTurmasPanel';
 
-function DesafiosSection({ turmaAtualId, nomeTurma }) {
+function DesafiosSection({ turmaAtualId, nomeTurma, turmasList }) {
   const [challenges, setChallenges] = useState([]);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(null);
+  const [duplicandoId, setDuplicandoId] = useState(null);
   const [recuperacaoConfig, setRecuperacaoConfig] = useState({ multiplicador: 1, desafios_extras: 0, questoes_por_rodada: 3 });
   const [sessaoFoco, setSessaoFoco] = useState(() => {
     try {
@@ -358,8 +360,21 @@ function DesafiosSection({ turmaAtualId, nomeTurma }) {
           <div style={styles.challengeActions}>
             <button style={styles.editBtn} onClick={()=>handleEditChallenge(ch)}>✏️ Editar</button>
             <button style={styles.toggleBtn} onClick={()=>handleToggleChallenge(ch.id)}>{ch.active?'Desativar':'Ativar'}</button>
+            <button style={styles.editBtn} onClick={()=>setDuplicandoId(duplicandoId === ch.id ? null : ch.id)}>
+              🔄 Duplicar
+            </button>
             <button style={styles.deleteBtn} onClick={()=>handleDeleteChallenge(ch.id)}>🗑️</button>
           </div>
+          {duplicandoId === ch.id && (
+            <DuplicarTurmasPanel
+              turmasList={turmasList}
+              turmaIdAtual={ch.turma_id}
+              onConfirm={(turmaIds) => req(`/api/desafios/${ch.id}/duplicar`, {
+                method: 'POST', headers: authHeaders(), body: JSON.stringify({ turma_ids: turmaIds }),
+              })}
+              onClose={() => setDuplicandoId(null)}
+            />
+          )}
         </div>
       ))}
       <div style={{height:'1rem'}}/>

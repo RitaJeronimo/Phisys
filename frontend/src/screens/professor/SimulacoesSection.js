@@ -3,12 +3,14 @@ import { simulacoes as simulacoesApi, parametros as parametrosApi } from '../../
 import { COLORS, FONT_SCALE } from '../../theme';
 import { INTERVENTIONS, PRIMARY_PARAMS } from '../../engine/mascotEngine';
 import { styles, req, authHeaders, focusLabel, getDefaultSimParams, makeEmptySimulation } from './shared';
+import DuplicarTurmasPanel from './DuplicarTurmasPanel';
 
-function SimulacoesSection({ turmaAtualId, nomeTurma }) {
+function SimulacoesSection({ turmaAtualId, nomeTurma, turmasList }) {
   const [simulations, setSimulations] = useState([]);
   const [editing, setEditing] = useState(null);
   const [simForm, setSimForm] = useState(null);
   const [ativandoId, setAtivandoId] = useState(null);
+  const [duplicandoId, setDuplicandoId] = useState(null);
   const [parametrosList, setParametrosList] = useState([]);
   const [lancandoId, setLancandoId] = useState(null);
   const [valoresLancamento, setValoresLancamento] = useState({});
@@ -233,8 +235,21 @@ function SimulacoesSection({ turmaAtualId, nomeTurma }) {
             >
               {ativandoId === sim.id ? '⏳ Ativando...' : lancandoId === sim.id ? 'Cancelar' : '🚀 Lançar para Turma'}
             </button>
+            <button style={styles.editBtn} onClick={()=>setDuplicandoId(duplicandoId === sim.id ? null : sim.id)}>
+              🔄 Duplicar
+            </button>
             <button style={styles.deleteBtn} onClick={()=>handleDeleteSimulation(sim.id)}>🗑️</button>
           </div>
+          {duplicandoId === sim.id && (
+            <DuplicarTurmasPanel
+              turmasList={turmasList}
+              turmaIdAtual={sim.turma_id}
+              onConfirm={(turmaIds) => req(`/api/simulacoes/${sim.id}/duplicar`, {
+                method: 'POST', headers: authHeaders(), body: JSON.stringify({ turma_ids: turmaIds }),
+              })}
+              onClose={() => setDuplicandoId(null)}
+            />
+          )}
           {lancandoId === sim.id && (() => {
             const paramsAtivos = parametrosList.filter(p => p.ativo);
             const faltaPreencher = paramsAtivos.some(p => valoresLancamento[p.id] === undefined || valoresLancamento[p.id] === '');
