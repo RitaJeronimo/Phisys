@@ -241,12 +241,14 @@ export function getDefaultSecondaryValues() {
 export function calcularSecundarios(primarios) {
   const { hidratacao, fc, peso } = primarios;
   const ageDays = primarios.ageDays ?? primarios.age_days ?? 90;
+  const stage = getAgeStage(ageDays);
 
   const vol_urinario = hidratacao < 50 ? 0 : hidratacao > 80 ? 2 : 1;
 
   // RVP: influenciada por hidratação, peso e idade/fase
   const fatorHidratacao = hidratacao < 50 ? 2 : hidratacao > 80 ? 0 : 1;
-  const fatorPeso      = peso > 400 ? 2 : peso < 200 ? 0 : 1;
+  const pesoNormal      = stage.pesoNormal ?? [200, 400];
+  const fatorPeso       = peso > pesoNormal[1] ? 2 : peso < pesoNormal[0] ? 0 : 1;
   const fatorIdade     = ageDays > 540 ? 2 : ageDays <= 30 ? 0 : 1;
   const rvp = Math.round((fatorHidratacao + fatorPeso + fatorIdade) / 3);
 
