@@ -68,16 +68,28 @@ function parseCsvAlunos(csvTexto) {
   return linhas;
 }
 
-// Valida cada linha ja parseada: matricula/nome presentes, sem duplicata
-// dentro do proprio arquivo, e sem colidir com matricula ja existente no
-// banco (recebida pronta em matriculasExistentes pra nao repetir SELECT por
-// linha). Usada tanto no preview quanto na revalidacao da confirmacao.
+// Mesma regra de formato de matricula ja usada no login do aluno
+// (LoginScreen.js: so numeros, minimo 6 digitos). Nao era conferida aqui -
+// uma planilha colada com as colunas trocadas (nome,matricula em vez do
+// matricula,nome esperado) passava disfarcada de "linha valida", porque os
+// dois campos so precisavam estar nao-vazios (bug real, achado pela Samela,
+// 07/09/2026). As duas checagens abaixo pegam o swap dos dois lados.
+const MATRICULA_FORMATO = /^\d{6,}$/;
+const NOME_SO_DIGITOS = /^\d+$/;
+
+// Valida cada linha ja parseada: matricula/nome presentes, com formato
+// plausivel (pega coluna trocada), sem duplicata dentro do proprio arquivo,
+// e sem colidir com matricula ja existente no banco (recebida pronta em
+// matriculasExistentes pra nao repetir SELECT por linha). Usada tanto no
+// preview quanto na revalidacao da confirmacao.
 function validarLinhasAlunos(linhasParsed, matriculasExistentes) {
   const vistos = new Set();
   return linhasParsed.map(l => {
     if (!l.matricula) return { ...l, status: 'erro', motivo: 'Matricula ausente.' };
     if (!l.nome) return { ...l, status: 'erro', motivo: 'Nome ausente.' };
     if (!l.email) return { ...l, status: 'erro', motivo: 'Email ausente.' };
+    if (NOME_SO_DIGITOS.test(l.nome)) return { ...l, status: 'erro', motivo: 'Nome parece ser uma matricula (so numeros) - confira a ordem das colunas.' };
+    if (!MATRICULA_FORMATO.test(l.matricula)) return { ...l, status: 'erro', motivo: 'Matricula deve conter so numeros (minimo 6 digitos).' };
     if (vistos.has(l.matricula)) return { ...l, status: 'erro', motivo: 'Matricula duplicada no arquivo.' };
     vistos.add(l.matricula);
     if (matriculasExistentes.has(l.matricula)) return { ...l, status: 'erro', motivo: 'Matricula ja cadastrada.' };
@@ -100,6 +112,14 @@ router.post('/', auth, requireProfessor, resolveTurmaId, async (req, res) => {
   const { nome, matricula, email, codigo_turma } = req.body;
   if (!nome || !matricula || !email || !codigo_turma) {
     return res.status(400).json({ erro: 'Nome, matricula, email e codigo da turma sao obrigatorios.' });
+  }
+  // Mesma checagem de formato do import (pega nome/matricula trocados no
+  // formulario manual) - ver comentario de validarLinhasAlunos acima.
+  if (NOME_SO_DIGITOS.test(nome)) {
+    return res.status(400).json({ erro: 'Nome parece ser uma matricula (so numeros) - confira se os campos nao foram trocados.' });
+  }
+  if (!MATRICULA_FORMATO.test(matricula)) {
+    return res.status(400).json({ erro: 'Matricula deve conter so numeros (minimo 6 digitos).' });
   }
   try {
     const turma = await pool.query('SELECT codigo FROM turmas WHERE id = $1', [req.turmaId]);
@@ -294,6 +314,47 @@ router.get('/:id', auth, requireProfessor, mesmaTurmaDoRecurso('usuarios'), asyn
     res.json(result.rows[0]);
   } catch (err) {
     console.error('Erro ao buscar usuario:', err.message);
+    res.status(500).json({ erro: 'Erro interno do servidor.' });
+  }
+});
+
+// POST /api/usuarios/:id/reenviar-codigo – professor reenvia o codigo de
+// primeiro acesso pro aluno (so da propria turma). So faz sentido enquanto o
+// aluno ainda nao definiu a propria senha - nesse caso nao ha "senha atual"
+// pra proteger, entao o codigo novo mantem a mesma politica de validade do
+// cadastro/importacao original (expira so quando a turma for desativada), em
+// vez dos 10 minutos do reset abaixo. O codigo em si nunca fica gravado em
+// texto puro (so o hash), entao "reenviar" na pratica gera um codigo novo -
+// a diferenca real pro reset e nao forcar o aluno a trocar de senha por causa
+// disso (item 2 do feedback da Samela, 07/09/2026: a chavinha sempre
+// resetava, mesmo quando o aluno so precisava do codigo de novo, matando o
+// codigo original no processo).
+router.post('/:id/reenviar-codigo', auth, requireProfessor, mesmaTurmaDoRecurso('usuarios'), async (req, res) => {
+  const { id } = req.params;
+  try {
+    const usuario = await pool.query(
+      `SELECT id, nome, email, senha_definida_pelo_aluno FROM usuarios WHERE id = $1 AND modo = 'aluno'`,
+      [id]
+    );
+    if (usuario.rows.length === 0) {
+      return res.status(404).json({ erro: 'Aluno nao encontrado.' });
+    }
+    const aluno = usuario.rows[0];
+    if (aluno.senha_definida_pelo_aluno) {
+      return res.status(400).json({ erro: 'Este aluno ja definiu a propria senha - use Resetar senha em vez de reenviar.' });
+    }
+
+    const codigo = await gerarCodigoAcesso(id, { expiraComTurma: true });
+    await enviarCodigoEmail(aluno.email, aluno.nome, codigo);
+
+    res.json({
+      ok: true,
+      codigo,
+      expira_com_turma: true,
+      mensagem: 'Codigo reenviado por e-mail - tambem mostrado abaixo, caso o envio falhe.',
+    });
+  } catch (err) {
+    console.error('Erro ao reenviar codigo de acesso:', err.message);
     res.status(500).json({ erro: 'Erro interno do servidor.' });
   }
 });

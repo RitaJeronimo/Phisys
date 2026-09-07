@@ -161,6 +161,20 @@ function AlunosSection({ turmaAtualId, onResetCode }) {
     }
   }
 
+  // Aluno que ainda nao definiu a propria senha (primeiro acesso) nao tem
+  // "senha atual" pra proteger - reenviar so gera um codigo novo com a mesma
+  // validade do cadastro original, sem mexer em senha (item 2 do feedback da
+  // Samela, 07/09/2026: antes so existia a chavinha de reset, que matava o
+  // codigo de primeiro acesso e o substituia por um de 10 minutos).
+  async function handleReenviarCodigo(id, nome) {
+    try {
+      const data = await usuariosApi.reenviarCodigo(id);
+      onResetCode({ nome, codigo: data.codigo, expiraComTurma: true });
+    } catch(e) {
+      alert('Erro ao reenviar código: ' + e.message);
+    }
+  }
+
   async function handleDeletarAluno(id, nome) {
     if (!window.confirm(`Remover ${nome} permanentemente? Isso apaga o cadastro e todos os dados do aluno.`)) return;
     try {
@@ -398,9 +412,11 @@ function AlunosSection({ turmaAtualId, onResetCode }) {
                   }}/>
               </div>
               <button
-                onClick={() => handleResetarSenhaAluno(student.id, student.nome)}
+                onClick={() => student.senha_definida_pelo_aluno
+                  ? handleResetarSenhaAluno(student.id, student.nome)
+                  : handleReenviarCodigo(student.id, student.nome)}
                 style={{ background:COLORS.iconChipBg, border:`1px solid ${COLORS.border}`, color:COLORS.blue, borderRadius:'8px', padding:'4px 8px', cursor:'pointer', fontSize:'clamp(14px, calc(11.9px + 0.9vw), 18.2px)', fontFamily:'inherit' }}
-                title="Resetar senha"
+                title={student.senha_definida_pelo_aluno ? 'Resetar senha' : 'Reenviar código de acesso'}
               >🔑</button>
               <button
                 onClick={() => handleDeletarAluno(student.id, student.nome)}

@@ -9,7 +9,7 @@ const { requireProfessor, mesmaTurmaDoRecurso, resolveTurmaId } = require('../mi
 router.get('/', auth, resolveTurmaId, async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT u.id, u.nome, u.matricula,
+      `SELECT u.id, u.nome, u.matricula, u.senha_definida_pelo_aluno,
        r.xp_total, r.sessoes, r.media_saude, r.nota_final,
        RANK() OVER (ORDER BY r.xp_total DESC) AS posicao
        FROM usuarios u
