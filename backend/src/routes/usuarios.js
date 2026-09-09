@@ -47,6 +47,11 @@ async function gerarCodigoAcesso(usuario_id, { expiraComTurma = false, queryable
 // validarLinhasAlunos pega isso como "Nome ausente"/"Email ausente",
 // sinalizando que a planilha precisa da coluna nova.
 function parseCsvAlunos(csvTexto) {
+  // Colar do Excel sempre usa TAB entre colunas (independe de locale - so
+  // "salvar como CSV" e locale-dependente); uma linha colada assim nao tem
+  // virgula nenhuma, e o parser hardcoded em ',' jogava tudo pra matricula
+  // e deixava nome/email vazios (bug real, achado pela Samela, 07/09/2026).
+  const separador = String(csvTexto || '').includes('\t') ? '\t' : ',';
   const linhasBrutas = String(csvTexto || '').split('\n');
   const linhas = [];
   let primeiraNaoVazia = true;
@@ -55,10 +60,10 @@ function parseCsvAlunos(csvTexto) {
     if (!trimmed) return;
     if (primeiraNaoVazia) {
       primeiraNaoVazia = false;
-      if (trimmed.split(',')[0].trim().toLowerCase() === 'matricula') return;
+      if (trimmed.split(separador)[0].trim().toLowerCase() === 'matricula') return;
     }
-    const primeiraVirgula = trimmed.indexOf(',');
-    const ultimaVirgula = trimmed.lastIndexOf(',');
+    const primeiraVirgula = trimmed.indexOf(separador);
+    const ultimaVirgula = trimmed.lastIndexOf(separador);
     const temTresColunas = primeiraVirgula !== -1 && ultimaVirgula !== primeiraVirgula;
     const matricula = (primeiraVirgula === -1 ? trimmed : trimmed.slice(0, primeiraVirgula)).trim();
     const nome = temTresColunas ? trimmed.slice(primeiraVirgula + 1, ultimaVirgula).trim() : '';
