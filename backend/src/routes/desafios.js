@@ -36,7 +36,7 @@ router.get('/', auth, resolveTurmaId, async (req, res) => {
 // do que a UI exibe visualmente).
 router.post('/:id/checar', auth, async (req, res) => {
   const { id } = req.params;
-  const { opcao_index, fechar, volta_extra } = req.body;
+  const { opcao_index, fechar, volta_extra, tempo_segundos } = req.body;
   try {
     const result = await pool.query(
       'SELECT correta, delta_acerto, delta_erro FROM desafios WHERE id = $1 AND turma_id = $2',
@@ -50,6 +50,22 @@ router.post('/:id/checar', auth, async (req, res) => {
     const correta = opcaoCorreta === opcao_index;
 
     if (!fechar) {
+      // Registra a tentativa (uma por clique real - fechar:true e so o
+      // commit da mesma tentativa que ja passou por aqui, nao logamos de
+      // novo). Best effort de proposito, mesmo padrao do enviarCodigoEmail.js
+      // ("NUNCA lanca"): uma falha aqui nao pode travar o feedback
+      // instantaneo de certo/errado, que hoje e praticamente infalivel.
+      // sessao_id e tempo_segundos ficam NULL por enquanto - encadear do
+      // frontend e o proximo item, separado deste.
+      try {
+        await pool.query(
+          `INSERT INTO respostas (desafio_id, resposta, correta, tempo_segundos)
+           VALUES ($1, $2, $3, $4)`,
+          [id, opcao_index, correta, tempo_segundos ?? null]
+        );
+      } catch (err) {
+        console.error('Erro ao registrar tentativa de resposta:', err.message);
+      }
       return res.json({ correta, opcao_correta: opcaoCorreta });
     }
 
