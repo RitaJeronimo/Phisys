@@ -43,6 +43,10 @@ function App() {
   const [showWelcome, setShowWelcome] = useState(false);
   const [motivationMessages, setMotivationMessages] = useState(null);
   const [motivationNivel, setMotivationNivel] = useState(3);
+  // true so quando o aluno acabou de responder a escala NESTA carga de pagina -
+  // distingue uma resposta real de motivationNivel de um reload que so
+  // reencontrou o default (3), evitando gravar lixo em sessoes.nivel_motivacao.
+  const [motivacaoRespondidaAgora, setMotivacaoRespondidaAgora] = useState(false);
 
   useEffect(() => {
     setValues(prev => ({ ...prev, age_days: ageDays }));
@@ -129,6 +133,7 @@ function App() {
 
   async function handleMotivation(nivel) {
     setMotivationNivel(nivel);
+    setMotivacaoRespondidaAgora(true);
     setScreen('home');
   }
 
@@ -152,7 +157,7 @@ function App() {
     setMode(m);
     setSessionStart(Date.now());
     setScreen('game');
-    sessoesApi.iniciar({ nivel_motivacao: motivationNivel, modo: m })
+    sessoesApi.iniciar({ nivel_motivacao: motivacaoRespondidaAgora ? motivationNivel : null, modo: m })
       .then(s => { if (s?.id) setSessaoId(s.id); })
       .catch(() => {});
   }

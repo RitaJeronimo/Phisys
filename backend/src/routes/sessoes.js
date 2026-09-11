@@ -8,10 +8,33 @@ router.post('/iniciar', auth, async (req, res) => {
   const { nivel_motivacao, modo } = req.body;
 
   try {
+    // nivel_motivacao so vem preenchido quando o aluno acabou de responder a
+    // escala nesta mesma carga de pagina (App.js's motivacaoRespondidaAgora) -
+    // null/ausente significa "nao sei, foi um reload", entao busca a resposta
+    // ja registrada hoje em vez de deixar a sessao sem motivacao ou gravar o
+    // default do React por engano (bug real corrigido aqui). "Hoje" e no fuso
+    // America/Sao_Paulo, dado de pesquisa sobre o dia do aluno, nao do
+    // servidor - iniciada_em e TIMESTAMP puro (sem fuso), gravado como
+    // relogio UTC (mesmo raciocinio do ajuste de cuidados_uso/simulacoes em
+    // schema.js, "evita erro de +3h em Recife/UTC-3"), entao reinterpreta como
+    // UTC antes de converter pro fuso do aluno.
+    let nivelFinal = nivel_motivacao;
+    if (nivelFinal === null || nivelFinal === undefined) {
+      const motivacaoHoje = await pool.query(
+        `SELECT nivel_motivacao FROM sessoes
+         WHERE usuario_id = $1 AND nivel_motivacao IS NOT NULL
+           AND (iniciada_em AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo')::date
+             = (NOW() AT TIME ZONE 'America/Sao_Paulo')::date
+         ORDER BY iniciada_em ASC LIMIT 1`,
+        [req.usuario.id]
+      );
+      nivelFinal = motivacaoHoje.rows.length > 0 ? motivacaoHoje.rows[0].nivel_motivacao : null;
+    }
+
     const result = await pool.query(
       `INSERT INTO sessoes (usuario_id, nivel_motivacao, modo)
        VALUES ($1, $2, $3) RETURNING *`,
-      [req.usuario.id, nivel_motivacao, modo]
+      [req.usuario.id, nivelFinal, modo]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
