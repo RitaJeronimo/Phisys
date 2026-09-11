@@ -137,7 +137,7 @@ function App() {
     setScreen('home');
   }
 
-  function handleLogout() { removeToken(); setUser(null); setMode(null); setScreen('home'); setValues(getDefaultPrimaryValues()); setScore(100); setSessionData(null); }
+  function handleLogout() { removeToken(); setUser(null); setMode(null); setScreen('home'); setValues(getDefaultPrimaryValues()); setScore(100); setSessionData(null); setSessaoId(null); setMotivationNivel(3); setMotivacaoRespondidaAgora(false); }
 
   // Aluno com a turma desativada pelo professor (item 2, 24/08/2026): o
   // token ja e limpo em api.js na hora que qualquer chamada autenticada
