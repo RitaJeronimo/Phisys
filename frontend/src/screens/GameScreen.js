@@ -82,7 +82,7 @@ function ParamBar({ param, value }) {
   );
 }
 
-function GameScreen({ user, mode, values: initialValues, score: initialScore, onBack, onFinish, ageDays }) {
+function GameScreen({ user, mode, values: initialValues, score: initialScore, onBack, onFinish, ageDays, sessaoId }) {
   const [values, setValues] = useState(initialValues || getDefaultValues());
   const [score, setScore] = useState(initialScore ?? 100);
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -275,7 +275,7 @@ useEffect(() => {
     // confia mais em nada calculado aqui no cliente).
     let resultado;
     try {
-      resultado = await desafiosApi.checar(challenge.id, idx, false);
+      resultado = await desafiosApi.checar(challenge.id, idx, false, undefined, sessaoId, elapsed);
     } catch (e) {
       console.log('Erro ao checar resposta:', e.message);
       return;

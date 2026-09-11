@@ -36,7 +36,7 @@ router.get('/', auth, resolveTurmaId, async (req, res) => {
 // do que a UI exibe visualmente).
 router.post('/:id/checar', auth, async (req, res) => {
   const { id } = req.params;
-  const { opcao_index, fechar, volta_extra, tempo_segundos } = req.body;
+  const { opcao_index, fechar, volta_extra, tempo_segundos, sessao_id } = req.body;
   try {
     const result = await pool.query(
       'SELECT correta, delta_acerto, delta_erro FROM desafios WHERE id = $1 AND turma_id = $2',
@@ -55,13 +55,16 @@ router.post('/:id/checar', auth, async (req, res) => {
       // novo). Best effort de proposito, mesmo padrao do enviarCodigoEmail.js
       // ("NUNCA lanca"): uma falha aqui nao pode travar o feedback
       // instantaneo de certo/errado, que hoje e praticamente infalivel.
-      // sessao_id e tempo_segundos ficam NULL por enquanto - encadear do
-      // frontend e o proximo item, separado deste.
+      // sessao_id vem direto do cliente, mesmo nivel de confianca que
+      // sessoes.duracao_segundos ja tem hoje (dado auxiliar, sem impacto em
+      // pontuacao/estado do jogo) - sem checagem de posse contra
+      // req.usuario.id de proposito (custaria uma query extra num evento
+      // muito frequente so pra proteger um campo que so afeta analytics).
       try {
         await pool.query(
-          `INSERT INTO respostas (desafio_id, resposta, correta, tempo_segundos)
-           VALUES ($1, $2, $3, $4)`,
-          [id, opcao_index, correta, tempo_segundos ?? null]
+          `INSERT INTO respostas (desafio_id, resposta, correta, tempo_segundos, sessao_id)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [id, opcao_index, correta, tempo_segundos ?? null, sessao_id ?? null]
         );
       } catch (err) {
         console.error('Erro ao registrar tentativa de resposta:', err.message);
