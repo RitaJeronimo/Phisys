@@ -151,33 +151,28 @@ router.post('/cuidado', auth, async (req, res) => {
       }
     }
 
-    const animal = await pool.query(
-      'SELECT * FROM animal WHERE usuario_id = $1',
-      [req.usuario.id]
-    );
-
-    if (animal.rows.length === 0) {
-      return res.status(404).json({ erro: 'Animal nao encontrado.' });
-    }
-
-    const a = animal.rows[0];
-    // NUMERIC no Postgres vem como string pelo driver pg - sem o Number(),
-    // "70" + 20 concatena ("7020") em vez de somar, e Math.min(100, "7020")
-    // sempre bate em 100 (bug real: cuidados diarios pulavam direto pra 100).
-    const novaHidratacao = efeito.hidratacao ? Math.min(100, Number(a.hidratacao) + efeito.hidratacao) : Number(a.hidratacao);
-    const novaEnergia    = efeito.energia    ? Math.min(100, Number(a.energia)    + efeito.energia)    : Number(a.energia);
-    const novaSaude      = efeito.saude      ? Math.min(100, Number(a.saude)      + efeito.saude)      : Number(a.saude);
+    // Atualiza so as colunas que este cuidado afeta, com o incremento calculado
+    // pelo proprio Postgres (nao le-depois-escreve em JS). Isso fecha a race
+    // condition onde dois cuidados concorrentes (ids diferentes) liam o mesmo
+    // snapshot e cada UPDATE sobrescrevia as colunas que o outro nao pretendia
+    // tocar com um valor ja desatualizado.
+    const colunas = Object.keys(efeito);
+    const setColunas = colunas.map((coluna, i) => `${coluna} = LEAST(100, ${coluna} + $${i + 1})`);
 
     const result = await pool.query(
       `UPDATE animal SET
-        hidratacao    = $1,
-        energia       = $2,
-        saude         = $3,
+        ${setColunas.join(',\n        ')},
         atualizado_em = NOW()
-       WHERE usuario_id = $4
+       WHERE usuario_id = $${colunas.length + 1}
        RETURNING *`,
-      [novaHidratacao, novaEnergia, novaSaude, req.usuario.id]
+      [...colunas.map((coluna) => efeito[coluna]), req.usuario.id]
     );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ erro: 'Animal nao encontrado.' });
+    }
+
+    const novaSaude = Number(result.rows[0].saude);
 
     // Registra o uso: em Modo Livre, na tabela de historico (cooldown); em Modo
     // Sessao, incrementa o contador exato daquela simulacao especifica.
