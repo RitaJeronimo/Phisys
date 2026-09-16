@@ -10,7 +10,7 @@ import { getDefaultPrimaryValues, calcularSaude } from './engine/mascotEngine';
 import { animal as animalApi, ranking as rankingApi, sessoes as sessoesApi, mensagens as mensagensApi, acessos as acessosApi, getToken, removeToken, decodeToken } from './api';
 import { COLORS, FONT_FAMILY, FONT_SCALE } from './theme';
 import { MASCOT_IMAGES } from './assets/mascote';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 function corrigirAnimal(a) {
   const fc = Number(a.fc) < 100 ? 370 : Number(a.fc);
@@ -148,7 +148,16 @@ function App() {
   // internos conhecidos de abandono, alem do botao "voltar" (handleBack).
   // No-op no servidor se a sessao ja tiver sido finalizada de verdade ou se
   // nao houver sessao aberta (sessaoId null).
-  function handleLogout() { if (sessaoId) sessoesApi.progresso(sessaoId).catch(() => {}); removeToken(); setUser(null); setMode(null); setScreen('home'); setValues(getDefaultPrimaryValues()); setScore(100); setSessionData(null); setSessaoId(null); setMotivationNivel(3); setMotivacaoRespondidaAgora(false); }
+  // useCallback (17/09/2026): o useEffect do listener turma-desativada
+  // abaixo depende de handleLogout - sem memoizar, uma funcao nova a cada
+  // render fazia esse effect re-rodar toda hora, e o eslint-plugin-react-
+  // hooks trata isso como erro fatal em build de producao (CI=true no
+  // Vercel), quebrando os ultimos 2 deploys. sessaoId e a unica dependencia
+  // real (todo o resto sao setters estaveis do useState).
+  const handleLogout = useCallback(() => {
+    if (sessaoId) sessoesApi.progresso(sessaoId).catch(() => {});
+    removeToken(); setUser(null); setMode(null); setScreen('home'); setValues(getDefaultPrimaryValues()); setScore(100); setSessionData(null); setSessaoId(null); setMotivationNivel(3); setMotivacaoRespondidaAgora(false);
+  }, [sessaoId]);
 
   // Aluno com a turma desativada pelo professor (item 2, 24/08/2026): o
   // token ja e limpo em api.js na hora que qualquer chamada autenticada
