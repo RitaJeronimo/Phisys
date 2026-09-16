@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { ranking as rankingApi, turmas as turmasApi } from '../../api';
+import { ranking as rankingApi, turmas as turmasApi, exportPesquisa as exportPesquisaApi } from '../../api';
 import { COLORS, FONT_FAMILY } from '../../theme';
 import { styles } from './shared';
 
@@ -93,6 +93,26 @@ function ProfessorLayout({ onBack, onApplySimulation, ageDays, setAgeDays }) {
     }
   }
 
+  // Export multi-aba (pedido da Samela, XLS de analytics da dissertacao) -
+  // separado do "↓ Exportar" acima de proposito: aquele continua sendo o CSV
+  // simples de ranking do dia a dia do professor, sem mudar de comportamento;
+  // este e o pacote completo (acessos/progressao/sessoes/tentativas) pra
+  // pesquisa. A resposta e um arquivo binario, nao JSON - exportPesquisaApi
+  // ja devolve o Blob pronto.
+  async function handleExportPesquisa() {
+    try {
+      const blob = await exportPesquisaApi.baixar(turmaAtualId);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `phisys_pesquisa_${nomeTurma(turmaAtualId).replace(/\s+/g, '_')}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      alert(e.message || 'Erro ao exportar dados de pesquisa.');
+    }
+  }
+
   async function handleCopyResetCode() {
     if (!resetCodeInfo) return;
     try { await navigator.clipboard.writeText(resetCodeInfo.codigo); } catch {}
@@ -107,7 +127,10 @@ function ProfessorLayout({ onBack, onApplySimulation, ageDays, setAgeDays }) {
       <div style={styles.topbar}>
         <button style={styles.backBtn} onClick={onBack}>←</button>
         <div style={styles.title}>Painel do Professor</div>
-        <button style={styles.exportBtn} onClick={handleExport}>↓ Exportar</button>
+        <div style={{ display:'flex', gap:'8px', flexWrap:'wrap', justifyContent:'flex-end' }}>
+          <button style={styles.exportBtn} onClick={handleExport}>↓ Exportar</button>
+          <button style={styles.exportBtn} onClick={handleExportPesquisa}>↓ Exportar (pesquisa)</button>
+        </div>
       </div>
 
       {resetCodeInfo && (

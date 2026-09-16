@@ -107,6 +107,21 @@ export const turmas = {
 export const acessos = {
   registrar: () => req('/api/acessos/registrar', { method: 'POST', headers: authHeaders() }),
 };
+// A resposta aqui e um arquivo binario (.xlsx), nao JSON - nao da pra
+// reaproveitar req() acima, que sempre faz res.json(). Erro do backend ainda
+// vem como JSON (ver exportPesquisa.js), entao só tenta parsear o corpo como
+// JSON no caminho de erro.
+export const exportPesquisa = {
+  baixar: async (turmaId) => {
+    const res = await fetch(`${BASE}/api/export/pesquisa?turma_id=${turmaId}`, { headers: authHeaders() });
+    if (!res.ok) {
+      let mensagem = 'Erro ao exportar dados de pesquisa.';
+      try { const data = await res.json(); mensagem = data.erro || mensagem; } catch {}
+      throw new Error(mensagem);
+    }
+    return res.blob();
+  },
+};
 export const parametros = {
   listar: (turmaId)        => req(comTurma('/api/parametros', turmaId), { headers: authHeaders() }),
   criar:  (data, turmaId)  => req('/api/parametros', { method: 'POST', headers: authHeaders(), body: JSON.stringify({ ...data, turma_id: turmaId }) }),
