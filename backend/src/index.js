@@ -38,6 +38,7 @@ app.use('/api/mensagens', require('./routes/mensagens'));
 app.use('/api/configuracoes', require('./routes/configuracoes'));
 app.use('/api/turmas', require('./routes/turmas'));
 app.use('/api/parametros', require('./routes/parametros'));
+app.use('/api/acessos', require('./routes/acessos'));
 
 app.get('/', (req, res) => {
   res.json({ status: 'Phisys API rodando!', version: '1.0.0' });

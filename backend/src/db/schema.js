@@ -380,6 +380,25 @@ async function adicionarColunas() {
     // balanceamento que so deve valer daqui pra frente).
     await pool.query(`ALTER TABLE animal ALTER COLUMN peso SET DEFAULT 125`);
 
+    // Log de frequencia de acesso (pedido da Samela, 16/09/2026, para o XLS
+    // de analytics da dissertacao - qualificacao em 09/10): ate agora nao
+    // existia nenhum registro de quando um usuario acessa o app. 1 linha por
+    // usuario por dia (UNIQUE usuario_id+data), gravada via ON CONFLICT DO
+    // NOTHING tanto no login (POST /api/auth/login) quanto na restauracao de
+    // sessao pelo token salvo (POST /api/acessos/registrar) - sem isso o
+    // segundo caminho, o token dura 7 dias e o frontend restaura a sessao
+    // so decodificando localStorage, sem bater no backend, entao logar so o
+    // login subestimaria bastante a frequencia real de uso.
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS acessos_diarios (
+        id          SERIAL PRIMARY KEY,
+        usuario_id  INTEGER REFERENCES usuarios(id) ON DELETE CASCADE,
+        data        DATE NOT NULL,
+        criado_em   TIMESTAMP DEFAULT NOW(),
+        UNIQUE(usuario_id, data)
+      )
+    `);
+
     console.log('Colunas e tabelas adicionadas com sucesso!');
   } catch (err) {
     console.error('Erro ao adicionar colunas:', err.message);

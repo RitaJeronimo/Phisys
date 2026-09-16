@@ -77,6 +77,16 @@ router.post('/login', authLimiter, async (req, res) => {
       { expiresIn: process.env.JWT_EXPIRES_IN }
     );
 
+    // Log de frequencia de acesso (pedido da Samela, 16/09/2026 - ver
+    // schema.js). "data" usa o fuso America/Sao_Paulo (mesmo padrao do
+    // "hoje" em sessoes.js), nao UTC, para bucketizar o dia certo do aluno.
+    await pool.query(
+      `INSERT INTO acessos_diarios (usuario_id, data)
+       VALUES ($1, (NOW() AT TIME ZONE 'America/Sao_Paulo')::date)
+       ON CONFLICT (usuario_id, data) DO NOTHING`,
+      [usuario.id]
+    );
+
     res.json({
       token,
       usuario: {

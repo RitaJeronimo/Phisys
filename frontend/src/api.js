@@ -103,6 +103,9 @@ export const turmas = {
   editar:  (id, data)  => req(`/api/turmas/${id}`, { method: 'PUT', headers: authHeaders(), body: JSON.stringify(data) }),
   validar: (codigo)    => req(`/api/turmas/validar/${codigo}`),
 };
+export const acessos = {
+  registrar: () => req('/api/acessos/registrar', { method: 'POST', headers: authHeaders() }),
+};
 export const parametros = {
   listar: (turmaId)        => req(comTurma('/api/parametros', turmaId), { headers: authHeaders() }),
   criar:  (data, turmaId)  => req('/api/parametros', { method: 'POST', headers: authHeaders(), body: JSON.stringify({ ...data, turma_id: turmaId }) }),

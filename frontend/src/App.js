@@ -7,7 +7,7 @@ import ProfessorPanel from './screens/ProfessorPanel';
 import SecondaryScreen from './screens/SecondaryScreen';
 import FinalScreen from './screens/FinalScreen';
 import { getDefaultPrimaryValues, calcularSaude } from './engine/mascotEngine';
-import { animal as animalApi, ranking as rankingApi, sessoes as sessoesApi, mensagens as mensagensApi, getToken, removeToken, decodeToken } from './api';
+import { animal as animalApi, ranking as rankingApi, sessoes as sessoesApi, mensagens as mensagensApi, acessos as acessosApi, getToken, removeToken, decodeToken } from './api';
 import { COLORS, FONT_FAMILY, FONT_SCALE } from './theme';
 import { MASCOT_IMAGES } from './assets/mascote';
 import React, { useState, useEffect } from 'react';
@@ -60,6 +60,11 @@ function App() {
       if (payload.exp * 1000 < Date.now()) return;
       const loggedUser = { id: payload.id, name: payload.nome, nome: payload.nome, matricula: payload.matricula, mode: payload.modo, modo: payload.modo };
       setUser(loggedUser);
+      // Log de frequencia de acesso (pedido da Samela, 16/09/2026): esse e o
+      // unico caminho de uso que restaura a sessao sem bater no backend (token
+      // de 7 dias decodificado direto do localStorage) - login novo ja grava
+      // em POST /api/auth/login, entao aqui cobre o resto.
+      acessosApi.registrar().catch(() => {});
       if (payload.modo === 'professor') { setScreen('professor'); return; }
       setScreen('home');
       animalApi.get().then(a => {
