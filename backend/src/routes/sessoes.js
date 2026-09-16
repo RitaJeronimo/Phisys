@@ -95,6 +95,35 @@ router.put('/:id/finalizar', auth, async (req, res) => {
   }
 });
 
+// PUT /api/sessoes/:id/progresso — heartbeat periodico (a cada 30s, ver
+// App.js) + chamada explicita no botao "voltar" e no logout/turma-desativada:
+// atualiza duracao_segundos ao vivo pra sessao nao ficar NULL pra sempre se o
+// aluno abandonar no meio (fecha a aba, cai de internet, etc.) sem nunca
+// chegar no PUT /finalizar. Calculado no servidor (NOW() - iniciada_em), nao
+// confia em nenhum valor vindo do cliente. So grava enquanto a sessao ainda
+// esta aberta (finalizada_em IS NULL) - um heartbeat atrasado que chegue
+// depois do /finalizar de verdade vira no-op (WHERE nao bate em nenhuma
+// linha). Nao mexe em xp_total/saude_final nem no contador ranking.sessoes -
+// isso continua so acontecendo no /finalizar de verdade (decisao deliberada
+// da Rita, 16/09/2026: sessao abandonada nao deve contar como "completada"
+// so por ter ficado com a aba aberta).
+router.put('/:id/progresso', auth, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(
+      `UPDATE sessoes SET
+        duracao_segundos = EXTRACT(EPOCH FROM (NOW() - iniciada_em))::int
+       WHERE id = $1 AND usuario_id = $2 AND finalizada_em IS NULL
+       RETURNING id, duracao_segundos`,
+      [id, req.usuario.id]
+    );
+    res.json(result.rows[0] || { id: Number(id), duracao_segundos: null });
+  } catch (err) {
+    console.error('Erro ao atualizar progresso da sessao:', err.message);
+    res.status(500).json({ erro: 'Erro interno do servidor.' });
+  }
+});
+
 // GET /api/sessoes — historico de sessoes do aluno
 router.get('/', auth, async (req, res) => {
   try {

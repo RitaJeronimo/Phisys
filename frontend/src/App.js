@@ -142,7 +142,13 @@ function App() {
     setScreen('home');
   }
 
-  function handleLogout() { removeToken(); setUser(null); setMode(null); setScreen('home'); setValues(getDefaultPrimaryValues()); setScore(100); setSessionData(null); setSessaoId(null); setMotivationNivel(3); setMotivacaoRespondidaAgora(false); }
+  // Grava a duracao antes de abandonar a sessao (pedido da Samela,
+  // 16/09/2026, ver PUT /api/sessoes/:id/progresso) - logout e o evento
+  // turma-desativada (que chama handleLogout abaixo) sao os 2 caminhos
+  // internos conhecidos de abandono, alem do botao "voltar" (handleBack).
+  // No-op no servidor se a sessao ja tiver sido finalizada de verdade ou se
+  // nao houver sessao aberta (sessaoId null).
+  function handleLogout() { if (sessaoId) sessoesApi.progresso(sessaoId).catch(() => {}); removeToken(); setUser(null); setMode(null); setScreen('home'); setValues(getDefaultPrimaryValues()); setScore(100); setSessionData(null); setSessaoId(null); setMotivationNivel(3); setMotivacaoRespondidaAgora(false); }
 
   // Aluno com a turma desativada pelo professor (item 2, 24/08/2026): o
   // token ja e limpo em api.js na hora que qualquer chamada autenticada
@@ -156,8 +162,11 @@ function App() {
     }
     window.addEventListener('phisys:turma-desativada', onTurmaDesativada);
     return () => window.removeEventListener('phisys:turma-desativada', onTurmaDesativada);
-  }, []);
-  function handleBack() { setMode(null); setScreen('home'); }
+  }, [handleLogout]);
+  // Mesma logica de handleLogout: grava a duracao antes de sair do jogo pelo
+  // botao "voltar", o outro caminho conhecido de abandono sem passar por
+  // handleGameFinish/finalizar.
+  function handleBack() { if (sessaoId) sessoesApi.progresso(sessaoId).catch(() => {}); setMode(null); setScreen('home'); }
   function handleSelectMode(m) {
     setMode(m);
     setSessionStart(Date.now());
@@ -188,6 +197,19 @@ function App() {
       }
     } catch(e) {}
   }
+
+  // Heartbeat de duracao (pedido da Samela, 16/09/2026): enquanto a tela de
+  // jogo estiver ativa, atualiza duracao_segundos a cada 30s - cobre o caso
+  // de fechar a aba/navegador de verdade (crash, cair de internet, trocar de
+  // app no celular), que nenhum handler interno consegue capturar. Reinicia
+  // sozinho sempre que `screen`/`sessaoId` mudam (novo jogo, saiu da tela).
+  useEffect(() => {
+    if (screen !== 'game' || !sessaoId) return;
+    const interval = setInterval(() => {
+      sessoesApi.progresso(sessaoId).catch(() => {});
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [screen, sessaoId]);
 
   function handleViewRanking()   { setScreen('ranking'); }
   function handleViewPanel()     { setScreen('professor'); }

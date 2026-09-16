@@ -90,6 +90,7 @@ export const mensagens = {
 export const sessoes = {
   iniciar:   (data)     => req('/api/sessoes/iniciar', { method: 'POST', headers: authHeaders(), body: JSON.stringify(data) }),
   finalizar: (id, data) => req(`/api/sessoes/${id}/finalizar`, { method: 'PUT', headers: authHeaders(), body: JSON.stringify(data) }),
+  progresso: (id)       => req(`/api/sessoes/${id}/progresso`, { method: 'PUT', headers: authHeaders() }),
 };
 export const configuracoes = {
   getPesos: (turmaId)     => req(comTurma('/api/configuracoes/pesos', turmaId), { headers: authHeaders() }),
