@@ -7,6 +7,7 @@ const {
   PRIMARY_PARAMS, getAgeStage, getAgePANormal, getAgeRecoveryPenalty,
   aplicarDeltaComFreio, calcularSaude, applyBonus,
 } = require('../engine/mascotEngine');
+const { registrarProgressaoDiaria } = require('../utils/registrarProgressaoDiaria');
 
 // GET /api/desafios – lista desafios da turma do usuario logado (aluno ou professor)
 router.get('/', auth, resolveTurmaId, async (req, res) => {
@@ -148,6 +149,15 @@ router.post('/:id/checar', auth, async (req, res) => {
        WHERE usuario_id = $7 RETURNING *`,
       [novosValores.hidratacao, novosValores.pas, novosValores.pad, novosValores.fc, novosValores.energia, novosValores.saude, req.usuario.id]
     );
+
+    // Snapshot diario de progressao (ver schema.js) - best effort, mesmo
+    // padrao do INSERT em respostas acima: nao pode travar o feedback do
+    // desafio por causa de analytics.
+    try {
+      await registrarProgressaoDiaria(pool, req.usuario.id, animalAtualizado.rows[0]);
+    } catch (err) {
+      console.error('Erro ao registrar progressao diaria:', err.message);
+    }
     const rankingAtualizado = await pool.query(
       `INSERT INTO ranking (usuario_id, xp_total, sessoes, media_saude)
        VALUES ($1, $2, 0, $3)

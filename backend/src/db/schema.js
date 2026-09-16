@@ -399,6 +399,42 @@ async function adicionarColunas() {
       )
     `);
 
+    // Serie historica de progressao (pedido da Samela, 16/09/2026, mesmo XLS
+    // de analytics): ate agora animal (energia/hidratacao/pas/pad/fc/peso/
+    // saude/age_days) so existia como snapshot atual, sobrescrito a cada
+    // desafio/cuidado - nao dava pra reconstruir "como o aluno evoluiu ao
+    // longo do semestre". 1 linha por aluno por dia (UNIQUE usuario_id+data,
+    // ON CONFLICT DO UPDATE - fica sempre com o estado mais recente daquele
+    // dia, nao o primeiro), gravada via registrarProgressaoDiaria() nos 2
+    // pontos que o PROPRIO ALUNO altera animal (POST /desafios/:id/checar,
+    // POST /animal/cuidado) - mudancas em lote do professor (idade da turma,
+    // ativar simulacao) nao disparam sozinhas, mas entram no snapshot assim
+    // que o aluno fizer qualquer coisa naquele dia, ja que sempre gravamos o
+    // estado atual completo, nao um delta.
+    // DELIBERADAMENTE sem qualquer relacao com sessoes/ranking - decisao
+    // explicita da Rita (16/09/2026): POST /api/ranking/reset ja deleta
+    // sessoes (e cascateia respostas em cascata), apagando o unico historico
+    // que existia ate aqui. Essa tabela precisa sobreviver a um "zerar
+    // turma" pra servir de dado de pesquisa, entao so cascateia com a
+    // exclusao do proprio usuario, igual animal/ranking.
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS progressao_diaria (
+        id            SERIAL PRIMARY KEY,
+        usuario_id    INTEGER REFERENCES usuarios(id) ON DELETE CASCADE,
+        data          DATE NOT NULL,
+        energia       NUMERIC,
+        hidratacao    NUMERIC,
+        pas           NUMERIC,
+        pad           NUMERIC,
+        fc            NUMERIC,
+        peso          NUMERIC,
+        saude         NUMERIC,
+        age_days      INTEGER,
+        atualizado_em TIMESTAMP DEFAULT NOW(),
+        UNIQUE(usuario_id, data)
+      )
+    `);
+
     console.log('Colunas e tabelas adicionadas com sucesso!');
   } catch (err) {
     console.error('Erro ao adicionar colunas:', err.message);

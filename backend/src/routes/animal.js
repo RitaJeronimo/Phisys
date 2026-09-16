@@ -4,6 +4,7 @@ const pool = require('../db/connection');
 const auth = require('../middleware/auth');
 const { requireProfessor, resolveTurmaId } = require('../middleware/turmaOwnership');
 const { recalcularSaudeTurma } = require('../utils/recalcularSaudeTurma');
+const { registrarProgressaoDiaria } = require('../utils/registrarProgressaoDiaria');
 
 const COOLDOWN_HORAS_MODO_LIVRE = 2;
 
@@ -170,6 +171,15 @@ router.post('/cuidado', auth, async (req, res) => {
 
     if (result.rows.length === 0) {
       return res.status(404).json({ erro: 'Animal nao encontrado.' });
+    }
+
+    // Snapshot diario de progressao (ver schema.js) - best effort, mesmo
+    // padrao do desafios.js: nao pode travar a resposta do cuidado por causa
+    // de analytics.
+    try {
+      await registrarProgressaoDiaria(pool, req.usuario.id, result.rows[0]);
+    } catch (err) {
+      console.error('Erro ao registrar progressao diaria:', err.message);
     }
 
     const novaSaude = Number(result.rows[0].saude);
