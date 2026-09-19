@@ -83,6 +83,24 @@ function AlunosSection({ turmaAtualId, onResetCode }) {
     setImportando(true);
   }
 
+  // Le um arquivo .csv selecionado pelo professor e preenche o mesmo campo
+  // que a textarea de colar usa - reaproveita 100% da validacao/preview que
+  // ja existe, sem endpoint novo. So aceita .csv (sem suporte a .xlsx por
+  // enquanto - Rita decidiu adiar isso pra quando/se for pedido).
+  function handleArquivoCsv(e) {
+    const arquivo = e.target.files[0];
+    e.target.value = ''; // permite selecionar o mesmo arquivo de novo depois
+    if (!arquivo) return;
+    if (!arquivo.name.toLowerCase().endsWith('.csv')) {
+      alert('Selecione um arquivo .csv.');
+      return;
+    }
+    const leitor = new FileReader();
+    leitor.onload = () => setImportCsv(String(leitor.result || ''));
+    leitor.onerror = () => alert('Erro ao ler o arquivo.');
+    leitor.readAsText(arquivo, 'utf-8');
+  }
+
   async function handleValidarImportacao() {
     if (!importCsv.trim() || !importCodigoTurma.trim()) {
       alert('Cole o CSV e informe o código da turma.');
@@ -252,8 +270,10 @@ function AlunosSection({ turmaAtualId, onResetCode }) {
             {!importResultado && (
               <>
                 <div style={styles.fieldHint}>
-                  Cole abaixo, uma linha por aluno: <b>matrícula,nome,e-mail</b> (com ou sem cabeçalho).
+                  Selecione um arquivo .csv, ou cole abaixo, uma linha por aluno: <b>matrícula,nome,e-mail</b> (com ou sem cabeçalho).
                 </div>
+                <div style={styles.fieldLabel}>Arquivo .csv</div>
+                <input type="file" accept=".csv,text/csv" onChange={handleArquivoCsv} style={styles.input}/>
                 <div style={styles.fieldLabel}>CSV</div>
                 <textarea
                   style={{ ...styles.input, minHeight:'160px', fontFamily:'monospace', resize:'vertical' }}
