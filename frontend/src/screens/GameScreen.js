@@ -139,7 +139,11 @@ useEffect(() => {
       const fromDB = Array.isArray(data) && data.length > 0
         ? data.map(d => ({
             id: d.id,
-            tag: `Desafio #${d.id}`,
+            // titulo e obrigatorio no schema (NOT NULL) - o professor sempre
+            // digita um nome real ao cadastrar (DesafiosSection.js). Antes o
+            // aluno nunca via esse dado: o card mostrava so "Desafio #<id>",
+            // gerado aqui mesmo, ignorando o titulo cadastrado.
+            tag: d.titulo,
             focus: d.foco || 'renal',
             intervencao: d.intervencao || null,
             text: d.pergunta,
@@ -488,9 +492,13 @@ useEffect(() => {
         <div className="session-right">
           <div style={styles.challengeCard}>
             <div style={styles.challengeHeader}>
-              <div style={styles.challengeTag}>🏃 {challenge.tag}</div>
               <div style={styles.challengeFocus}>{challenge.focus}</div>
             </div>
+            {/* Titulo do desafio (challenge.tag) fora do badge/pill de proposito:
+                e texto livre digitado pelo professor, sem tamanho garantido -
+                um heading de largura cheia que quebra linha naturalmente e
+                nunca corta/estoura, ao contrario de um badge de largura fixa. */}
+            <div style={styles.challengeTitle}>🏃 {challenge.tag}</div>
             <div style={styles.challengeText}>{challenge.text}</div>
           </div>
 
@@ -556,9 +564,12 @@ const styles = {
   statusPillVal:      { ...FONT_SCALE.bodyBold, color:COLORS.indigo },
   statusPillLbl:      { ...FONT_SCALE.caption, color:COLORS.textMuted, textTransform:'uppercase', letterSpacing:'0.05em' },
   challengeCard:      { margin:'0 1.5rem', background:COLORS.surface, boxShadow:SHADOW_CARD, borderRadius:'18px', padding:'1.25rem' },
-  challengeHeader:    { display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'0.75rem' },
-  challengeTag:       { ...FONT_SCALE.label, letterSpacing:'0.08em', textTransform:'uppercase', background:COLORS.iconChipBg, color:COLORS.indigo, padding:'3px 10px', borderRadius:'20px' },
+  challengeHeader:    { display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'0.5rem' },
   challengeFocus:     { ...FONT_SCALE.caption, color:COLORS.textMuted },
+  // Titulo do desafio: texto livre do professor, sem limite de tamanho
+  // garantido - por isso e um heading normal (quebra linha, wordBreak pra
+  // palavras muito longas) em vez de um badge/pill de largura fixa.
+  challengeTitle:     { ...FONT_SCALE.bodyBold, color:COLORS.textPrimary, lineHeight:'1.3', marginBottom:'0.5rem', wordBreak:'break-word' },
   challengeText:      { ...FONT_SCALE.body, color:COLORS.textPrimary, lineHeight:'1.6' },
   optionsTitle:       { padding:'0.75rem 1.5rem 0.5rem', ...FONT_SCALE.label, color:COLORS.textMuted, letterSpacing:'0.08em', textTransform:'uppercase' },
   options:            { padding:'0 1.5rem', display:'flex', flexDirection:'column', gap:'10px' },
