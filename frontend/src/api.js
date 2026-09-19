@@ -97,6 +97,8 @@ export const configuracoes = {
   setPesos: (data, turmaId) => req('/api/configuracoes/pesos', { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ ...data, turma_id: turmaId }) }),
   getRecuperacao: (turmaId)     => req(comTurma('/api/configuracoes/recuperacao', turmaId), { headers: authHeaders() }),
   setRecuperacao: (data, turmaId) => req('/api/configuracoes/recuperacao', { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ ...data, turma_id: turmaId }) }),
+  getSessao: (turmaId)     => req(comTurma('/api/configuracoes/sessao', turmaId), { headers: authHeaders() }),
+  setSessao: (data, turmaId) => req('/api/configuracoes/sessao', { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ ...data, turma_id: turmaId }) }),
 };
 export const turmas = {
   listar:  ()          => req('/api/turmas', { headers: authHeaders() }),

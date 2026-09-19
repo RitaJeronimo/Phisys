@@ -118,4 +118,47 @@ router.put('/recuperacao', auth, requireProfessor, resolveTurmaId, async (req, r
   }
 });
 
+// ── FOCO DO MODO SESSÃO ───────────────────────────────────────────────────
+// Substitui o antigo `phisys_sessao_config` do localStorage (gravado no
+// navegador do PROFESSOR, lido no navegador do ALUNO - nunca chegava, ja
+// que sao dispositivos diferentes). Mesma tabela/padrao de recuperacao
+// acima, so troca a chave - sem migration nova.
+
+const SESSAO_FOCO_PADRAO = 'todos';
+const FOCOS_VALIDOS = ['todos', 'renal', 'cardiovascular'];
+
+// GET /api/configuracoes/sessao – retorna o foco atual do Modo Sessao da turma
+router.get('/sessao', auth, resolveTurmaId, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT valor FROM configuracoes WHERE chave = 'sessao_foco' AND turma_id = $1`,
+      [req.turmaId]
+    );
+    res.json({ foco: result.rows.length > 0 ? result.rows[0].valor : SESSAO_FOCO_PADRAO });
+  } catch (err) {
+    console.error('Erro ao buscar foco da sessao:', err.message);
+    res.status(500).json({ erro: 'Erro interno do servidor.' });
+  }
+});
+
+// PUT /api/configuracoes/sessao – professor define o foco do Modo Sessao
+// (so afeta a propria turma - mesmo escopo de M3 na auditoria de seguranca)
+router.put('/sessao', auth, requireProfessor, resolveTurmaId, async (req, res) => {
+  const { foco } = req.body;
+  if (!FOCOS_VALIDOS.includes(foco)) {
+    return res.status(400).json({ erro: `foco deve ser um de: ${FOCOS_VALIDOS.join(', ')}.` });
+  }
+  try {
+    await pool.query(
+      `INSERT INTO configuracoes (chave, valor, turma_id) VALUES ('sessao_foco', $1, $2)
+       ON CONFLICT (chave, turma_id) DO UPDATE SET valor = $1`,
+      [foco, req.turmaId]
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Erro ao salvar foco da sessao:', err.message);
+    res.status(500).json({ erro: 'Erro interno do servidor.' });
+  }
+});
+
 module.exports = router;

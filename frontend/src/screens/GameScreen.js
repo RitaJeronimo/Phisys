@@ -131,7 +131,8 @@ useEffect(() => {
       desafiosApi.get(),
       simulacoesApi.getAtiva().catch(() => null),
       configuracoesApi.getRecuperacao().catch(() => ({ multiplicador: 1, desafios_extras: 0, questoes_por_rodada: 3 })),
-    ]).then(([data, simAtiva, recConfig]) => {
+      configuracoesApi.getSessao().catch(() => ({ foco: 'todos' })),
+    ]).then(([data, simAtiva, recConfig, sessaoConfig]) => {
       setRecuperacaoConfig(recConfig);
       const tamanhoRodada = Math.max(1, recConfig.questoes_por_rodada ?? 3);
 
@@ -169,32 +170,32 @@ useEffect(() => {
       }
 
       if (mode === 'sessao') {
-        try {
-          const cfg = JSON.parse(localStorage.getItem('phisys_sessao_config') || '{}');
-          const foco = cfg.foco || 'todos';
-          let sessaoChallenges = fromDBCoerente.filter(c => c.active !== false);
-          if (foco !== 'todos') {
-            sessaoChallenges = sessaoChallenges.filter(c =>
-              c.focus?.toLowerCase().includes(foco.toLowerCase())
-            );
-          }
-          // CORRECAO: antes, quando nao havia nenhum desafio ativo do foco
-          // selecionado, o fallback usava MOCK_CHALLENGES por inteiro, sem
-          // filtro - isso quebrava a promessa de isolamento por foco (ex: um
-          // aluno em Modo Sessao com foco "Renal" acabava vendo o desafio
-          // mock de Fisiologia Cardiovascular tambem). Agora o fallback dos
-          // mocks tambem respeita o foco selecionado.
-          let fallback = MOCK_CHALLENGES;
-          if (foco !== 'todos') {
-            fallback = MOCK_CHALLENGES.filter(c =>
-              c.focus?.toLowerCase().includes(foco.toLowerCase())
-            );
-            if (fallback.length === 0) fallback = MOCK_CHALLENGES; // seguranca: nunca deixar o quiz vazio
-          }
-          definirPool(sessaoChallenges.length > 0 ? sessaoChallenges : fallback, tamanhoRodada);
-        } catch {
-          definirPool(fromDBCoerente.length > 0 ? fromDBCoerente : MOCK_CHALLENGES, tamanhoRodada);
+        // CORRECAO: o foco vinha de 'phisys_sessao_config' no localStorage,
+        // gravado pelo PROFESSOR no proprio navegador dele e lido aqui no
+        // navegador do ALUNO - dispositivos diferentes, entao o valor nunca
+        // chegava (sempre caia no default 'todos'). Agora vem do backend
+        // (GET /api/configuracoes/sessao), configuracao real por turma.
+        const foco = sessaoConfig?.foco || 'todos';
+        let sessaoChallenges = fromDBCoerente.filter(c => c.active !== false);
+        if (foco !== 'todos') {
+          sessaoChallenges = sessaoChallenges.filter(c =>
+            c.focus?.toLowerCase().includes(foco.toLowerCase())
+          );
         }
+        // CORRECAO: antes, quando nao havia nenhum desafio ativo do foco
+        // selecionado, o fallback usava MOCK_CHALLENGES por inteiro, sem
+        // filtro - isso quebrava a promessa de isolamento por foco (ex: um
+        // aluno em Modo Sessao com foco "Renal" acabava vendo o desafio
+        // mock de Fisiologia Cardiovascular tambem). Agora o fallback dos
+        // mocks tambem respeita o foco selecionado.
+        let fallback = MOCK_CHALLENGES;
+        if (foco !== 'todos') {
+          fallback = MOCK_CHALLENGES.filter(c =>
+            c.focus?.toLowerCase().includes(foco.toLowerCase())
+          );
+          if (fallback.length === 0) fallback = MOCK_CHALLENGES; // seguranca: nunca deixar o quiz vazio
+        }
+        definirPool(sessaoChallenges.length > 0 ? sessaoChallenges : fallback, tamanhoRodada);
       } else {
         // CORRECAO: antes, o Modo Livre sempre misturava MOCK_CHALLENGES junto
         // com os desafios reais do banco. Isso quebrava a garantia de coerencia
@@ -464,8 +465,15 @@ useEffect(() => {
               { val: statusEmoji[status], lbl: statusLabel[status] },
               // Quando o aluno esta numa volta extra de recuperacao, mostra
               // "Volta X" em vez de "Desafios", para deixar claro que a lista
-              // esta se repetindo (nao e um erro/travamento).
-              { val: `${currentIdx + 1}/${challenges.length}`, lbl: voltasExtrasUsadas > 0 ? `Volta ${voltasExtrasUsadas + 1}` : 'Desafios' },
+              // esta se repetindo (nao e um erro/travamento). So no Modo
+              // Sessao mostra o total de voltas ("Volta X de N") - e o modo
+              // cujo fim depende so das voltas (sem energia esgotada como
+              // freio, ver handleNext), entao e o unico que precisa desse
+              // sinal de "quanto falta". No Livre o fim ja e sinalizado pela
+              // energia, e mostrar so "Volta X" mantem a diferenciacao.
+              { val: `${currentIdx + 1}/${challenges.length}`, lbl: voltasExtrasUsadas > 0
+                  ? (mode === 'sessao' ? `Volta ${voltasExtrasUsadas + 1} de ${1 + (recuperacaoConfig.desafios_extras || 0)}` : `Volta ${voltasExtrasUsadas + 1}`)
+                  : 'Desafios' },
               { val: errorCount, lbl: 'Erros' },
               { val: myRank, lbl: 'Ranking' },
             ].map(item => (

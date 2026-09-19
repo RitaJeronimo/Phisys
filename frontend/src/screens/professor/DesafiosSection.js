@@ -11,12 +11,7 @@ function DesafiosSection({ turmaAtualId, nomeTurma, turmasList }) {
   const [form, setForm] = useState(null);
   const [duplicandoId, setDuplicandoId] = useState(null);
   const [recuperacaoConfig, setRecuperacaoConfig] = useState({ multiplicador: 1, desafios_extras: 0, questoes_por_rodada: 3 });
-  const [sessaoFoco, setSessaoFoco] = useState(() => {
-    try {
-      const cfg = JSON.parse(localStorage.getItem('phisys_sessao_config') || '{}');
-      return cfg.foco || 'todos';
-    } catch { return 'todos'; }
-  });
+  const [sessaoFoco, setSessaoFoco] = useState('todos');
 
   const fetchChallenges = useCallback(() => {
     if (!turmaAtualId) { setChallenges([]); return; }
@@ -51,6 +46,13 @@ function DesafiosSection({ turmaAtualId, nomeTurma, turmasList }) {
     if (!turmaAtualId) return;
     configuracoesApi.getRecuperacao(turmaAtualId)
       .then(data => setRecuperacaoConfig(data))
+      .catch(() => {});
+  }, [turmaAtualId]);
+
+  useEffect(() => {
+    if (!turmaAtualId) return;
+    configuracoesApi.getSessao(turmaAtualId)
+      .then(data => setSessaoFoco(data.foco))
       .catch(() => {});
   }, [turmaAtualId]);
 
@@ -252,7 +254,7 @@ function DesafiosSection({ turmaAtualId, nomeTurma, turmasList }) {
               }}
               onClick={() => {
                 setSessaoFoco(opt.value);
-                localStorage.setItem('phisys_sessao_config', JSON.stringify({ foco: opt.value }));
+                configuracoesApi.setSessao({ foco: opt.value }, turmaAtualId).catch(() => {});
               }}
             >
               {opt.label}

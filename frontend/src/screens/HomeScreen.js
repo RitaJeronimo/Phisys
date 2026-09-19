@@ -293,6 +293,19 @@ function StatusCard({ saude, status, stage, onOpenSaude }) {
   );
 }
 
+// Rotulo curto do parametro principal de cada cuidado, pra montar a etiqueta
+// de efeito nos cards (ex: "+30 energia") a partir de DAILY_CARES[...].effect.
+const ROTULO_EFEITO = { energia: 'energia', hidratacao: 'hidrat.' };
+
+// Etiqueta curta do efeito de um cuidado (ex: "+30 energia"), a partir do
+// primeiro parametro do seu `effect` - e sempre o efeito principal, na ordem
+// em que DAILY_CARES foi declarado (mascotEngine.js).
+function formatarEfeitoCuidado(effect) {
+  const [param, delta] = Object.entries(effect)[0];
+  const sinal = delta > 0 ? '+' : '';
+  return `${sinal}${delta} ${ROTULO_EFEITO[param] || param}`;
+}
+
 // Formata o tempo restante ate liberar (ex: "1h 23min") a partir de um ISO string
 function formatarTempoRestante(liberaEmISO) {
   const liberaEm = new Date(liberaEmISO);
@@ -513,6 +526,8 @@ function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, on
                 const restante = formatarTempoRestante(st.liberaEm);
                 desc = restante ? `Libera em ${restante}` : null;
               }
+            } else {
+              desc = formatarEfeitoCuidado(c.effect);
             }
             const theme = CARE_THEME[c.id];
             return (
