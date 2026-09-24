@@ -212,12 +212,28 @@ function App() {
   // de fechar a aba/navegador de verdade (crash, cair de internet, trocar de
   // app no celular), que nenhum handler interno consegue capturar. Reinicia
   // sozinho sempre que `screen`/`sessaoId` mudam (novo jogo, saiu da tela).
+  // Item 4 do walkthrough (23/09/2026): o intervalo sozinho perdia sessoes
+  // fechadas antes do 1o tick de 30s, e ate 30s do fim de qualquer sessao.
+  // Agora dispara 1 heartbeat assim que o sessaoId chega, e outro (keepalive)
+  // no pagehide/visibilitychange->hidden - fechar aba, trocar de app ou
+  // bloquear o celular.
   useEffect(() => {
     if (screen !== 'game' || !sessaoId) return;
+    sessoesApi.progresso(sessaoId).catch(() => {});
     const interval = setInterval(() => {
       sessoesApi.progresso(sessaoId).catch(() => {});
     }, 30000);
-    return () => clearInterval(interval);
+    function onSaindo(e) {
+      if (e.type === 'visibilitychange' && document.visibilityState !== 'hidden') return;
+      sessoesApi.progresso(sessaoId, { keepalive: true }).catch(() => {});
+    }
+    window.addEventListener('pagehide', onSaindo);
+    document.addEventListener('visibilitychange', onSaindo);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('pagehide', onSaindo);
+      document.removeEventListener('visibilitychange', onSaindo);
+    };
   }, [screen, sessaoId]);
 
   function handleViewRanking()   { setScreen('ranking'); }

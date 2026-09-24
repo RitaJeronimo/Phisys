@@ -103,18 +103,27 @@ router.put('/:id/finalizar', auth, async (req, res) => {
 // confia em nenhum valor vindo do cliente. So grava enquanto a sessao ainda
 // esta aberta (finalizada_em IS NULL) - um heartbeat atrasado que chegue
 // depois do /finalizar de verdade vira no-op (WHERE nao bate em nenhuma
-// linha). Nao mexe em xp_total/saude_final nem no contador ranking.sessoes -
-// isso continua so acontecendo no /finalizar de verdade (decisao deliberada
-// da Rita, 16/09/2026: sessao abandonada nao deve contar como "completada"
-// so por ter ficado com a aba aberta).
+// linha). Tambem grava um snapshot best-effort de xp_total/saude_final (item
+// 4 do walkthrough, 23/09/2026: sessao abandonada perdia esses dados de
+// pesquisa), relidos das mesmas fontes de verdade do /finalizar
+// (ranking.xp_total, animal.saude) - nunca do cliente. Feito com subqueries
+// num unico UPDATE em vez de 2 SELECTs + UPDATE como no /finalizar: e 1 ida
+// ao banco por heartbeat (roda a cada 30s por aluno com jogo aberto) e o
+// snapshot sai atomico. Continua sem mexer em finalizada_em nem no contador
+// ranking.sessoes - isso so acontece no /finalizar de verdade (decisao
+// deliberada da Rita, 16/09/2026, reconfirmada 23/09: sessao abandonada nao
+// conta como "completada"; na planilha ela segue identificavel pelo
+// "Finalizada em" vazio).
 router.put('/:id/progresso', auth, async (req, res) => {
   const { id } = req.params;
   try {
     const result = await pool.query(
       `UPDATE sessoes SET
-        duracao_segundos = EXTRACT(EPOCH FROM (NOW() - iniciada_em))::int
+        duracao_segundos = EXTRACT(EPOCH FROM (NOW() - iniciada_em))::int,
+        xp_total         = COALESCE((SELECT xp_total FROM ranking WHERE usuario_id = $2), 0),
+        saude_final      = COALESCE((SELECT saude FROM animal WHERE usuario_id = $2), 0)
        WHERE id = $1 AND usuario_id = $2 AND finalizada_em IS NULL
-       RETURNING id, duracao_segundos`,
+       RETURNING id, duracao_segundos, xp_total, saude_final`,
       [id, req.usuario.id]
     );
     res.json(result.rows[0] || { id: Number(id), duracao_segundos: null });

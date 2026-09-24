@@ -90,7 +90,11 @@ export const mensagens = {
 export const sessoes = {
   iniciar:   (data)     => req('/api/sessoes/iniciar', { method: 'POST', headers: authHeaders(), body: JSON.stringify(data) }),
   finalizar: (id, data) => req(`/api/sessoes/${id}/finalizar`, { method: 'PUT', headers: authHeaders(), body: JSON.stringify(data) }),
-  progresso: (id)       => req(`/api/sessoes/${id}/progresso`, { method: 'PUT', headers: authHeaders() }),
+  // keepalive: usado no pagehide/visibilitychange (App.js) - deixa o fetch
+  // sobreviver ao fechamento da aba. sendBeacon nao serve aqui porque nao
+  // aceita o header Authorization (auth e Bearer JWT, nao cookie).
+  progresso: (id, { keepalive = false } = {}) =>
+    req(`/api/sessoes/${id}/progresso`, { method: 'PUT', headers: authHeaders(), keepalive }),
 };
 export const configuracoes = {
   getPesos: (turmaId)     => req(comTurma('/api/configuracoes/pesos', turmaId), { headers: authHeaders() }),
