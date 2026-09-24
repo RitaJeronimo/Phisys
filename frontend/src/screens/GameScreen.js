@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { PARAMS, getDefaultValues, getMascotStatus, calculateFinalGrade, STATUS, calcularSaude, calcularEnergiaModulada, embaralharArray, getAgeStage } from '../engine/mascotEngine';
+import { PARAMS, getDefaultValues, getMascotStatus, calculateFinalGrade, STATUS, calcularSaude, calcularEnergiaModulada, embaralharArray, getAgeStage, getAgePANormal } from '../engine/mascotEngine';
 import { ranking as rankingApi, getToken, decodeToken, desafios as desafiosApi, configuracoes as configuracoesApi, simulacoes as simulacoesApi } from '../api';
 import { COLORS, FONT_FAMILY, SHADOW_CARD, FONT_SCALE } from '../theme';
 import { MASCOT_IMAGES } from '../assets/mascote';
@@ -62,12 +62,17 @@ function ChibiMascot({ status, ageDays, size = 72 }) {
   );
 }
 
-function ParamBar({ param, value }) {
+// normalOverride: faixa normal da FASE ATUAL do animal (FC, PA, peso), mesmo
+// padrao do ParamCard da HomeScreen - sem isso a barra usava a faixa fixa de
+// PRIMARY_PARAMS (ex: FC 360-380) e FC 340 de um Adulto (normal 340-380)
+// aparecia verde na Home e vermelha aqui (item 1, feedback 23-24/09/2026).
+function ParamBar({ param, value, normalOverride }) {
+  const normal = normalOverride || param.normal;
   const pct = ((value - param.min) / (param.max - param.min)) * 100;
-  const normalMin = ((param.normal[0] - param.min) / (param.max - param.min)) * 100;
-  const normalWidth = ((param.normal[1] - param.normal[0]) / (param.max - param.min)) * 100;
-  const inRange = value >= param.normal[0] && value <= param.normal[1];
-  const deviation = Math.abs(value - (param.normal[0] + param.normal[1]) / 2) / ((param.normal[1] - param.normal[0]) / 2);
+  const normalMin = ((normal[0] - param.min) / (param.max - param.min)) * 100;
+  const normalWidth = ((normal[1] - normal[0]) / (param.max - param.min)) * 100;
+  const inRange = value >= normal[0] && value <= normal[1];
+  const deviation = Math.abs(value - (normal[0] + normal[1]) / 2) / ((normal[1] - normal[0]) / 2);
   const fillColor = inRange ? '#32C878' : deviation > 2 ? '#DC3C3C' : '#EF9F27';
   const displayVal = param.step < 1 ? value.toFixed(1) : Math.round(value);
   return (
@@ -226,6 +231,11 @@ useEffect(() => {
   }, []);
 
   const status = getMascotStatus(values);
+  // Faixas normais da fase atual - mesmas fontes que a Home e o calcularSaude
+  // usam, pra cor da barra bater com a do card e com a saude calculada.
+  const faseAtual = getAgeStage(ageDays ?? 90);
+  const paNormalFase = getAgePANormal(ageDays ?? 90);
+  const faixaPorFase = { fc: faseAtual.fcNormal, pas: paNormalFase.pas, pad: paNormalFase.pad, peso: faseAtual.pesoNormal };
   const challenge = challenges[currentIdx];
 
   useEffect(() => {
@@ -459,6 +469,7 @@ useEffect(() => {
                   key={p.id}
                   param={p}
                   value={p.id === 'energia' ? calcularEnergiaModulada(values, calcularSaude(values)) : values[p.id]}
+                  normalOverride={faixaPorFase[p.id]}
                 />
               ))}
             </div>
