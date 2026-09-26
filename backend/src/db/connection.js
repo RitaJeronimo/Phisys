@@ -4,6 +4,15 @@ dotenv.config();
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: true } : false,
+  // Lentidao (26/09/2026): o padrao do pg fecha conexoes ociosas apos 10s -
+  // aluno lendo uma pergunta por mais que isso pagava uma conexao nova
+  // (TLS + auth, Render em Oregon -> Neon em us-east-1) no proximo clique.
+  // 60s cobre o ritmo normal de uma sessao sem segurar conexao parada por
+  // muito tempo (o Neon Free suspende apos 5 min sem uso).
+  idleTimeoutMillis: 60000,
+  // Keepalive de TCP: evita que a conexao ociosa seja derrubada em silencio
+  // no caminho (NAT/proxy) e so descoberta no proximo uso.
+  keepAlive: true,
 });
 // Usa pool.query (nao pool.connect) de proposito: pool.connect() retorna um
 // client "checked-out" que precisa ser liberado manualmente (client.release()
