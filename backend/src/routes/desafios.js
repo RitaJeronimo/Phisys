@@ -61,15 +61,16 @@ router.post('/:id/checar', auth, async (req, res) => {
       // pontuacao/estado do jogo) - sem checagem de posse contra
       // req.usuario.id de proposito (custaria uma query extra num evento
       // muito frequente so pra proteger um campo que so afeta analytics).
-      try {
-        await pool.query(
-          `INSERT INTO respostas (desafio_id, resposta, correta, tempo_segundos, sessao_id)
-           VALUES ($1, $2, $3, $4, $5)`,
-          [id, opcao_index, correta, tempo_segundos ?? null, sessao_id ?? null]
-        );
-      } catch (err) {
-        console.error('Erro ao registrar tentativa de resposta:', err.message);
-      }
+      // Sem await (lentidao, 26/09/2026): o feedback de certo/errado nao
+      // espera mais esse INSERT - era 1 de 3 idas ao banco (Render em Oregon,
+      // Neon em us-east-1) antes do aluno ver o resultado. O registro
+      // continua acontecendo; o .catch mantem o best effort sem deixar
+      // uma promise rejeitada sem tratamento.
+      pool.query(
+        `INSERT INTO respostas (desafio_id, resposta, correta, tempo_segundos, sessao_id)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [id, opcao_index, correta, tempo_segundos ?? null, sessao_id ?? null]
+      ).catch(err => console.error('Erro ao registrar tentativa de resposta:', err.message));
       return res.json({ correta, opcao_correta: opcaoCorreta });
     }
 
