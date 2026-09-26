@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { PARAMS, getDefaultValues, getMascotStatus, calculateFinalGrade, STATUS, calcularSaude, calcularEnergiaModulada, embaralharArray, getAgeStage, getAgePANormal, corrigirAnimal, primariosNaFaixa } from '../engine/mascotEngine';
 import { ranking as rankingApi, getToken, decodeToken, desafios as desafiosApi, configuracoes as configuracoesApi, simulacoes as simulacoesApi } from '../api';
 import { COLORS, FONT_FAMILY, SHADOW_CARD, FONT_SCALE } from '../theme';
@@ -106,6 +106,8 @@ function GameScreen({ user, mode, values: initialValues, score: initialScore, on
   // servidor - os valores do animal ainda sao os de antes da resposta, e a
   // decisao de fim de rodada (recuperado ou nao) usaria dados velhos.
   const [fechando, setFechando] = useState(false);
+  const respondendoRef = useRef(false);
+  const [respondendo, setRespondendo] = useState(null);
 
   const [myRank, setMyRank] = useState('-');
   const [challengePool, setChallengePool] = useState([]); // pool completo, embaralhado
@@ -258,82 +260,103 @@ useEffect(() => {
     return () => clearInterval(interval);
   }, [status, answered, finished]);
 
-  async function handleAnswer(option, idx) {
-    if (answered) return;
-    const elapsed = (Date.now() - questionStart) / 1000;
+  // Trava sincrona de "resposta em andamento" (toques repetidos, 26/09/2026):
+  // `answered` so vira true DEPOIS que o checar volta do servidor - nesse
+  // intervalo cada toque extra disparava outro checar, e mais de um chegava
+  // ao fechamento (deltas e XP aplicados 2x ou mais, reproduzido na branch
+  // Neon). A ref trava no mesmo instante do toque, sem esperar o proximo
+  // render - mesmo padrao do pendingCaresRef da HomeScreen. O state
+  // `respondendo` (indice tocado) e so para o retorno visual na alternativa.
+  function travar(idx) { respondendoRef.current = true; setRespondendo(idx); }
+  function liberar()   { respondendoRef.current = false; setRespondendo(null); }
 
-    // MOCK_CHALLENGES (fallback so quando a turma nao tem nenhum desafio real
-    // cadastrado) nao vem do banco - nao ha como checar/persistir no servidor
-    // sem risco de colidir com um desafio real por coincidencia de id. Vira
-    // pratica/demonstracao, sem persistir XP/estado (ate o professor cadastrar
-    // desafios de verdade).
-    if (!challenge.fromDB) {
-      setCorrectIndex(challenge.options.findIndex(o => o.correct));
-      if (option.correct) {
+  async function handleAnswer(option, idx) {
+    if (answered || respondendoRef.current) return;
+    travar(idx);
+    // Libera no fim, exceto no 1o erro: ai so libera junto com o reset de 1s
+    // do "selected" - evita que um toque durante o aviso de erro conte como
+    // 2a tentativa antes de o estado `attempts` ser atualizado na tela.
+    let liberarAoFim = true;
+    try {
+      const elapsed = (Date.now() - questionStart) / 1000;
+
+      // MOCK_CHALLENGES (fallback so quando a turma nao tem nenhum desafio real
+      // cadastrado) nao vem do banco - nao ha como checar/persistir no servidor
+      // sem risco de colidir com um desafio real por coincidencia de id. Vira
+      // pratica/demonstracao, sem persistir XP/estado (ate o professor cadastrar
+      // desafios de verdade).
+      if (!challenge.fromDB) {
+        setCorrectIndex(challenge.options.findIndex(o => o.correct));
+        if (option.correct) {
+          setResponseTimes(t => [...t, elapsed]);
+          setSelected(option.letter);
+          setAnswered(true);
+          setAttempts(0);
+          setSolvedCount(s => s + 1);
+        } else {
+          const newAttempts = attempts + 1;
+          setAttempts(newAttempts);
+          setSelected(option.letter);
+          if (newAttempts < 2) {
+            liberarAoFim = false;
+            setTimeout(() => { setSelected(null); liberar(); }, 1000);
+          } else {
+            setResponseTimes(t => [...t, elapsed]);
+            setAnswered(true);
+            setAttempts(0);
+            setErrorCount(e => e + 1);
+          }
+        }
+        return;
+      }
+
+      // Desafios reais: primeiro so confere (fechar:false), pra dar feedback
+      // visual instantaneo sem mexer em nada ainda - o servidor e quem decide
+      // se e certo/errado e quem calcula o novo estado do animal/XP (nao
+      // confia mais em nada calculado aqui no cliente).
+      let resultado;
+      try {
+        resultado = await desafiosApi.checar(challenge.id, idx, false, undefined, sessaoId, elapsed);
+      } catch (e) {
+        console.log('Erro ao checar resposta:', e.message);
+        return;
+      }
+      setCorrectIndex(resultado.opcao_correta);
+
+      async function fecharResposta() {
+        setFechando(true);
+        try {
+          const fechamento = await desafiosApi.checar(challenge.id, idx, true, voltasExtrasUsadas > 0);
+          setScore(fechamento.newScore);
+          setValues(corrigirAnimal(fechamento.novosValores));
+        } catch (e) { console.log('Erro ao fechar resposta:', e.message); }
+        finally { setFechando(false); }
+      }
+
+      if (resultado.correta) {
         setResponseTimes(t => [...t, elapsed]);
         setSelected(option.letter);
         setAnswered(true);
         setAttempts(0);
         setSolvedCount(s => s + 1);
+        await fecharResposta();
       } else {
         const newAttempts = attempts + 1;
         setAttempts(newAttempts);
         setSelected(option.letter);
         if (newAttempts < 2) {
-          setTimeout(() => setSelected(null), 1000);
+          liberarAoFim = false;
+          setTimeout(() => { setSelected(null); liberar(); }, 1000);
         } else {
           setResponseTimes(t => [...t, elapsed]);
           setAnswered(true);
           setAttempts(0);
           setErrorCount(e => e + 1);
+          await fecharResposta();
         }
       }
-      return;
-    }
-
-    // Desafios reais: primeiro so confere (fechar:false), pra dar feedback
-    // visual instantaneo sem mexer em nada ainda - o servidor e quem decide
-    // se e certo/errado e quem calcula o novo estado do animal/XP (nao
-    // confia mais em nada calculado aqui no cliente).
-    let resultado;
-    try {
-      resultado = await desafiosApi.checar(challenge.id, idx, false, undefined, sessaoId, elapsed);
-    } catch (e) {
-      console.log('Erro ao checar resposta:', e.message);
-      return;
-    }
-    setCorrectIndex(resultado.opcao_correta);
-
-    async function fecharResposta() {
-      setFechando(true);
-      try {
-        const fechamento = await desafiosApi.checar(challenge.id, idx, true, voltasExtrasUsadas > 0);
-        setScore(fechamento.newScore);
-        setValues(corrigirAnimal(fechamento.novosValores));
-      } catch (e) { console.log('Erro ao fechar resposta:', e.message); }
-      finally { setFechando(false); }
-    }
-
-    if (resultado.correta) {
-      setResponseTimes(t => [...t, elapsed]);
-      setSelected(option.letter);
-      setAnswered(true);
-      setAttempts(0);
-      setSolvedCount(s => s + 1);
-      await fecharResposta();
-    } else {
-      const newAttempts = attempts + 1;
-      setAttempts(newAttempts);
-      setSelected(option.letter);
-      if (newAttempts < 2) {
-        setTimeout(() => setSelected(null), 1000);
-      } else {
-        setResponseTimes(t => [...t, elapsed]);
-        setAnswered(true);
-        setAttempts(0);
-        setErrorCount(e => e + 1);
-        await fecharResposta();
-      }
+    } finally {
+      if (liberarAoFim) liberar();
     }
   }
 
@@ -540,7 +563,9 @@ useEffect(() => {
               else if (answered && option.letter === selected && !isCorrectOption) extra = styles.optionWrong;
               else if (answered && isCorrectOption) extra = styles.optionCorrect;
               return (
-                <div key={option.letter} style={{ ...styles.option, ...extra }} onClick={() => handleAnswer(option, idx)}>
+                <div key={option.letter} style={{ ...styles.option, ...extra,
+                  ...(respondendo === idx && !answered ? styles.optionPendente : {}),
+                  ...(respondendo !== null && !answered ? { cursor:'progress' } : {}) }} onClick={() => handleAnswer(option, idx)}>
                   <div style={{ ...styles.optionLetter, ...(answered && isCorrectOption ? styles.optionLetterCorrect : answered && option.letter === selected ? styles.optionLetterWrong : {}) }}>
                     {option.letter}
                   </div>
@@ -615,6 +640,7 @@ const styles = {
   optionsTitle:       { padding:'0.75rem 1.5rem 0.5rem', ...FONT_SCALE.label, color:COLORS.textMuted, letterSpacing:'0.08em', textTransform:'uppercase' },
   options:            { padding:'0 1.5rem', display:'flex', flexDirection:'column', gap:'10px' },
   option:             { background:COLORS.surface, boxShadow:SHADOW_CARD, borderWidth:'1.5px', borderStyle:'solid', borderColor:COLORS.border, borderRadius:'14px', padding:'1rem 1.25rem', cursor:'pointer', display:'flex', alignItems:'center', gap:'12px' },
+  optionPendente:     { borderColor:COLORS.indigo, opacity:0.75 },
   optionCorrect:      { background:COLORS.status.saudavel.soft, borderColor:COLORS.status.saudavel.color },
   optionWrong:        { background:COLORS.status.critico.soft, borderColor:COLORS.status.critico.color },
   optionLetter:       { width:'26px', height:'26px', borderRadius:'50%', background:COLORS.iconChipBg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'12px', fontWeight:'800', color:COLORS.indigo, flexShrink:0 },
