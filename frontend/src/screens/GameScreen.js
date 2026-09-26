@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { PARAMS, getDefaultValues, getMascotStatus, calculateFinalGrade, STATUS, calcularSaude, calcularEnergiaModulada, embaralharArray, getAgeStage, getAgePANormal } from '../engine/mascotEngine';
+import { PARAMS, getDefaultValues, getMascotStatus, calculateFinalGrade, STATUS, calcularSaude, calcularEnergiaModulada, embaralharArray, getAgeStage, getAgePANormal, corrigirAnimal } from '../engine/mascotEngine';
 import { ranking as rankingApi, getToken, decodeToken, desafios as desafiosApi, configuracoes as configuracoesApi, simulacoes as simulacoesApi } from '../api';
 import { COLORS, FONT_FAMILY, SHADOW_CARD, FONT_SCALE } from '../theme';
 import { MASCOT_IMAGES } from '../assets/mascote';
@@ -301,7 +301,7 @@ useEffect(() => {
       try {
         const fechamento = await desafiosApi.checar(challenge.id, idx, true, voltasExtrasUsadas > 0);
         setScore(fechamento.newScore);
-        setValues(fechamento.novosValores);
+        setValues(corrigirAnimal(fechamento.novosValores));
       } catch (e) { console.log('Erro ao fechar resposta:', e.message); }
     }
 
@@ -439,7 +439,7 @@ useEffect(() => {
               </div>
             ))}
           </div>
-          <button style={styles.nextBtn} onClick={onBack}>Voltar ao menu</button>
+          <button style={styles.nextBtn} onClick={() => onBack(values, score)}>Voltar ao menu</button>
         </div>
       </div>
     );
@@ -448,7 +448,7 @@ useEffect(() => {
   return (
     <div className="app-screen" style={styles.screen}>
       <div style={styles.topbar}>
-        <button style={styles.backBtn} onClick={onBack}>←</button>
+        <button style={styles.backBtn} onClick={() => onBack(values, score)}>←</button>
         <div style={styles.modeBadge}>{mode === 'sessao' ? '📋 Sessão' : '🎯 Livre'}</div>
         <div style={styles.scoreBadge}>⭐ {Math.round(score)} pts</div>
         <div style={styles.timerBadge}>⏱ {formatTime(seconds)}</div>

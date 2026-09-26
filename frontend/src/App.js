@@ -6,29 +6,11 @@ import RankingScreen from './screens/RankingScreen';
 import ProfessorPanel from './screens/ProfessorPanel';
 import SecondaryScreen from './screens/SecondaryScreen';
 import FinalScreen from './screens/FinalScreen';
-import { getDefaultPrimaryValues, calcularSaude } from './engine/mascotEngine';
+import { getDefaultPrimaryValues, calcularSaude, corrigirAnimal } from './engine/mascotEngine';
 import { animal as animalApi, ranking as rankingApi, sessoes as sessoesApi, mensagens as mensagensApi, acessos as acessosApi, getToken, removeToken, decodeToken } from './api';
 import { COLORS, FONT_FAMILY, FONT_SCALE } from './theme';
 import { MASCOT_IMAGES } from './assets/mascote';
 import React, { useState, useEffect, useCallback } from 'react';
-
-function corrigirAnimal(a) {
-  const fc = Number(a.fc) < 100 ? 370 : Number(a.fc);
-  const pas = Number(a.pas) < 60 ? 110 : Number(a.pas);
-  const pad = Number(a.pad) < 40 ? 70 : Number(a.pad);
-  return {
-    energia:    Number(a.energia)    || 80,
-    hidratacao: Number(a.hidratacao) || 70,
-    pas, pad, fc,
-    peso:       Number(a.peso)       || 125,
-    age_days:   Number(a.age_days)   || 90,
-    // CORRECAO: esse campo estava faltando aqui - a funcao reconstroi
-    // o objeto do animal do zero e descartava o valor de saude vindo
-    // do banco, fazendo a tela exibir NaN ate o primeiro desafio ser
-    // respondido (unico outro lugar que recalculava saude).
-    saude:      Number(a.saude)      || 85,
-  };
-}
 
 function App() {
   const [user, setUser]               = useState(null);
@@ -176,6 +158,14 @@ function App() {
   // botao "voltar", o outro caminho conhecido de abandono sem passar por
   // handleGameFinish/finalizar.
   function handleBack() { if (sessaoId) sessoesApi.progresso(sessaoId).catch(() => {}); setMode(null); setScreen('home'); }
+  // Saida da sessao pelo "voltar": o GameScreen tem copia propria de
+  // values/score - sem repassar aqui, a Home mostrava os valores de antes
+  // da sessao ate um F5 (item 2, 26/09/2026).
+  function handleGameBack(valoresSessao, scoreSessao) {
+    if (valoresSessao) setValues(valoresSessao);
+    if (scoreSessao !== undefined) setScore(scoreSessao);
+    handleBack();
+  }
   function handleSelectMode(m) {
     setMode(m);
     setSessionStart(Date.now());
@@ -269,7 +259,7 @@ function App() {
 
   if (screen === 'game')
     return <GameScreen user={user} mode={mode} values={values} setValues={setValues}
-      score={score} setScore={setScore} onBack={handleBack} onFinish={handleGameFinish} ageDays={ageDays} sessaoId={sessaoId}/>;
+      score={score} setScore={setScore} onBack={handleGameBack} onFinish={handleGameFinish} ageDays={ageDays} sessaoId={sessaoId}/>;
 
   if (screen === 'final') {
     const saude = calcularSaude({ ...values, age_days: ageDays });

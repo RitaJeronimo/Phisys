@@ -228,6 +228,33 @@ export function getDefaultPrimaryValues() {
   return v;
 }
 
+// Converte o registro do animal vindo da API em numeros. As colunas sao
+// NUMERIC no Postgres e o driver pg as devolve como texto ("50") - sem isso,
+// calcularEnergiaModulada fazia "50" + 0 = "500" (barra presa em 100%) ou
+// "50" + (-10) = NaN (barra congelada) ate um F5 (item 2, 26/09/2026).
+// Padrao so quando o valor falta/e invalido: 0 e valor real (energia
+// esgotada), nao "ausente" - o `|| padrao` antigo trocava 0 por 80.
+function numOu(v, padrao) {
+  const n = Number(v);
+  return v === null || v === undefined || v === '' || Number.isNaN(n) ? padrao : n;
+}
+
+export function corrigirAnimal(a) {
+  const fc  = numOu(a.fc, 370);
+  const pas = numOu(a.pas, 110);
+  const pad = numOu(a.pad, 70);
+  return {
+    energia:    numOu(a.energia, 80),
+    hidratacao: numOu(a.hidratacao, 70),
+    pas: pas < 60 ? 110 : pas,
+    pad: pad < 40 ? 70 : pad,
+    fc:  fc < 100 ? 370 : fc,
+    peso:       numOu(a.peso, 125),
+    age_days:   numOu(a.age_days, 90),
+    saude:      numOu(a.saude, 85),
+  };
+}
+
 export function getDefaultSecondaryValues() {
   const v = {};
   SECONDARY_PARAMS.forEach(p => v[p.id] = p.default);

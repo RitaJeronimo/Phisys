@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { animal as animalApi, simulacoes as simulacoesApi } from '../api';
-import { PRIMARY_PARAMS, calcularSaude, calcularEnergiaModulada, getAgePANormal, getAgeStage, getMascotStatus, STATUS, DAILY_CARES } from '../engine/mascotEngine';
+import { PRIMARY_PARAMS, calcularSaude, calcularEnergiaModulada, getAgePANormal, getAgeStage, getMascotStatus, STATUS, DAILY_CARES, corrigirAnimal } from '../engine/mascotEngine';
 import { COLORS, FONT_FAMILY, SHADOW_CARD, FONT_SCALE } from '../theme';
 import { MASCOT_IMAGES } from '../assets/mascote';
 
@@ -433,7 +433,7 @@ function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, on
     // recalculava tudo aqui e sobrescrevia via PUT /api/animal e
     // PUT /api/ranking com valores proprios, o que permitia mandar qualquer
     // valor direto nessas rotas.
-    setValues(resultado.animal);
+    setValues(corrigirAnimal(resultado.animal));
     setCareEffect(id);
     setTimeout(() => setCareEffect(null), 1500);
     fetchCuidadoStatus();
