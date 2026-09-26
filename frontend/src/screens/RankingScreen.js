@@ -58,7 +58,7 @@ function RankingScreen({ user, onBack }) {
               const heights = [64, 80, 48];
               const pos = [2, 1, 3];
               return (
-                <div key={item.usuario_id} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'6px' }}>
+                <div key={item.id} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'6px' }}>
                   {pos[i] === 1 && <div style={{ fontSize:'clamp(24px, calc(20.4px + 0.9vw), 31.2px)' }}>👑</div>}
                   <div style={{ width:`${sizes[i]}px`, height:`${sizes[i]}px`, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:'800', color:'white', fontSize:`${sizes[i]/3}px`, background:COLORS.indigo, border:`3px solid ${COLORS.iconChipBg}`, ...(item.nome === user.name ? { background:COLORS.accent } : {}) }}>
                     {initials(item.nome)}
@@ -75,12 +75,12 @@ function RankingScreen({ user, onBack }) {
           <div style={{ padding:'1.25rem 1.5rem 0', display:'flex', flexDirection:'column', gap:'8px' }}>
             <div style={{ display:'flex', justifyContent:'space-between', ...FONT_SCALE.caption, color:COLORS.textMuted, letterSpacing:'0.06em', textTransform:'uppercase', marginBottom:'4px', fontWeight:'700' }}>
               <span>aluno</span>
-              <span>xp / sessoes</span>
+              <span>xp / sessões</span>
             </div>
             {sorted.map(item => {
               const isMe = item.nome === user.name;
               return (
-                <div key={item.usuario_id} style={{ background: isMe ? COLORS.iconChipBg : COLORS.surface, boxShadow: isMe ? 'none' : SHADOW_CARD, border: isMe ? `1.5px solid ${COLORS.indigo}` : 'none', borderRadius:'14px', padding:'0.875rem 1rem', display:'flex', alignItems:'center', gap:'12px' }}>
+                <div key={item.id} style={{ background: isMe ? COLORS.iconChipBg : COLORS.surface, boxShadow: isMe ? 'none' : SHADOW_CARD, border: isMe ? `1.5px solid ${COLORS.indigo}` : 'none', borderRadius:'14px', padding:'0.875rem 1rem', display:'flex', alignItems:'center', gap:'12px' }}>
                   <div style={{ ...FONT_SCALE.bodyBold, width:'22px', textAlign:'center', color: posColor(item.pos) }}>{item.pos}</div>
                   <div style={{ width:'36px', height:'36px', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'13px', fontWeight:'800', color: 'white', background: isMe ? COLORS.indigo : COLORS.textMuted, flexShrink:0 }}>
                     {initials(item.nome)}
@@ -89,7 +89,12 @@ function RankingScreen({ user, onBack }) {
                     <div style={{ ...FONT_SCALE.body, color: COLORS.textPrimary, fontWeight: isMe ? '800' : '600' }}>
                       {isMe ? `${item.nome} (você)` : item.nome}
                     </div>
-                    <div style={{ ...FONT_SCALE.caption, color:COLORS.textMuted, marginTop:'2px' }}>{item.sessões} sessoes</div>
+                    {/* O backend devolve "sessoes" sem acento (coluna ranking.sessoes) -
+                        antes lia item.sessões e a linha mostrava so "sessoes", sem
+                        numero. Conta so sessoes finalizadas (decisao de 16/09/2026). */}
+                    <div style={{ ...FONT_SCALE.caption, color:COLORS.textMuted, marginTop:'2px' }}>
+                      {Number(item.sessoes) || 0} {Number(item.sessoes) === 1 ? 'sessão' : 'sessões'}
+                    </div>
                   </div>
                   <div style={{ textAlign:'right' }}>
                     <div style={{ ...FONT_SCALE.bodyBold, color:COLORS.textPrimary }}>{item.xp_total}</div>
