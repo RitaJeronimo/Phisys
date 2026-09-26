@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { PARAMS, getDefaultValues, getMascotStatus, calculateFinalGrade, STATUS, calcularSaude, calcularEnergiaModulada, embaralharArray, getAgeStage, getAgePANormal, corrigirAnimal } from '../engine/mascotEngine';
+import { PARAMS, getDefaultValues, getMascotStatus, calculateFinalGrade, STATUS, calcularSaude, calcularEnergiaModulada, embaralharArray, getAgeStage, getAgePANormal, corrigirAnimal, primariosNaFaixa } from '../engine/mascotEngine';
 import { ranking as rankingApi, getToken, decodeToken, desafios as desafiosApi, configuracoes as configuracoesApi, simulacoes as simulacoesApi } from '../api';
 import { COLORS, FONT_FAMILY, SHADOW_CARD, FONT_SCALE } from '../theme';
 import { MASCOT_IMAGES } from '../assets/mascote';
@@ -102,6 +102,10 @@ function GameScreen({ user, mode, values: initialValues, score: initialScore, on
   const [recuperacaoConfig, setRecuperacaoConfig] = useState({ multiplicador: 1, desafios_extras: 0, questoes_por_rodada: 3 });
   const [voltasExtrasUsadas, setVoltasExtrasUsadas] = useState(0);
   const [correctIndex, setCorrectIndex] = useState(null);
+  // true enquanto o fechamento da resposta (checar fechar:true) nao volta do
+  // servidor - os valores do animal ainda sao os de antes da resposta, e a
+  // decisao de fim de rodada (recuperado ou nao) usaria dados velhos.
+  const [fechando, setFechando] = useState(false);
 
   const [myRank, setMyRank] = useState('-');
   const [challengePool, setChallengePool] = useState([]); // pool completo, embaralhado
@@ -237,6 +241,9 @@ useEffect(() => {
   const paNormalFase = getAgePANormal(ageDays ?? 90);
   const faixaPorFase = { fc: faseAtual.fcNormal, pas: paNormalFase.pas, pad: paNormalFase.pad, peso: faseAtual.pesoNormal };
   const challenge = challenges[currentIdx];
+  const fimDeRodada = currentIdx + 1 >= challenges.length;
+  const temVoltaExtra = voltasExtrasUsadas < (recuperacaoConfig.desafios_extras || 0);
+  const recuperado = primariosNaFaixa(values, ageDays ?? 90);
 
   useEffect(() => {
     if (answered || finished) return;
@@ -298,11 +305,13 @@ useEffect(() => {
     setCorrectIndex(resultado.opcao_correta);
 
     async function fecharResposta() {
+      setFechando(true);
       try {
         const fechamento = await desafiosApi.checar(challenge.id, idx, true, voltasExtrasUsadas > 0);
         setScore(fechamento.newScore);
         setValues(corrigirAnimal(fechamento.novosValores));
       } catch (e) { console.log('Erro ao fechar resposta:', e.message); }
+      finally { setFechando(false); }
     }
 
     if (resultado.correta) {
@@ -328,7 +337,10 @@ useEffect(() => {
     }
   }
 
-  function handleNext() {
+  // escolha: 'continuar' | 'encerrar' | undefined - so vem definida nos 2
+  // botoes de fim de rodada com animal ainda nao recuperado (ver render).
+  function handleNext(escolha) {
+    if (fechando) return;
     const energiaAtual = values.energia || 0;
     const snapshot = {
       label: `D${currentIdx + 1}`,
@@ -352,8 +364,13 @@ useEffect(() => {
       // Se o professor configurou desafios extras e ainda ha voltas
       // disponiveis, avanca para a proxima fatia do pool (desafios
       // diferentes), em vez de repetir os mesmos.
+      // Rodadas extras (feedback do laboratorio, 26/09/2026): antes as voltas
+      // eram obrigatorias sempre, mesmo com o animal ja recuperado, e a unica
+      // saida era o "voltar" (sessao abandonada). Agora: recuperado encerra
+      // sozinho; nao recuperado, o aluno escolhe continuar ou encerrar.
       const desafiosExtras = recuperacaoConfig.desafios_extras || 0;
-      if (voltasExtrasUsadas < desafiosExtras) {
+      const ofereceVolta = voltasExtrasUsadas < desafiosExtras && !primariosNaFaixa(values, ageDays ?? 90);
+      if (ofereceVolta && escolha === 'continuar') {
         const proximaVolta = voltasExtrasUsadas + 1;
         const inicioFatia = proximaVolta * TAMANHO_RODADA;
         // Se o pool nao tem desafios suficientes para uma fatia nova sem
@@ -545,9 +562,22 @@ useEffect(() => {
                 <div style={{ ...FONT_SCALE.caption, color:COLORS.accent, marginBottom:'4px', letterSpacing:'.06em', textTransform:'uppercase' }}>💡 Explicação Fisiológica</div>
                 <div style={{ ...FONT_SCALE.body, color:COLORS.textPrimary, lineHeight:'1.6' }}>{challenge.explanation}</div>
               </div>
-              <button style={styles.nextBtn} onClick={handleNext}>
-                {currentIdx + 1 >= challenges.length ? 'Ver resultado' : 'Próximo desafio →'}
-              </button>
+              {fimDeRodada && temVoltaExtra && !fechando && recuperado && (
+                <div style={styles.fimRodadaMsg}>✅ Hidratação, PA e FC na faixa normal — o Phisys se recuperou!</div>
+              )}
+              {fimDeRodada && temVoltaExtra && !fechando && !recuperado ? (
+                <>
+                  <div style={styles.fimRodadaMsg}>⚠️ Ainda há parâmetros fora da faixa normal. Quer fazer mais uma volta de recuperação?</div>
+                  <button style={styles.nextBtn} onClick={() => handleNext('continuar')}>
+                    Continuar recuperação (volta {voltasExtrasUsadas + 2} de {1 + recuperacaoConfig.desafios_extras})
+                  </button>
+                  <button style={styles.encerrarBtn} onClick={() => handleNext('encerrar')}>Encerrar sessão</button>
+                </>
+              ) : (
+                <button style={{ ...styles.nextBtn, opacity: fechando ? 0.6 : 1 }} disabled={fechando} onClick={() => handleNext()}>
+                  {fechando ? 'Salvando resposta...' : fimDeRodada ? 'Ver resultado' : 'Próximo desafio →'}
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -592,6 +622,8 @@ const styles = {
   optionLetterWrong:  { background:COLORS.status.critico.color, color:'white' },
   optionText:         { ...FONT_SCALE.body, color:COLORS.textPrimary, lineHeight:'1.4' },
   nextBtn:            { width:'100%', padding:'13px', borderRadius:'12px', border:'none', backgroundColor:COLORS.indigo, color:'white', fontSize:'clamp(16px, calc(13.6px + 0.9vw), 20.8px)', fontWeight:'800', cursor:'pointer', fontFamily:'inherit' },
+  fimRodadaMsg:       { ...FONT_SCALE.body, color:COLORS.textPrimary, textAlign:'center', marginBottom:'10px', lineHeight:'1.5' },
+  encerrarBtn:        { width:'100%', marginTop:'8px', padding:'12px', borderRadius:'12px', border:`1.5px solid ${COLORS.border}`, background:COLORS.surface, color:COLORS.textMuted, fontSize:'clamp(15px, calc(12.75px + 0.9vw), 19.5px)', fontWeight:'700', cursor:'pointer', fontFamily:'inherit' },
   modeBadge:          { background:'rgba(255,255,255,0.15)', border:'1px solid rgba(255,255,255,0.25)', borderRadius:'20px', padding:'4px 10px', ...FONT_SCALE.label, color:'white' },
 };
 

@@ -154,6 +154,24 @@ export function getAgePANormal(days) {
 }
 
 // Modulador de saúde por fase — animais mais velhos são mais vulneráveis
+// Criterio de "recuperado" das voltas extras (26/09/2026): os 4 primarios
+// que entram no calcularSaude (hidratacao, PAS, PAD, FC) dentro da faixa
+// normal da fase. Nao usa o status Saudavel (>=75%) porque ele aceita 1
+// parametro fora da faixa - a sessao encerraria com uma barra vermelha.
+// Energia e peso ficam de fora: peso nao muda com desafios, e energia cai
+// a cada resposta no Modo Livre - nenhum dos dois o aluno consegue corrigir
+// respondendo, entao prenderiam o aluno nas voltas.
+export function primariosNaFaixa(primarios, ageDays) {
+  const stage = getAgeStage(ageDays);
+  const paNormal = getAgePANormal(ageDays);
+  const hid = PRIMARY_PARAMS.find(x => x.id === 'hidratacao').normal;
+  const dentro = (v, [min, max]) => v >= min && v <= max;
+  return dentro(primarios.hidratacao, hid)
+    && dentro(primarios.pas, paNormal.pas)
+    && dentro(primarios.pad, paNormal.pad)
+    && dentro(primarios.fc, stage.fcNormal);
+}
+
 export function getAgeSaudeModifier(days) {
   if (days <= 30)  return 0;    // Recém-nascido: sem penalidade
   if (days <= 180) return 0;    // Juvenil: sem penalidade
