@@ -80,30 +80,32 @@ router.post('/:id/checar', auth, async (req, res) => {
     // POST /api/animal/cuidado ja faz - nao confia num campo "mode" do
     // cliente (deixaria escapar do desconto de energia do Modo Livre so
     // se autodeclarando "sessao").
-    const animalResult = await pool.query('SELECT * FROM animal WHERE usuario_id = $1', [req.usuario.id]);
-    if (animalResult.rows.length === 0) {
+    // Lentidao (26/09/2026): animal, simulacao ativa, XP atual e multiplicador
+    // de recuperacao eram 4 idas ao banco em sequencia (Render em Oregon, Neon
+    // em us-east-1). Agora e 1 so, com subconsultas - nao Promise.all, que
+    // abriria conexoes novas no pool (handshake TLS cada) quando houver poucas
+    // ociosas. De quebra, as 4 leem o mesmo instante do banco. ranking e
+    // configuracoes tem UNIQUE (usuario_id / chave+turma_id): no maximo 1 linha.
+    const leitura = await pool.query(
+      `SELECT a.*,
+         EXISTS (SELECT 1 FROM simulacoes WHERE ativo = TRUE AND turma_id = $2) AS _modo_sessao,
+         (SELECT xp_total FROM ranking WHERE usuario_id = $1) AS _xp_atual,
+         (SELECT valor FROM configuracoes
+           WHERE chave = 'recuperacao_multiplicador' AND turma_id = $2) AS _multiplicador
+       FROM animal a WHERE a.usuario_id = $1`,
+      [req.usuario.id, req.usuario.turma_id]
+    );
+    if (leitura.rows.length === 0) {
       return res.status(404).json({ erro: 'Animal nao encontrado.' });
     }
-    const values = animalResult.rows[0];
+    const { _modo_sessao: modoSessao, _xp_atual, _multiplicador, ...values } = leitura.rows[0];
     const ageDaysAtual = values.age_days || 90;
-
-    const simAtiva = await pool.query(
-      'SELECT id FROM simulacoes WHERE ativo = TRUE AND turma_id = $1 ORDER BY criado_em DESC LIMIT 1',
-      [req.usuario.turma_id]
-    );
-    const modoSessao = simAtiva.rows.length > 0;
-
-    const rankingResult = await pool.query('SELECT xp_total FROM ranking WHERE usuario_id = $1', [req.usuario.id]);
-    const scoreAtual = rankingResult.rows.length > 0 ? Number(rankingResult.rows[0].xp_total) : 0;
+    const scoreAtual = _xp_atual != null ? Number(_xp_atual) : 0;
 
     let novosValores, newScore;
 
     if (correta) {
-      const configResult = await pool.query(
-        `SELECT valor FROM configuracoes WHERE chave = 'recuperacao_multiplicador' AND turma_id = $1`,
-        [req.usuario.turma_id]
-      );
-      const multiplicador = configResult.rows.length > 0 ? Number(configResult.rows[0].valor) : 1;
+      const multiplicador = _multiplicador != null ? Number(_multiplicador) : 1;
       const fatorRecuperacao = (multiplicador || 1) * getAgeRecoveryPenalty(ageDaysAtual);
       const paNormalAtual = getAgePANormal(ageDaysAtual);
       const fcNormalAtual = getAgeStage(ageDaysAtual).fcNormal;
