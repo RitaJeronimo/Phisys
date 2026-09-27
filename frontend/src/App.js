@@ -154,6 +154,17 @@ function App() {
     window.addEventListener('phisys:turma-desativada', onTurmaDesativada);
     return () => window.removeEventListener('phisys:turma-desativada', onTurmaDesativada);
   }, [handleLogout]);
+  // Token invalido/expirado (item 1, 27/09/2026): antes o 403 era engolido
+  // pelos .catch() das telas e o aluno ficava numa Home com valores padrao,
+  // sem aviso, ate sair e entrar de novo por conta propria.
+  useEffect(() => {
+    function onSessaoExpirada() {
+      handleLogout();
+      alert('Sua sessão expirou. Entre de novo para continuar.');
+    }
+    window.addEventListener('phisys:sessao-expirada', onSessaoExpirada);
+    return () => window.removeEventListener('phisys:sessao-expirada', onSessaoExpirada);
+  }, [handleLogout]);
   // Mesma logica de handleLogout: grava a duracao antes de sair do jogo pelo
   // botao "voltar", o outro caminho conhecido de abandono sem passar por
   // handleGameFinish/finalizar.

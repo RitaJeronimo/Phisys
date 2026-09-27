@@ -6,14 +6,14 @@ async function auth(req, res, next) {
   const token = authHeader && authHeader.split(' ')[1];
 
   if (!token) {
-    return res.status(401).json({ erro: 'Token nao fornecido.' });
+    return res.status(401).json({ erro: 'Token nao fornecido.', motivo: 'token_invalido' });
   }
 
   let decoded;
   try {
     decoded = jwt.verify(token, process.env.JWT_SECRET);
   } catch (err) {
-    return res.status(403).json({ erro: 'Token invalido ou expirado.' });
+    return res.status(403).json({ erro: 'Token invalido ou expirado.', motivo: 'token_invalido' });
   }
 
   // Aluno so continua com acesso enquanto a propria turma estiver ativa

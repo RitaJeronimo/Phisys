@@ -5,7 +5,11 @@ async function req(path, options = {}) {
     headers: { 'Content-Type': 'application/json', ...optHeaders },
     ...restOptions,
   });
-  const data = await res.json();
+  // Resposta de erro nem sempre e JSON: durante deploy/reinicio do Render
+  // vem uma pagina HTML (502), e res.json() quebrava com um SyntaxError
+  // engolido pelas telas - o aluno via o animal padrao sem aviso nenhum.
+  let data;
+  try { data = await res.json(); } catch (e) { if (res.ok) throw e; data = {}; }
   if (!res.ok) {
     // Aluno com a turma desativada (item 2, 24/08/2026): o backend corta
     // acesso em toda chamada autenticada, nao só no login - detectado aqui,
@@ -13,11 +17,19 @@ async function req(path, options = {}) {
     // telas (App.js, HomeScreen.js, GameScreen.js, ...). Limpa o token e
     // avisa o resto do app via evento; quem estiver ouvindo (App.js) decide
     // o que fazer (logout + mensagem).
-    if (data.motivo === 'turma_desativada') {
+    // Token invalido/expirado (item 1, 27/09/2026) segue o mesmo caminho,
+    // com evento proprio. So a primeira chamada que detecta o problema avisa
+    // o app (as outras ja encontram o token removido) - ao abrir o app saem
+    // 3 chamadas em paralelo, e sem isso o aviso aparecia 3 vezes.
+    if ((data.motivo === 'turma_desativada' || data.motivo === 'token_invalido') && getToken()) {
       removeToken();
-      window.dispatchEvent(new CustomEvent('phisys:turma-desativada'));
+      window.dispatchEvent(new CustomEvent(
+        data.motivo === 'turma_desativada' ? 'phisys:turma-desativada' : 'phisys:sessao-expirada'
+      ));
     }
-    const err = new Error(data.erro || 'Erro na requisicao');
+    const err = new Error(data.erro || (res.status >= 500
+      ? 'Servidor indisponivel. Tente de novo em instantes.'
+      : 'Erro na requisicao'));
     err.data = data;
     throw err;
   }
