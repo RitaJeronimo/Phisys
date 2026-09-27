@@ -87,7 +87,7 @@ export const usuarios = {
 export const desafios = {
   get: (turmaId) => req(comTurma('/api/desafios', turmaId), { headers: authHeaders() }),
   criar: (data, turmaId) => req('/api/desafios', { method: 'POST', headers: authHeaders(), body: JSON.stringify({ ...data, turma_id: turmaId }) }),
-  checar: (id, opcao_index, fechar, volta_extra, sessao_id, tempo_segundos) => req(`/api/desafios/${id}/checar`, { method: 'POST', headers: authHeaders(), body: JSON.stringify({ opcao_index, fechar, volta_extra, sessao_id, tempo_segundos }) }),
+  checar: (id, opcao_index, fechar, volta_extra, sessao_id, tempo_segundos, chave_fechamento, chave_tentativa) => req(`/api/desafios/${id}/checar`, { method: 'POST', headers: authHeaders(), body: JSON.stringify({ opcao_index, fechar, volta_extra, sessao_id, tempo_segundos, chave_fechamento, chave_tentativa }) }),
 };
 export const simulacoes = {
   getAtiva: (turmaId) => req(comTurma('/api/simulacoes/ativa', turmaId), { headers: authHeaders() }),

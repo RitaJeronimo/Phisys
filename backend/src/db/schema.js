@@ -304,6 +304,29 @@ async function adicionarColunas() {
       END $$;
     `);
 
+    // Idempotencia do fechamento de desafio (27/09/2026): toques repetidos
+    // mandavam varios fechar:true para a mesma resposta, e cada um aplicava
+    // deltas e XP de novo (reproduzido na branch Neon em 26/09). O cliente
+    // manda uma chave por pergunta exibida; so o primeiro fechamento com a
+    // chave consegue reservar a linha (ver POST /desafios/:id/checar).
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS fechamentos_desafio (
+        usuario_id  INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+        chave       VARCHAR(64) NOT NULL,
+        criado_em   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        PRIMARY KEY (usuario_id, chave)
+      )
+    `);
+
+    // Mesma idempotencia para o registro de tentativas: toques repetidos
+    // chegavam a gravar ate 7 linhas por desafio (UI permite 2). Uma chave
+    // por tentativa; o indice UNIQUE descarta a repeticao. Linhas antigas
+    // ficam com chave NULL, que nunca conflita (NULLs sao distintos em
+    // indice UNIQUE). desafio_id no indice e nao sessao_id: sessao_id pode
+    // vir NULL (chega assincrono no cliente).
+    await pool.query(`ALTER TABLE respostas ADD COLUMN IF NOT EXISTS chave VARCHAR(64)`);
+    await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_respostas_desafio_chave ON respostas (desafio_id, chave)`);
+
     // Store compartilhado do rate limiter de login/registro (item M1 da auditoria
     // de seguranca): o MemoryStore padrao do express-rate-limit fica isolado por
     // processo, e testes em producao (14/08/2026) mostraram contagem inconsistente

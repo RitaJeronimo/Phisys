@@ -108,6 +108,12 @@ function GameScreen({ user, mode, values: initialValues, score: initialScore, on
   const [fechando, setFechando] = useState(false);
   const respondendoRef = useRef(false);
   const [respondendo, setRespondendo] = useState(null);
+  // Chaves de idempotencia (27/09/2026): prefixo aleatorio por montagem da
+  // tela + questionStart (muda a cada pergunta exibida, inclusive nas voltas
+  // extras) = uma chave por pergunta, usada no fechamento; com "-t" + numero
+  // da tentativa, uma chave por tentativa, usada no registro em respostas.
+  // O backend aplica/grava uma vez so por chave, mesmo que chegue repetido.
+  const prefixoChaveRef = useRef(Math.random().toString(36).slice(2, 10));
 
   const [myRank, setMyRank] = useState('-');
   const [challengePool, setChallengePool] = useState([]); // pool completo, embaralhado
@@ -314,9 +320,11 @@ useEffect(() => {
       // visual instantaneo sem mexer em nada ainda - o servidor e quem decide
       // se e certo/errado e quem calcula o novo estado do animal/XP (nao
       // confia mais em nada calculado aqui no cliente).
+      const chavePergunta = `${prefixoChaveRef.current}-${questionStart}`;
       let resultado;
       try {
-        resultado = await desafiosApi.checar(challenge.id, idx, false, undefined, sessaoId, elapsed);
+        resultado = await desafiosApi.checar(challenge.id, idx, false, undefined, sessaoId, elapsed,
+          undefined, `${chavePergunta}-t${attempts}`);
       } catch (e) {
         console.log('Erro ao checar resposta:', e.message);
         return;
@@ -326,7 +334,8 @@ useEffect(() => {
       async function fecharResposta() {
         setFechando(true);
         try {
-          const fechamento = await desafiosApi.checar(challenge.id, idx, true, voltasExtrasUsadas > 0);
+          const fechamento = await desafiosApi.checar(challenge.id, idx, true, voltasExtrasUsadas > 0,
+            undefined, undefined, chavePergunta);
           setScore(fechamento.newScore);
           setValues(corrigirAnimal(fechamento.novosValores));
         } catch (e) { console.log('Erro ao fechar resposta:', e.message); }

@@ -37,7 +37,7 @@ router.get('/', auth, resolveTurmaId, async (req, res) => {
 // do que a UI exibe visualmente).
 router.post('/:id/checar', auth, async (req, res) => {
   const { id } = req.params;
-  const { opcao_index, fechar, volta_extra, tempo_segundos, sessao_id } = req.body;
+  const { opcao_index, fechar, volta_extra, tempo_segundos, sessao_id, chave_fechamento, chave_tentativa } = req.body;
   try {
     const result = await pool.query(
       'SELECT correta, delta_acerto, delta_erro FROM desafios WHERE id = $1 AND turma_id = $2',
@@ -66,10 +66,17 @@ router.post('/:id/checar', auth, async (req, res) => {
       // Neon em us-east-1) antes do aluno ver o resultado. O registro
       // continua acontecendo; o .catch mantem o best effort sem deixar
       // uma promise rejeitada sem tratamento.
+      // chave_tentativa (27/09/2026): uma por tentativa - um toque repetido
+      // que chegue aqui cai no ON CONFLICT e nao grava de novo (ver
+      // schema.js). Sem chave (bundle antigo) grava como antes.
+      const chaveTentativa = typeof chave_tentativa === 'string'
+        && chave_tentativa.length > 0 && chave_tentativa.length <= 64
+        ? chave_tentativa : null;
       pool.query(
-        `INSERT INTO respostas (desafio_id, resposta, correta, tempo_segundos, sessao_id)
-         VALUES ($1, $2, $3, $4, $5)`,
-        [id, opcao_index, correta, tempo_segundos ?? null, sessao_id ?? null]
+        `INSERT INTO respostas (desafio_id, resposta, correta, tempo_segundos, sessao_id, chave)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         ON CONFLICT (desafio_id, chave) DO NOTHING`,
+        [id, opcao_index, correta, tempo_segundos ?? null, sessao_id ?? null, chaveTentativa]
       ).catch(err => console.error('Erro ao registrar tentativa de resposta:', err.message));
       return res.json({ correta, opcao_correta: opcaoCorreta });
     }
@@ -147,32 +154,68 @@ router.post('/:id/checar', auth, async (req, res) => {
       newScore = Math.max(0, scoreAtual - 5);
     }
 
-    const animalAtualizado = await pool.query(
-      `UPDATE animal SET hidratacao=$1, pas=$2, pad=$3, fc=$4, energia=$5, saude=$6, atualizado_em=NOW()
-       WHERE usuario_id = $7 RETURNING *`,
-      [novosValores.hidratacao, novosValores.pas, novosValores.pad, novosValores.fc, novosValores.energia, novosValores.saude, req.usuario.id]
+    // Idempotencia (27/09/2026): so o primeiro fechamento com a mesma chave
+    // aplica alguma coisa. Reserva da chave, animal e ranking vao num unico
+    // statement - ou tudo e gravado, ou nada (antes eram 2 statements
+    // soltos), e com 1 ida ao banco a menos (Render em Oregon, Neon em
+    // us-east-1). Um repetido simultaneo espera o primeiro terminar e cai no
+    // ON CONFLICT. Sem chave (bundle antigo ainda aberto no celular) aplica
+    // como antes.
+    const chave = typeof chave_fechamento === 'string'
+      && chave_fechamento.length > 0 && chave_fechamento.length <= 64
+      ? chave_fechamento : null;
+    const escrita = await pool.query(
+      `WITH reserva AS (
+         INSERT INTO fechamentos_desafio (usuario_id, chave)
+         SELECT $7, $9::varchar WHERE $9::varchar IS NOT NULL
+         ON CONFLICT (usuario_id, chave) DO NOTHING
+         RETURNING 1
+       ),
+       pode_aplicar AS (
+         SELECT 1 WHERE $9::varchar IS NULL OR EXISTS (SELECT 1 FROM reserva)
+       ),
+       animal_novo AS (
+         UPDATE animal SET hidratacao=$1, pas=$2, pad=$3, fc=$4, energia=$5, saude=$6, atualizado_em=NOW()
+         WHERE usuario_id = $7 AND EXISTS (SELECT 1 FROM pode_aplicar)
+         RETURNING *
+       ),
+       ranking_novo AS (
+         INSERT INTO ranking (usuario_id, xp_total, sessoes, media_saude)
+         SELECT $7, $8, 0, $6 FROM pode_aplicar
+         ON CONFLICT (usuario_id) DO UPDATE SET xp_total = $8, media_saude = ($6 + ranking.media_saude) / 2, atualizado_em = NOW()
+         RETURNING xp_total
+       )
+       SELECT animal_novo.*, (SELECT xp_total FROM ranking_novo) AS _xp_total FROM animal_novo`,
+      [novosValores.hidratacao, novosValores.pas, novosValores.pad, novosValores.fc,
+       novosValores.energia, novosValores.saude, req.usuario.id, newScore, chave]
     );
+
+    if (escrita.rows.length === 0) {
+      // Fechamento repetido: nada foi aplicado agora. Devolve o estado atual,
+      // que ja inclui o efeito do primeiro fechamento com essa chave.
+      const atual = await pool.query(
+        `SELECT a.*, (SELECT xp_total FROM ranking WHERE usuario_id = $1) AS _xp_total
+         FROM animal a WHERE a.usuario_id = $1`,
+        [req.usuario.id]
+      );
+      const { _xp_total: xpAtual, ...animalAtual } = atual.rows[0] || {};
+      return res.json({ correta, opcao_correta: opcaoCorreta, novosValores: animalAtual, newScore: xpAtual, repetido: true });
+    }
+    const { _xp_total, ...animalAtualizado } = escrita.rows[0];
 
     // Snapshot diario de progressao (ver schema.js) - best effort, mesmo
     // padrao do INSERT em respostas acima: nao pode travar o feedback do
     // desafio por causa de analytics.
     try {
-      await registrarProgressaoDiaria(pool, req.usuario.id, animalAtualizado.rows[0]);
+      await registrarProgressaoDiaria(pool, req.usuario.id, animalAtualizado);
     } catch (err) {
       console.error('Erro ao registrar progressao diaria:', err.message);
     }
-    const rankingAtualizado = await pool.query(
-      `INSERT INTO ranking (usuario_id, xp_total, sessoes, media_saude)
-       VALUES ($1, $2, 0, $3)
-       ON CONFLICT (usuario_id) DO UPDATE SET xp_total = $2, media_saude = ($3 + ranking.media_saude) / 2, atualizado_em = NOW()
-       RETURNING *`,
-      [req.usuario.id, newScore, novosValores.saude]
-    );
 
     res.json({
       correta, opcao_correta: opcaoCorreta,
-      novosValores: animalAtualizado.rows[0],
-      newScore: rankingAtualizado.rows[0].xp_total,
+      novosValores: animalAtualizado,
+      newScore: _xp_total,
     });
   } catch (err) {
     console.error('Erro ao checar resposta:', err.message);
