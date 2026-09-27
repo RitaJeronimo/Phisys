@@ -139,9 +139,9 @@ function SimulacoesSection({ turmaAtualId, nomeTurma, turmasList }) {
             </select>
             <div style={styles.fieldLabel}>Descrição para o aluno</div>
             <textarea style={{...styles.input, minHeight:'60px', resize:'vertical'}} value={simForm.description} onChange={e=>setSimForm(f=>({...f,description:e.target.value}))} placeholder="Descreva o quadro clínico que o aluno deverá reverter..."/>
-            <div style={styles.fieldLabel}>Cuidados diários liberados nesta sessão</div>
+            <div style={styles.fieldLabel}>Cuidados diários liberados por dia</div>
             <div style={styles.simNotice}>
-              🔁 Quando esta simulação estiver ativa, cada cuidado (Trocar Água, Alimentar, Limpar Maravalha) poderá ser usado esta quantidade de vezes pelo aluno durante a sessão. Ajuste conforme o foco da atividade.
+              🔁 Quando esta simulação estiver ativa, cada cuidado (Trocar Água, Alimentar, Limpar Maravalha) poderá ser usado esta quantidade de vezes por dia pelo aluno (o limite zera à meia-noite). Ajuste conforme o foco da atividade.
             </div>
             <div style={{ display:'flex', alignItems:'center', gap:'12px', marginBottom:'1rem' }}>
               <input type="range" min="1" max="10" step="1" value={simForm.cuidadosPorSessao ?? 3}

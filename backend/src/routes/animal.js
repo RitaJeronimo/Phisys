@@ -46,7 +46,8 @@ router.get('/cuidado/status', auth, async (req, res) => {
       for (const cuidadoId of cuidadoIds) {
         const contagemResult = await pool.query(
           `SELECT quantidade FROM cuidados_sessao_contagem
-           WHERE usuario_id = $1 AND simulacao_id = $2 AND cuidado_id = $3`,
+           WHERE usuario_id = $1 AND simulacao_id = $2 AND cuidado_id = $3
+             AND data = (NOW() AT TIME ZONE 'America/Sao_Paulo')::date`,
           [req.usuario.id, sessao.id, cuidadoId]
         );
         const usados = contagemResult.rows.length > 0 ? contagemResult.rows[0].quantidade : 0;
@@ -114,16 +115,19 @@ router.post('/cuidado', auth, async (req, res) => {
       const sessao = simAtiva.rows[0];
       const limite = sessao.cuidados_por_sessao ?? 3;
 
+      // Limite e por dia (America/Sao_Paulo), nao pela sessao inteira - ver
+      // schema.js.
       const contagemResult = await pool.query(
         `SELECT quantidade FROM cuidados_sessao_contagem
-         WHERE usuario_id = $1 AND simulacao_id = $2 AND cuidado_id = $3`,
+         WHERE usuario_id = $1 AND simulacao_id = $2 AND cuidado_id = $3
+           AND data = (NOW() AT TIME ZONE 'America/Sao_Paulo')::date`,
         [req.usuario.id, sessao.id, cuidado_id]
       );
       const usados = contagemResult.rows.length > 0 ? contagemResult.rows[0].quantidade : 0;
 
       if (usados >= limite) {
         return res.status(429).json({
-          erro: `Limite de ${limite} usos deste cuidado atingido nesta sessao.`,
+          erro: `Limite de ${limite} usos deste cuidado atingido hoje.`,
           modo: 'sessao',
           usados,
           limite,
@@ -189,9 +193,9 @@ router.post('/cuidado', auth, async (req, res) => {
     if (emSessao) {
       const sessao = simAtiva.rows[0];
       await pool.query(
-        `INSERT INTO cuidados_sessao_contagem (usuario_id, simulacao_id, cuidado_id, quantidade)
-         VALUES ($1, $2, $3, 1)
-         ON CONFLICT (usuario_id, simulacao_id, cuidado_id)
+        `INSERT INTO cuidados_sessao_contagem (usuario_id, simulacao_id, cuidado_id, data, quantidade)
+         VALUES ($1, $2, $3, (NOW() AT TIME ZONE 'America/Sao_Paulo')::date, 1)
+         ON CONFLICT (usuario_id, simulacao_id, cuidado_id, data)
          DO UPDATE SET quantidade = cuidados_sessao_contagem.quantidade + 1`,
         [req.usuario.id, sessao.id, cuidado_id]
       );

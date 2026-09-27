@@ -280,6 +280,30 @@ async function adicionarColunas() {
       )
     `);
 
+    // Limite de cuidados do Modo Sessao passou a zerar por dia (relato da
+    // Samela, 27/09/2026: simulacao ativa de um dia pro outro deixava os
+    // cuidados esgotados no dia seguinte). "data" usa o fuso
+    // America/Sao_Paulo (mesmo padrao de acessos_diarios) e entra na PK: 1
+    // linha por usuario+simulacao+cuidado+dia. Linhas antigas nao tem dia
+    // conhecido - ficam com "ontem" em vez de "hoje", pra nao continuar
+    // bloqueando quem esgotou num dia anterior. Tudo num bloco so, guardado
+    // pela existencia da coluna, pra rodar uma vez e ser atomico.
+    await pool.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_name = 'cuidados_sessao_contagem' AND column_name = 'data'
+        ) THEN
+          ALTER TABLE cuidados_sessao_contagem ADD COLUMN data DATE;
+          UPDATE cuidados_sessao_contagem SET data = (NOW() AT TIME ZONE 'America/Sao_Paulo')::date - 1;
+          ALTER TABLE cuidados_sessao_contagem ALTER COLUMN data SET NOT NULL;
+          ALTER TABLE cuidados_sessao_contagem DROP CONSTRAINT cuidados_sessao_contagem_pkey;
+          ALTER TABLE cuidados_sessao_contagem ADD PRIMARY KEY (usuario_id, simulacao_id, cuidado_id, data);
+        END IF;
+      END $$;
+    `);
+
     // Store compartilhado do rate limiter de login/registro (item M1 da auditoria
     // de seguranca): o MemoryStore padrao do express-rate-limit fica isolado por
     // processo, e testes em producao (14/08/2026) mostraram contagem inconsistente
