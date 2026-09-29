@@ -5,6 +5,7 @@ const auth = require('../middleware/auth');
 const { requireProfessor, resolveTurmaId } = require('../middleware/turmaOwnership');
 const { recalcularSaudeTurma } = require('../utils/recalcularSaudeTurma');
 const { registrarProgressaoDiaria } = require('../utils/registrarProgressaoDiaria');
+const { PRIMARY_PARAMS } = require('../engine/mascotEngine');
 
 const COOLDOWN_HORAS_MODO_LIVRE = 2;
 
@@ -161,20 +162,40 @@ router.post('/cuidado', auth, async (req, res) => {
     // condition onde dois cuidados concorrentes (ids diferentes) liam o mesmo
     // snapshot e cada UPDATE sobrescrevia as colunas que o outro nao pretendia
     // tocar com um valor ja desatualizado.
+    //
+    // Teto da hidratacao = topo da faixa normal (90), nao 100: acima de 90 ela
+    // conta como fora da faixa no calcularSaude, entao "trocar agua" com 100%
+    // derrubava a saude (Samela, 29/09/2026). GREATEST: se um desafio ja
+    // deixou acima do teto, o cuidado nao abaixa. So hidratacao por enquanto
+    // (decisao da Rita, 29/09/2026) - energia/saude seguem com LEAST(100).
+    const TETO_CUIDADO = { hidratacao: PRIMARY_PARAMS.find((p) => p.id === 'hidratacao').normal[1] };
     const colunas = Object.keys(efeito);
-    const setColunas = colunas.map((coluna, i) => `${coluna} = LEAST(100, ${coluna} + $${i + 1})`);
+    const setColunas = colunas.map((coluna, i) => (TETO_CUIDADO[coluna] !== undefined
+      ? `${coluna} = GREATEST(${coluna}, LEAST(${TETO_CUIDADO[coluna]}, ${coluna} + $${i + 1}))`
+      : `${coluna} = LEAST(100, ${coluna} + $${i + 1})`));
+    const abaixoDoTeto = colunas
+      .filter((coluna) => TETO_CUIDADO[coluna] !== undefined)
+      .map((coluna) => ` AND ${coluna} < ${TETO_CUIDADO[coluna]}`)
+      .join('');
 
     const result = await pool.query(
       `UPDATE animal SET
         ${setColunas.join(',\n        ')},
         atualizado_em = NOW()
-       WHERE usuario_id = $${colunas.length + 1}
+       WHERE usuario_id = $${colunas.length + 1}${abaixoDoTeto}
        RETURNING *`,
       [...colunas.map((coluna) => efeito[coluna]), req.usuario.id]
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ erro: 'Animal nao encontrado.' });
+      // Condicional no proprio UPDATE (atomico, mesma razao do comentario
+      // acima); o SELECT extra so roda no caminho de recusa.
+      const existe = await pool.query('SELECT 1 FROM animal WHERE usuario_id = $1', [req.usuario.id]);
+      if (existe.rows.length === 0) {
+        return res.status(404).json({ erro: 'Animal nao encontrado.' });
+      }
+      // Recusa antes de contar o uso e creditar XP - o aluno nao perde o uso.
+      return res.status(409).json({ erro: 'Este parametro ja esta no ideal.', motivo: 'ja_no_ideal' });
     }
 
     // Snapshot diario de progressao (ver schema.js) - best effort, mesmo

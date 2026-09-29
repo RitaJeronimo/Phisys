@@ -421,7 +421,9 @@ function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, on
     } catch (e) {
       // 429 = bloqueado (cooldown ou limite de sessao atingido). Recarrega o
       // status real do servidor para refletir o bloqueio na tela corretamente.
-      setCareError(id);
+      // 409 ja_no_ideal = hidratacao ja no topo da faixa normal (cuidado sem
+      // efeito, uso nao contado) - rotulo proprio em vez de "Indisponivel".
+      setCareError({ id, texto: e.data?.motivo === 'ja_no_ideal' ? 'Já no ideal' : 'Indisponível' });
       setTimeout(() => setCareError(null), 2000);
       fetchCuidadoStatus();
       pendingCaresRef.current[id] = false;
@@ -548,8 +550,8 @@ function HomeScreen({ user, values, setValues, score, onSelectMode, onLogout, on
                 {careEffect === c.id && (
                   <div style={{ position:'absolute', top:'-10px', right:'4px', fontSize:'clamp(13px, calc(11.05px + 0.9vw), 16.9px)', fontWeight:'800', color:COLORS.status.debilitado.color, animation:'fadeUp 1.5s ease-out', pointerEvents:'none' }}>+5 XP ⚡</div>
                 )}
-                {careError === c.id && (
-                  <div style={{ position:'absolute', top:'-10px', right:'4px', fontSize:'clamp(12px, calc(10.2px + 0.9vw), 15.6px)', fontWeight:'800', color:COLORS.status.critico.color, pointerEvents:'none' }}>Indisponível</div>
+                {careError?.id === c.id && (
+                  <div style={{ position:'absolute', top:'-10px', right:'4px', fontSize:'clamp(12px, calc(10.2px + 0.9vw), 15.6px)', fontWeight:'800', color:COLORS.status.critico.color, pointerEvents:'none' }}>{careError.texto}</div>
                 )}
               </div>
             );
