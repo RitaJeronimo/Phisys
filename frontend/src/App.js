@@ -284,7 +284,7 @@ function App() {
   }
 
   if (screen === 'ranking')   return <RankingScreen user={user} onBack={handleBack}/>;
-  if (screen === 'professor') return <ProfessorPanel onBack={handleBack} ageDays={ageDays} setAgeDays={setAgeDays}/>;
+  if (screen === 'professor') return <ProfessorPanel onBack={handleBack}/>;
   if (screen === 'secondary') return <SecondaryScreen values={values} onBack={handleBack}/>;
 
   return (

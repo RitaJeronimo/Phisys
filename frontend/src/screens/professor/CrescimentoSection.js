@@ -1,9 +1,62 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { animal as animalApi } from '../../api';
 import { COLORS, FONT_SCALE } from '../../theme';
 import { styles } from './shared';
 
-function CrescimentoSection({ turmaAtualId, ageDays, setAgeDays }) {
+function CrescimentoSection({ turmaAtualId, turmasList, fetchTurmas }) {
+  // Idade vem da turma selecionada (turmas.age_days, via GET /api/turmas) -
+  // antes era um estado de tela unico pra todas as turmas, nunca lido do
+  // banco (parecia global e voltava pra Juvenil no F5, Samela 01/10/2026).
+  // Sem a turma na lista (ainda carregando, ou releitura falhou) o slider
+  // fica bloqueado e o rotulo mostra "—", em vez de um 90 que nao veio do banco.
+  const turmaAtual = turmasList.find(t => t.id === turmaAtualId);
+  const idadeSalva = turmaAtual?.age_days;
+  // Valor do slider enquanto o professor arrasta - so vira PUT ao soltar.
+  const [rascunho, setRascunho] = useState(null);
+  const [salvando, setSalvando] = useState(false);
+  const idadeExibida = rascunho ?? idadeSalva;
+
+  useEffect(() => { setRascunho(null); }, [turmaAtualId]);
+
+  async function salvarIdade(novaIdade) {
+    if (novaIdade === idadeSalva) { setRascunho(null); return; }
+    setSalvando(true);
+    try {
+      await animalApi.setAge(novaIdade, turmaAtualId);
+    } catch (e) {
+      // So aqui o banco nao mudou - volta o slider pro valor salvo.
+      alert('Erro ao salvar a idade do animal.');
+      setRascunho(null);
+      setSalvando(false);
+      return;
+    }
+    // Banco ja atualizado; a releitura fica fora do try acima pra uma falha
+    // nela nunca aparecer como "erro ao salvar". fetchTurmas nao rejeita: o
+    // .catch dele esvazia turmasList, a turma some da lista e o slider fica
+    // bloqueado (ver `bloqueado`) ate a proxima leitura bem-sucedida.
+    await fetchTurmas();
+    setRascunho(null);
+    setSalvando(false);
+  }
+
+  // onChange do React dispara a cada passo do arraste (evento "input"); o
+  // "change" nativo dispara uma vez so, ao soltar (mouse, toque, ou mouse
+  // solto fora do slider) - antes era 1 PUT por passo, podendo chegar fora
+  // de ordem e salvar um valor que nao era o final. O <input> e sempre
+  // renderizado (sem return antecipado), entao o ref existe na montagem.
+  const sliderRef = useRef(null);
+  const salvarRef = useRef(salvarIdade);
+  salvarRef.current = salvarIdade;
+  useEffect(() => {
+    const el = sliderRef.current;
+    if (!el) return;
+    const aoSoltar = e => salvarRef.current(Number(e.target.value));
+    el.addEventListener('change', aoSoltar);
+    return () => el.removeEventListener('change', aoSoltar);
+  }, []);
+
+  const bloqueado = salvando || !turmaAtual;
+
   return (
     <>
       <div style={styles.sectionTitle}>fases de crescimento do animal</div>
@@ -13,17 +66,14 @@ function CrescimentoSection({ turmaAtualId, ageDays, setAgeDays }) {
       <div style={styles.challengeCard}>
         <div style={{ ...FONT_SCALE.bodyBold, color:COLORS.textPrimary, marginBottom:'12px' }}>📅 Idade atual do animal</div>
         <div style={{ display:'flex', alignItems:'center', gap:'12px', marginBottom:'8px' }}>
-          <input type="range" min="0" max="365" step="1" value={ageDays || 90}
-            onChange={async e => {
-              const newAge = Number(e.target.value);
-              if (setAgeDays) setAgeDays(newAge);
-              try {
-                await animalApi.setAge(newAge, turmaAtualId);
-              } catch(e) {}
-            }}
+          {/* Sempre renderizado (so desabilitado) - o listener de "change" do
+              useEffect([]) depende do ref existir na montagem. */}
+          <input ref={sliderRef} type="range" min="0" max="365" step="1" value={idadeExibida ?? 0}
+            disabled={bloqueado}
+            onChange={e => setRascunho(Number(e.target.value))}
             style={{ flex:1, accentColor:COLORS.indigo }}
           />
-          <div style={{ fontSize:'clamp(18px, calc(15.3px + 0.9vw), 23.4px)', fontWeight:'800', color:COLORS.textPrimary, whiteSpace:'nowrap', textAlign:'right' }}>{ageDays || 90} dias</div>
+          <div style={{ fontSize:'clamp(18px, calc(15.3px + 0.9vw), 23.4px)', fontWeight:'800', color:COLORS.textPrimary, whiteSpace:'nowrap', textAlign:'right' }}>{idadeExibida != null ? `${idadeExibida} dias` : '—'}</div>
         </div>
         <div style={{ display:'flex', gap:'6px' }}>
           {[
@@ -33,12 +83,11 @@ function CrescimentoSection({ turmaAtualId, ageDays, setAgeDays }) {
             { label:'🦳 Idoso',         days:600, color:'#9B59B6' },
           ].map(preset => (
             <div key={preset.days}
-              style={{ flex:1, background:`${preset.color}22`, border:`1px solid ${preset.color}55`, borderRadius:'8px', padding:'6px 4px', textAlign:'center', cursor:'pointer', fontSize:'clamp(12px, calc(10.2px + 0.9vw), 15.6px)', fontWeight:'700', color:COLORS.textPrimary }}
-              onClick={async () => {
-                if (setAgeDays) setAgeDays(preset.days);
-                try {
-                  await animalApi.setAge(preset.days, turmaAtualId);
-                } catch(e) {}
+              style={{ flex:1, background:`${preset.color}22`, border:`1px solid ${preset.color}55`, borderRadius:'8px', padding:'6px 4px', textAlign:'center', cursor: bloqueado ? 'default' : 'pointer', opacity: bloqueado ? .5 : 1, fontSize:'clamp(12px, calc(10.2px + 0.9vw), 15.6px)', fontWeight:'700', color:COLORS.textPrimary }}
+              onClick={() => {
+                if (bloqueado) return;
+                setRascunho(preset.days);
+                salvarIdade(preset.days);
               }}
             >
               {preset.label}

@@ -25,7 +25,7 @@ const SECTIONS = [
   ['crescimento', '🐭 Crescimento'],
 ];
 
-function ProfessorLayout({ onBack, onApplySimulation, ageDays, setAgeDays }) {
+function ProfessorLayout({ onBack, onApplySimulation }) {
   const [section, setSection] = useState('desafios');
   const [resetCodeInfo, setResetCodeInfo] = useState(null); // { nome, codigo, expiraEmMinutos | expiraComTurma }
 
@@ -47,7 +47,9 @@ function ProfessorLayout({ onBack, onApplySimulation, ageDays, setAgeDays }) {
   const [turmasList, setTurmasList] = useState([]);
 
   const fetchTurmas = useCallback(() => {
-    turmasApi.listar()
+    // Retorna a promise pra quem precisar esperar a lista atualizada
+    // (CrescimentoSection, depois de salvar a idade)
+    return turmasApi.listar()
       .then(data => {
         if (!Array.isArray(data)) return;
         setTurmasList(data);
@@ -190,7 +192,7 @@ function ProfessorLayout({ onBack, onApplySimulation, ageDays, setAgeDays }) {
       {section === 'notas'       && <NotasSection       {...sectionProps} />}
       {section === 'pesos'       && <PesosSection        {...sectionProps} />}
       {section === 'mensagens'   && <MensagensSection   {...sectionProps} />}
-      {section === 'crescimento' && <CrescimentoSection {...sectionProps} ageDays={ageDays} setAgeDays={setAgeDays} />}
+      {section === 'crescimento' && <CrescimentoSection {...sectionProps} />}
     </div>
   );
 }
