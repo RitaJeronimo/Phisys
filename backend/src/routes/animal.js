@@ -8,6 +8,8 @@ const { registrarProgressaoDiaria } = require('../utils/registrarProgressaoDiari
 const { PRIMARY_PARAMS } = require('../engine/mascotEngine');
 
 const COOLDOWN_HORAS_MODO_LIVRE = 2;
+// Limite de sanidade pro PUT /age - o preset "Idoso" usa 600 dias.
+const IDADE_MAXIMA_DIAS = 1000;
 
 // GET /api/animal — estado atual do animal do aluno logado
 router.get('/', auth, async (req, res) => {
@@ -248,9 +250,18 @@ router.post('/cuidado', auth, async (req, res) => {
   }
 });
 
-// PUT /api/animal/age — professor atualiza idade de todos os alunos de uma turma dele
+// PUT /api/animal/age — professor atualiza a idade do animal de uma turma dele
+// (turmas.age_days, fonte da verdade) e a copia em animal.age_days de todos
+// os alunos dela
 router.put('/age', auth, requireProfessor, resolveTurmaId, async (req, res) => {
+  // Validado antes do pool.connect() - turmas.age_days e NOT NULL, e antes
+  // qualquer valor (ate null) era gravado direto em animal. typeof antes do
+  // isInteger: Number(null), Number("") e Number([]) viram 0 e passariam.
   const { age_days } = req.body;
+  if (typeof age_days !== 'number' || !Number.isInteger(age_days)
+      || age_days < 0 || age_days > IDADE_MAXIMA_DIAS) {
+    return res.status(400).json({ erro: `age_days deve ser um inteiro entre 0 e ${IDADE_MAXIMA_DIAS}.` });
+  }
   const client = await pool.connect();
   // Mesmo padrao de simulacoes.js's /ativar - sem esse handler, um erro de
   // conexao no client "checked-out" (ex: Neon encerrando a conexao) derruba
@@ -260,8 +271,13 @@ router.put('/age', auth, requireProfessor, resolveTurmaId, async (req, res) => {
   });
   try {
     await client.query('BEGIN');
+    // Turma e alunos num unico statement (mesmo padrao do fechamento em CTE
+    // do /checar): uma ida ao banco a menos e nunca uma sem a outra.
     await client.query(
-      `UPDATE animal SET age_days = $1, atualizado_em = NOW()
+      `WITH turma AS (
+         UPDATE turmas SET age_days = $1 WHERE id = $2
+       )
+       UPDATE animal SET age_days = $1, atualizado_em = NOW()
        WHERE usuario_id IN (SELECT id FROM usuarios WHERE modo = 'aluno' AND turma_id = $2)`,
       [age_days, req.turmaId]
     );

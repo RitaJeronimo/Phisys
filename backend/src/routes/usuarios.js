@@ -146,7 +146,12 @@ router.post('/', auth, requireProfessor, resolveTurmaId, async (req, res) => {
     );
     const usuario = result.rows[0];
 
-    await pool.query('INSERT INTO animal (usuario_id) VALUES ($1)', [usuario.id]);
+    // Aluno novo nasce com a idade atual da turma, nao com o DEFAULT 90.
+    // COALESCE: nunca grava NULL explicito (que furaria o DEFAULT da coluna).
+    await pool.query(
+      'INSERT INTO animal (usuario_id, age_days) VALUES ($1, COALESCE((SELECT age_days FROM turmas WHERE id = $2), 90))',
+      [usuario.id, req.turmaId]
+    );
     await pool.query('INSERT INTO ranking (usuario_id) VALUES ($1)', [usuario.id]);
 
     const codigo = await gerarCodigoAcesso(usuario.id, { expiraComTurma: true });
@@ -254,7 +259,10 @@ router.post('/importar-confirmar', auth, requireProfessor, resolveTurmaId, async
         [nome, matricula, email, senha_hash, req.turmaId]
       );
       const usuario = result.rows[0];
-      await client.query('INSERT INTO animal (usuario_id) VALUES ($1)', [usuario.id]);
+      await client.query(
+        'INSERT INTO animal (usuario_id, age_days) VALUES ($1, COALESCE((SELECT age_days FROM turmas WHERE id = $2), 90))',
+        [usuario.id, req.turmaId]
+      );
       await client.query('INSERT INTO ranking (usuario_id) VALUES ($1)', [usuario.id]);
       const codigo = await gerarCodigoAcesso(usuario.id, { expiraComTurma: true, queryable: client });
       criados.push({ id: usuario.id, nome: usuario.nome, matricula: usuario.matricula, email, codigo });

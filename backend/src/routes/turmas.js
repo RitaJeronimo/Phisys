@@ -20,7 +20,7 @@ const MAX_TURMAS_ATIVAS_POR_PROFESSOR = 5;
 router.get('/', auth, requireProfessor, async (req, res) => {
   try {
     const result = await pool.query(
-      'SELECT id, nome, codigo, ativa, criado_em FROM turmas WHERE criado_por = $1 ORDER BY criado_em DESC',
+      'SELECT id, nome, codigo, ativa, age_days, criado_em FROM turmas WHERE criado_por = $1 ORDER BY criado_em DESC',
       [req.usuario.id]
     );
     res.json(result.rows);
@@ -53,7 +53,7 @@ router.post('/', auth, requireProfessor, async (req, res) => {
       return res.status(409).json({ erro: 'Ja existe uma turma com esse codigo.' });
     }
     const result = await pool.query(
-      'INSERT INTO turmas (nome, codigo, ativa, criado_por) VALUES ($1, $2, true, $3) RETURNING id, nome, codigo, ativa, criado_em',
+      'INSERT INTO turmas (nome, codigo, ativa, criado_por) VALUES ($1, $2, true, $3) RETURNING id, nome, codigo, ativa, age_days, criado_em',
       [nome, codigo, req.usuario.id]
     );
     res.status(201).json(result.rows[0]);

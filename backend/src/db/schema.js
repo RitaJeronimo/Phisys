@@ -482,6 +482,29 @@ async function adicionarColunas() {
       )
     `);
 
+    // Idade do animal por turma (Samela, 01/10/2026): antes so existia em
+    // animal.age_days (por aluno) e o painel do professor mostrava um estado
+    // de tela unico pra todas as turmas, nunca lido do banco - parecia global
+    // e voltava pra 90 (Juvenil) a cada F5. turmas.age_days passa a ser a
+    // fonte da verdade; animal.age_days continua como copia (engine, export e
+    // progressao_diaria leem dele), sempre gravada junto em PUT /animal/age.
+    // Backfill com a idade que os alunos da turma ja tem (moda; hoje cada
+    // turma e uniforme), 90 se a turma nao tiver alunos. Multi-statement sem
+    // parametros = uma transacao implicita: nenhuma turma criada no meio
+    // fica com NULL. Idempotente: no proximo boot a coluna ja e NOT NULL e o
+    // UPDATE nao acha nada.
+    await pool.query(`
+      ALTER TABLE turmas ADD COLUMN IF NOT EXISTS age_days INTEGER;
+      UPDATE turmas t SET age_days = COALESCE((
+        SELECT mode() WITHIN GROUP (ORDER BY a.age_days)
+        FROM animal a JOIN usuarios u ON u.id = a.usuario_id
+        WHERE u.modo = 'aluno' AND u.turma_id = t.id
+      ), 90)
+      WHERE t.age_days IS NULL;
+      ALTER TABLE turmas ALTER COLUMN age_days SET DEFAULT 90;
+      ALTER TABLE turmas ALTER COLUMN age_days SET NOT NULL;
+    `);
+
     console.log('Colunas e tabelas adicionadas com sucesso!');
   } catch (err) {
     console.error('Erro ao adicionar colunas:', err.message);
