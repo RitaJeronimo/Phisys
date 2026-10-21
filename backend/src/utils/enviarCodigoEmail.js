@@ -11,13 +11,17 @@ const REMETENTE = 'Phisys <codigo@bioinovatecufes.com>';
 // proposito: NUNCA lanca. O aluno ja foi gravado no banco antes desta
 // chamada, e o professor sempre ve o codigo na tela como rede de seguranca -
 // uma falha aqui (Resend fora do ar, e-mail invalido, etc.) so vira um log.
+// Retorna true/false (21/10/2026): o SDK da Resend nao lanca em erro de API
+// (devolve { error }) e o log dele e desligado em producao - antes disso uma
+// recusa (429, endereco invalido...) passava em silencio. Bounce nao aparece
+// aqui: e assincrono, a API aceita o envio e so depois o e-mail volta.
 async function enviarCodigoEmail(email, nome, codigo) {
   if (!resend) {
     console.error(`RESEND_API_KEY nao configurada - pulando envio de e-mail para ${email}.`);
-    return;
+    return false;
   }
   try {
-    await resend.emails.send({
+    const { error } = await resend.emails.send({
       from: REMETENTE,
       to: email,
       subject: 'Seu código de acesso - Phisys',
@@ -29,8 +33,14 @@ async function enviarCodigoEmail(email, nome, codigo) {
         <h2 style="letter-spacing:4px;">${codigo}</h2>
       `,
     });
+    if (error) {
+      console.error(`Resend recusou o e-mail de codigo de acesso para ${email}:`, error.statusCode, error.name, error.message);
+      return false;
+    }
+    return true;
   } catch (err) {
     console.error(`Erro ao enviar e-mail de codigo de acesso para ${email}:`, err.message);
+    return false;
   }
 }
 

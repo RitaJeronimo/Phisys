@@ -27,7 +27,7 @@ const SECTIONS = [
 
 function ProfessorLayout({ onBack, onApplySimulation }) {
   const [section, setSection] = useState('desafios');
-  const [resetCodeInfo, setResetCodeInfo] = useState(null); // { nome, codigo, expiraEmMinutos | expiraComTurma }
+  const [resetCodeInfo, setResetCodeInfo] = useState(null); // { nome, codigo, expiraEmMinutos | expiraComTurma, avisoEmail? }
 
   // Turma que as outras secoes (Desafios, Simulações, Parâmetros, Alunos, Notas,
   // Pesos, Mensagens, Crescimento) enxergam agora - desde o item 3 (24/08/2026) o
@@ -144,6 +144,11 @@ function ProfessorLayout({ onBack, onApplySimulation }) {
               ? 'Válido até a turma ser desativada · uso único'
               : `Válido por ${resetCodeInfo.expiraEmMinutos} minutos · uso único`}
           </div>
+          {resetCodeInfo.avisoEmail && (
+            <div style={{ ...styles.resetCodeHint, color:COLORS.status.critico.color, fontWeight:'700' }}>
+              ⚠️ {resetCodeInfo.avisoEmail}
+            </div>
+          )}
           <div style={styles.resetCodeActions}>
             <button style={styles.resetCodeCopyBtn} onClick={handleCopyResetCode}>Copiar</button>
             <button style={styles.resetCodeCloseBtn} onClick={() => setResetCodeInfo(null)}>Fechar</button>

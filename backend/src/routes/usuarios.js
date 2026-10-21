@@ -155,7 +155,7 @@ router.post('/', auth, requireProfessor, resolveTurmaId, async (req, res) => {
     await pool.query('INSERT INTO ranking (usuario_id) VALUES ($1)', [usuario.id]);
 
     const codigo = await gerarCodigoAcesso(usuario.id, { expiraComTurma: true });
-    await enviarCodigoEmail(email, usuario.nome, codigo);
+    const emailEnviado = await enviarCodigoEmail(email, usuario.nome, codigo);
 
     res.status(201).json({
       id: usuario.id,
@@ -164,6 +164,9 @@ router.post('/', auth, requireProfessor, resolveTurmaId, async (req, res) => {
       codigo,
       expira_com_turma: true,
       mensagem: 'Aluno cadastrado. Codigo enviado por e-mail - tambem mostrado abaixo, caso o envio falhe.',
+      // Campo novo e opcional: so existe quando o envio falhou, pra resposta
+      // de sucesso continuar identica a de antes.
+      ...(emailEnviado ? {} : { aviso_email: 'O e-mail com o codigo nao foi enviado. Entregue o codigo ao aluno.' }),
     });
   } catch (err) {
     console.error('Erro ao cadastrar aluno:', err.message);
@@ -271,12 +274,14 @@ router.post('/importar-confirmar', auth, requireProfessor, resolveTurmaId, async
 
     // Fora da transacao de proposito - best effort, enviarCodigoEmail nunca
     // lanca, entao Promise.all nunca rejeita aqui.
-    await Promise.all(criados.map(u => enviarCodigoEmail(u.email, u.nome, u.codigo)));
+    const enviados = await Promise.all(criados.map(u => enviarCodigoEmail(u.email, u.nome, u.codigo)));
+    // aviso_email so nos alunos cujo envio falhou (mesmo campo opcional do POST /).
+    const alunosResposta = criados.map((u, i) => (enviados[i] ? u : { ...u, aviso_email: 'E-mail nao enviado.' }));
 
     res.status(201).json({
       ok: true,
       total: criados.length,
-      alunos: criados,
+      alunos: alunosResposta,
       mensagem: `${criados.length} aluno(s) importado(s) com sucesso. Codigos enviados por e-mail.`,
     });
   } catch (err) {
@@ -358,13 +363,14 @@ router.post('/:id/reenviar-codigo', auth, requireProfessor, mesmaTurmaDoRecurso(
     }
 
     const codigo = await gerarCodigoAcesso(id, { expiraComTurma: true });
-    await enviarCodigoEmail(aluno.email, aluno.nome, codigo);
+    const emailEnviado = await enviarCodigoEmail(aluno.email, aluno.nome, codigo);
 
     res.json({
       ok: true,
       codigo,
       expira_com_turma: true,
       mensagem: 'Codigo reenviado por e-mail - tambem mostrado abaixo, caso o envio falhe.',
+      ...(emailEnviado ? {} : { aviso_email: 'O e-mail com o codigo nao foi enviado. Entregue o codigo ao aluno.' }),
     });
   } catch (err) {
     console.error('Erro ao reenviar codigo de acesso:', err.message);

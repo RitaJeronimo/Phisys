@@ -69,7 +69,7 @@ function AlunosSection({ turmaAtualId, onResetCode }) {
       // desativada (pedido da Rita, 24/08/2026). O codigo tambem ja foi
       // enviado por e-mail (28/08/2026) - o card continua servindo de rede
       // de seguranca caso o envio falhe.
-      onResetCode({ nome: data.nome, codigo: data.codigo, expiraComTurma: true });
+      onResetCode({ nome: data.nome, codigo: data.codigo, expiraComTurma: true, avisoEmail: data.aviso_email });
     } catch(e) {
       alert('Erro ao cadastrar aluno: ' + e.message);
     }
@@ -187,7 +187,7 @@ function AlunosSection({ turmaAtualId, onResetCode }) {
   async function handleReenviarCodigo(id, nome) {
     try {
       const data = await usuariosApi.reenviarCodigo(id);
-      onResetCode({ nome, codigo: data.codigo, expiraComTurma: true });
+      onResetCode({ nome, codigo: data.codigo, expiraComTurma: true, avisoEmail: data.aviso_email });
     } catch(e) {
       alert('Erro ao reenviar código: ' + e.message);
     }
@@ -328,9 +328,17 @@ function AlunosSection({ turmaAtualId, onResetCode }) {
                 <div style={styles.fieldHint}>
                   ✅ {importResultado.length} aluno(s) importado(s). Código enviado por e-mail pra cada um - também listados abaixo (e exportáveis), caso algum envio falhe.
                 </div>
+                {importResultado.some(a => a.aviso_email) && (
+                  <div style={{ ...styles.fieldHint, color:COLORS.status.critico.color, fontWeight:'700' }}>
+                    ⚠️ {importResultado.filter(a => a.aviso_email).length} e-mail(s) não foram enviados - entregue esses códigos pessoalmente.
+                  </div>
+                )}
                 {importResultado.map(a => (
                   <div key={a.id} style={{ display:'flex', justifyContent:'space-between', padding:'6px 10px', background:COLORS.surfaceMuted, borderRadius:'8px', marginBottom:'4px' }}>
-                    <div style={{ ...FONT_SCALE.caption }}>{a.nome} ({a.matricula})</div>
+                    <div style={{ ...FONT_SCALE.caption }}>
+                      {a.nome} ({a.matricula})
+                      {a.aviso_email && <span style={{ color:COLORS.status.critico.color, fontWeight:'700' }}> · ⚠️ e-mail não enviado</span>}
+                    </div>
                     <div style={{ ...FONT_SCALE.caption, fontWeight:'800' }}>{a.codigo}</div>
                   </div>
                 ))}
