@@ -7,6 +7,14 @@ const crypto = require('crypto');
 const { requireProfessor, mesmaTurmaDoRecurso, resolveTurmaId } = require('../middleware/turmaOwnership');
 const enviarCodigoEmail = require('../utils/enviarCodigoEmail');
 
+// Envio dos e-mails da importacao (item 3, 07/11/2026): um por vez, com
+// pausa entre eles - o Promise.all disparava todos juntos e a Resend
+// recusava os excedentes com 429 (limite de envios por segundo).
+const PAUSA_ENTRE_EMAILS_MS = 600;
+const ESPERA_ANTES_DE_REPETIR_MS = 1000;
+const ERROS_QUE_INTERROMPEM_ENVIO = ['daily_quota_exceeded', 'monthly_quota_exceeded', 'sem_chave'];
+const esperar = ms => new Promise(resolve => setTimeout(resolve, ms));
+
 // Gera e grava um codigo de 6 digitos de uso unico pra um aluno
 // definir/redefinir a propria senha em POST /api/auth/resetar-senha.
 // Compartilhado entre o cadastro manual (POST /, item 4) e o reset de senha
@@ -272,9 +280,27 @@ router.post('/importar-confirmar', auth, requireProfessor, resolveTurmaId, async
     }
     await client.query('COMMIT');
 
-    // Fora da transacao de proposito - best effort, enviarCodigoEmail nunca
-    // lanca, entao Promise.all nunca rejeita aqui.
-    const enviados = await Promise.all(criados.map(u => enviarCodigoEmail(u.email, u.nome, u.codigo)));
+    // Fora da transacao de proposito - best effort, o envio nunca lanca.
+    // Sequencial com pausa; repete uma vez so em rate_limit_exceeded; em cota
+    // diaria/mensal esgotada ou sem chave para e marca os restantes como nao
+    // enviados (tentar de novo so geraria mais recusas).
+    const enviados = [];
+    let interrompido = false;
+    for (let i = 0; i < criados.length; i++) {
+      const u = criados[i];
+      if (interrompido) { enviados.push(false); continue; }
+      if (i > 0) await esperar(PAUSA_ENTRE_EMAILS_MS);
+      let envio = await enviarCodigoEmail.comMotivo(u.email, u.nome, u.codigo);
+      if (!envio.ok && envio.erro === 'rate_limit_exceeded') {
+        await esperar(ESPERA_ANTES_DE_REPETIR_MS);
+        envio = await enviarCodigoEmail.comMotivo(u.email, u.nome, u.codigo);
+      }
+      if (!envio.ok && ERROS_QUE_INTERROMPEM_ENVIO.includes(envio.erro)) {
+        interrompido = true;
+        console.error(`Envio dos e-mails da importacao interrompido (${envio.erro}) - ${criados.length - i - 1} e-mail(s) restante(s) nao enviados.`);
+      }
+      enviados.push(envio.ok);
+    }
     // aviso_email so nos alunos cujo envio falhou (mesmo campo opcional do POST /).
     const alunosResposta = criados.map((u, i) => (enviados[i] ? u : { ...u, aviso_email: 'E-mail nao enviado.' }));
 

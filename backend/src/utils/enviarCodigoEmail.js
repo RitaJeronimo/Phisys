@@ -15,10 +15,13 @@ const REMETENTE = 'Phisys <codigo@bioinovatecufes.com>';
 // (devolve { error }) e o log dele e desligado em producao - antes disso uma
 // recusa (429, endereco invalido...) passava em silencio. Bounce nao aparece
 // aqui: e assincrono, a API aceita o envio e so depois o e-mail volta.
-async function enviarCodigoEmail(email, nome, codigo) {
+// comMotivo (item 3, 07/11/2026): mesmo envio, mas devolve tambem o nome do
+// erro da Resend (ex: rate_limit_exceeded), pra importacao decidir se tenta
+// de novo ou para. As outras rotas seguem usando so o true/false abaixo.
+async function enviarCodigoEmailComMotivo(email, nome, codigo) {
   if (!resend) {
     console.error(`RESEND_API_KEY nao configurada - pulando envio de e-mail para ${email}.`);
-    return false;
+    return { ok: false, erro: 'sem_chave' };
   }
   try {
     const { error } = await resend.emails.send({
@@ -35,13 +38,18 @@ async function enviarCodigoEmail(email, nome, codigo) {
     });
     if (error) {
       console.error(`Resend recusou o e-mail de codigo de acesso para ${email}:`, error.statusCode, error.name, error.message);
-      return false;
+      return { ok: false, erro: error.name };
     }
-    return true;
+    return { ok: true };
   } catch (err) {
     console.error(`Erro ao enviar e-mail de codigo de acesso para ${email}:`, err.message);
-    return false;
+    return { ok: false, erro: 'excecao' };
   }
 }
 
+async function enviarCodigoEmail(email, nome, codigo) {
+  return (await enviarCodigoEmailComMotivo(email, nome, codigo)).ok;
+}
+
 module.exports = enviarCodigoEmail;
+module.exports.comMotivo = enviarCodigoEmailComMotivo;
