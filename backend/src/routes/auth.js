@@ -198,15 +198,13 @@ router.post('/resetar-senha', authLimiter, async (req, res) => {
     return res.status(400).json({ erro: 'A senha deve ter pelo menos 4 caracteres.' });
   }
 
-  const erroGenerico = { erro: 'Codigo invalido ou expirado.' };
-
   try {
     const usuarioResult = await pool.query(
       `SELECT id, turma_id FROM usuarios WHERE matricula = $1 AND modo = 'aluno'`,
       [matricula]
     );
     if (usuarioResult.rows.length === 0) {
-      return res.status(401).json(erroGenerico);
+      return res.status(401).json({ erro: 'Matricula nao encontrada.' });
     }
     const usuario_id = usuarioResult.rows[0].id;
 
@@ -217,7 +215,7 @@ router.post('/resetar-senha', authLimiter, async (req, res) => {
       [usuario_id]
     );
     if (tokenResult.rows.length === 0) {
-      return res.status(401).json(erroGenerico);
+      return res.status(401).json({ erro: 'Nao ha codigo ativo para esta matricula: ele pode ja ter sido usado ou ter expirado. Peca um novo ao professor.' });
     }
     const tokenRow = tokenResult.rows[0];
 
@@ -228,25 +226,25 @@ router.post('/resetar-senha', authLimiter, async (req, res) => {
     if (tokenRow.expira_com_turma) {
       const turma = await pool.query('SELECT ativa FROM turmas WHERE id = $1', [usuarioResult.rows[0].turma_id]);
       if (turma.rows.length === 0 || !turma.rows[0].ativa) {
-        return res.status(401).json(erroGenerico);
+        return res.status(401).json({ erro: 'A turma desta matricula esta desativada. Fale com o professor.' });
       }
     }
 
     const codigoValido = await bcrypt.compare(codigo, tokenRow.codigo_hash);
     if (!codigoValido) {
-      return res.status(401).json(erroGenerico);
+      return res.status(401).json({ erro: 'Codigo incorreto: confira os 6 digitos ou peca um novo ao professor (um codigo novo cancela o anterior).' });
     }
 
     // Marca o token como usado de forma atomica (WHERE usado_em IS NULL) -
     // se duas requisicoes chegarem quase juntas com o mesmo codigo, so uma
-    // consegue mudar a linha; a outra cai no erro generico abaixo.
+    // consegue mudar a linha; a outra cai no erro abaixo.
     const consumido = await pool.query(
       `UPDATE reset_senha_tokens SET usado_em = NOW()
        WHERE id = $1 AND usado_em IS NULL RETURNING id`,
       [tokenRow.id]
     );
     if (consumido.rows.length === 0) {
-      return res.status(401).json(erroGenerico);
+      return res.status(401).json({ erro: 'Este codigo acabou de ser usado. Tente entrar com a nova senha; se nao funcionar, peca um novo codigo ao professor.' });
     }
 
     const senha_hash = await bcrypt.hash(nova_senha, 10);
