@@ -68,7 +68,7 @@ function CrescimentoSection({ turmaAtualId, turmasList, fetchTurmas }) {
         <div style={{ display:'flex', alignItems:'center', gap:'12px', marginBottom:'8px' }}>
           {/* Sempre renderizado (so desabilitado) - o listener de "change" do
               useEffect([]) depende do ref existir na montagem. */}
-          <input ref={sliderRef} type="range" min="0" max="365" step="1" value={idadeExibida ?? 0}
+          <input ref={sliderRef} type="range" min="0" max="720" step="1" value={idadeExibida ?? 0}
             disabled={bloqueado}
             onChange={e => setRascunho(Number(e.target.value))}
             style={{ flex:1, accentColor:COLORS.indigo }}
