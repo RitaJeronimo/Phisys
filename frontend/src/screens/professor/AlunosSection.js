@@ -215,6 +215,22 @@ function AlunosSection({ turmaAtualId, onResetCode }) {
     }
   }
 
+  // Item 6: corrige o e-mail sem excluir/recriar. So troca o e-mail; pra
+  // mandar codigo novo pro endereco corrigido, o professor usa o 🔑.
+  async function handleEditarEmail(student) {
+    try {
+      const { email: atual } = await usuariosApi.buscar(student.id);
+      const novo = window.prompt(`Novo e-mail de ${student.nome}:`, atual || '');
+      if (novo === null || novo.trim() === (atual || '')) return;
+      await usuariosApi.editarEmail(student.id, novo.trim());
+      alert(student.senha_definida_pelo_aluno
+        ? '✅ E-mail atualizado.'
+        : '✅ E-mail atualizado. Para mandar um código novo para este endereço, use 🔑 Reenviar código.');
+    } catch (e) {
+      alert('Erro ao editar e-mail: ' + e.message);
+    }
+  }
+
   async function handleDeletarAluno(id, nome) {
     if (!window.confirm(`Remover ${nome} permanentemente? Isso apaga o cadastro e todos os dados do aluno.`)) return;
     try {
@@ -473,6 +489,11 @@ function AlunosSection({ turmaAtualId, onResetCode }) {
                 style={{ background:COLORS.iconChipBg, border:`1px solid ${COLORS.border}`, color:COLORS.blue, borderRadius:'8px', padding:'4px 8px', cursor:'pointer', fontSize:'clamp(14px, calc(11.9px + 0.9vw), 18.2px)', fontFamily:'inherit' }}
                 title={student.senha_definida_pelo_aluno ? 'Resetar senha' : 'Reenviar código de acesso'}
               >🔑</button>
+              <button
+                onClick={() => handleEditarEmail(student)}
+                style={{ background:COLORS.iconChipBg, border:`1px solid ${COLORS.border}`, color:COLORS.blue, borderRadius:'8px', padding:'4px 8px', cursor:'pointer', fontSize:'clamp(14px, calc(11.9px + 0.9vw), 18.2px)', fontFamily:'inherit' }}
+                title="Editar e-mail"
+              >✉️</button>
               <button
                 onClick={() => handleDeletarAluno(student.id, student.nome)}
                 style={{ background:COLORS.status.critico.soft, border:`1px solid ${COLORS.status.critico.color}`, color:COLORS.status.critico.color, borderRadius:'8px', padding:'4px 8px', cursor:'pointer', fontSize:'clamp(14px, calc(11.9px + 0.9vw), 18.2px)', fontFamily:'inherit' }}

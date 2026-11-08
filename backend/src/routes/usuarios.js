@@ -353,18 +353,25 @@ router.get('/', auth, requireProfessor, resolveTurmaId, async (req, res) => {
   }
 });
 
-// GET /api/usuarios/:id – perfil de um aluno (so da propria turma)
+// GET /api/usuarios/:id – perfil de um aluno (so da propria turma).
+// Item 6 (08/11/2026): devolve tambem o e-mail (o painel le daqui ao clicar
+// em editar - a lista GET / continua sem e-mail) e filtra modo = 'aluno':
+// conta antiga de professor pode ter turma_id de uma turma do professor
+// logado e passar pelo mesmaTurmaDoRecurso.
 router.get('/:id', auth, requireProfessor, mesmaTurmaDoRecurso('usuarios'), async (req, res) => {
   const { id } = req.params;
   try {
     const result = await pool.query(
-      `SELECT u.id, u.nome, u.matricula, u.modo, u.criado_em, u.curso,
+      `SELECT u.id, u.nome, u.matricula, u.modo, u.criado_em, u.curso, u.email,
               r.xp_total, r.sessoes, r.media_saude
        FROM usuarios u
        LEFT JOIN ranking r ON r.usuario_id = u.id
-       WHERE u.id = $1`,
+       WHERE u.id = $1 AND u.modo = 'aluno'`,
       [id]
     );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ erro: 'Aluno nao encontrado.' });
+    }
     res.json(result.rows[0]);
   } catch (err) {
     console.error('Erro ao buscar usuario:', err.message);
@@ -443,6 +450,31 @@ router.put('/:id/resetar-senha', auth, requireProfessor, mesmaTurmaDoRecurso('us
     });
   } catch (err) {
     console.error('Erro ao resetar senha do aluno:', err.message);
+    res.status(500).json({ erro: 'Erro interno do servidor.' });
+  }
+});
+
+// PUT /api/usuarios/:id/email – professor corrige o e-mail de um aluno da
+// propria turma (item 6, 08/11/2026). So troca o e-mail: login, senha,
+// codigos pendentes e historico nao mudam (tudo e ligado ao usuario_id).
+// Pra mandar um codigo novo pro endereco corrigido, o professor usa o
+// reenviar-codigo de sempre. Formato so e conferido aqui (cadastro e
+// importacao seguem como estao); sem unicidade, igual cadastro/importacao.
+const EMAIL_FORMATO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+router.put('/:id/email', auth, requireProfessor, mesmaTurmaDoRecurso('usuarios'), async (req, res) => {
+  const email = String(req.body.email || '').trim();
+  if (!email) return res.status(400).json({ erro: 'Informe o novo e-mail.' });
+  if (email.length > 255) return res.status(400).json({ erro: 'E-mail muito longo (maximo 255 caracteres).' });
+  if (!EMAIL_FORMATO.test(email)) return res.status(400).json({ erro: 'E-mail invalido: confira o @ e o dominio (ex: nome@aluno.ufes.br).' });
+  try {
+    const result = await pool.query(
+      `UPDATE usuarios SET email = $1 WHERE id = $2 AND modo = 'aluno' RETURNING id, email`,
+      [email, req.params.id]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ erro: 'Aluno nao encontrado.' });
+    res.json({ ok: true, id: result.rows[0].id, email: result.rows[0].email });
+  } catch (err) {
+    console.error('Erro ao editar e-mail do aluno:', err.message);
     res.status(500).json({ erro: 'Erro interno do servidor.' });
   }
 });
