@@ -3,6 +3,17 @@ import { ranking as rankingApi, usuarios as usuariosApi } from '../../api';
 import { COLORS, FONT_SCALE, SHADOW_CARD } from '../../theme';
 import { styles, req, authHeaders, MEDAL } from './shared';
 
+// Item 7: "AAAA-MM-DD" -> "DD/MM/AAAA" sem passar por Date (evita trocar o dia por fuso).
+const dataBR = iso => iso.slice(0, 10).split('-').reverse().join('/');
+// acessos_diarios so existe desde 16/09/2026 - "sem acesso" antes disso nao e conhecido.
+function formatarStatusAcesso(u) {
+  const senha = u.senha_definida_pelo_aluno
+    ? `🔓 senha criada${u.senha_definida_em ? ` em ${new Date(u.senha_definida_em).toLocaleDateString('pt-BR')}` : ''}`
+    : u.senha_definida_em ? '🔄 senha resetada, aguardando nova' : '⏳ ainda não criou senha';
+  const acesso = u.ultimo_acesso ? `último acesso ${dataBR(u.ultimo_acesso)}` : 'sem acesso registrado desde 16/09';
+  return `${senha} · ${acesso}`;
+}
+
 function AlunosSection({ turmaAtualId, onResetCode }) {
   const [students, setStudents] = useState([]);
   const [manualGrades, setManualGrades] = useState({});
@@ -15,9 +26,10 @@ function AlunosSection({ turmaAtualId, onResetCode }) {
   const [importPreview, setImportPreview] = useState(null);
   const [importResultado, setImportResultado] = useState(null);
   const [importLoading, setImportLoading] = useState(false);
+  const [acessoInfo, setAcessoInfo] = useState({});
 
   const fetchStudents = useCallback(() => {
-    if (!turmaAtualId) { setStudents([]); return; }
+    if (!turmaAtualId) { setStudents([]); setAcessoInfo({}); return; }
     rankingApi.get(turmaAtualId)
       .then(data => {
         if (Array.isArray(data)) {
@@ -33,6 +45,16 @@ function AlunosSection({ turmaAtualId, onResetCode }) {
         }
       })
       .catch(() => setStudents([]));
+    // Item 7: rota so de professor, separada do ranking. Falha aqui so
+    // esconde a linha de status - a lista, as notas e o ranking nao mudam.
+    usuariosApi.listar(turmaAtualId)
+      .then(data => {
+        if (!Array.isArray(data)) return;
+        const info = {};
+        data.forEach(u => { info[u.id] = u; });
+        setAcessoInfo(info);
+      })
+      .catch(() => {});
   }, [turmaAtualId]);
 
   useEffect(() => { fetchStudents(); }, [fetchStudents]);
@@ -419,6 +441,11 @@ function AlunosSection({ turmaAtualId, onResetCode }) {
               <div style={{ flex:1 }}>
                 <div style={{ ...FONT_SCALE.bodyBold, color:COLORS.textPrimary }}>{student.nome}</div>
                 <div style={{ ...FONT_SCALE.caption, color:COLORS.textMuted, marginTop:'2px' }}>{student.matricula} · {student.sessoes} sessão(ões){student.curso ? ` · ${student.curso}` : ''}</div>
+                {acessoInfo[student.id] && (
+                  <div style={{ ...FONT_SCALE.caption, color:COLORS.textMuted, marginTop:'2px' }}>
+                    {formatarStatusAcesso(acessoInfo[student.id])}
+                  </div>
+                )}
               </div>
               <div style={{ textAlign:'right' }}>
                 <div style={{ fontSize:'clamp(18px, calc(15.3px + 0.9vw), 23.4px)', fontWeight:'800', color:'#E8A83C' }}>⭐ {xp}</div>

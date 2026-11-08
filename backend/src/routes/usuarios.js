@@ -329,7 +329,17 @@ router.get('/', auth, requireProfessor, resolveTurmaId, async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT u.id, u.nome, u.matricula, u.modo, u.criado_em, u.curso,
-              r.xp_total, r.sessoes, r.media_saude
+              r.xp_total, r.sessoes, r.media_saude,
+              -- Item 7 (08/11/2026): status de acesso so pro professor.
+              -- Fica aqui e nao em GET /api/ranking porque o ranking tambem
+              -- e lido pelos alunos. Data da senha = ultimo codigo usado
+              -- (tokens usados nunca sao apagados). ::text no acesso: DATE
+              -- viraria Date JS a meia-noite UTC e trocaria o dia em UTC-3.
+              u.senha_definida_pelo_aluno,
+              (SELECT MAX(t.usado_em) FROM reset_senha_tokens t
+                WHERE t.usuario_id = u.id) AS senha_definida_em,
+              (SELECT MAX(a.data)::text FROM acessos_diarios a
+                WHERE a.usuario_id = u.id) AS ultimo_acesso
        FROM usuarios u
        LEFT JOIN ranking r ON r.usuario_id = u.id
        WHERE u.modo = 'aluno' AND u.turma_id = $1
